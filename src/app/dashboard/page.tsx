@@ -37,7 +37,7 @@ export default function DashboardPage() {
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
     phone: '+1 415 890 1200',
     status: 'ACTIVE',
-    lastLogin: new Date().toISOString(),
+    lastLogin: '2026-08-24T10:15:00Z',
   });
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
@@ -46,6 +46,7 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<ProfitabilityMetric[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<{ type: 'TAX_INVOICE' | 'PROFORMA'; data: any } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   const loadData = async () => {
     try {
@@ -108,9 +109,8 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    setIsMounted(true);
     loadData();
-    const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
   }, []);
 
   const isDepotUser = currentUser.role === 'DEPOT_USER';

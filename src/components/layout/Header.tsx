@@ -41,6 +41,7 @@ export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Change password modal states
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -71,9 +72,8 @@ export default function Header() {
   };
 
   useEffect(() => {
+    setIsMounted(true);
     reloadData();
-    const interval = setInterval(reloadData, 5000);
-    return () => clearInterval(interval);
   }, []);
 
   const handleLogout = async () => {
@@ -141,7 +141,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-800 bg-slate-900/90 px-4 sm:px-6 backdrop-blur-md">
+      <header className="shrink-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-800 bg-slate-900/95 px-4 sm:px-6 backdrop-blur-md">
         {/* Left: Mobile menu & Brand */}
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="flex items-center gap-3 group">
@@ -162,7 +162,7 @@ export default function Header() {
           </Link>
 
           {/* Quick Depot status badge */}
-          {currentUser.assignedDepotName ? (
+          {isMounted && currentUser.assignedDepotName ? (
             <div className="hidden lg:flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400">
               <Building2 className="h-3.5 w-3.5" />
               <span>Depot Sandbox: {currentUser.assignedDepotName}</span>
@@ -317,7 +317,7 @@ export default function Header() {
                 <div className="text-xs font-semibold text-white line-clamp-1">{currentUser.name}</div>
                 <div className="text-[10px] font-mono text-brand-400 leading-tight flex items-center gap-1">
                   <span>{currentUser.role.replace('_', ' ')}</span>
-                  {currentUser.assignedDepotName && (
+                  {isMounted && currentUser.assignedDepotName && (
                     <span className="text-slate-400 truncate max-w-[100px]">• {currentUser.assignedDepotName.split(' ')[0]}</span>
                   )}
                 </div>

@@ -40,6 +40,28 @@ export default function ProformasPage() {
 
   useEffect(() => {
     loadData();
+
+    // SSE listener for instant updates
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/events');
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'PROFORMA_UPDATED' || payload.type === 'PROFORMA_CONFIRMED') {
+            loadData();
+          }
+        } catch {}
+      };
+    } catch {}
+
+    const onFocus = () => loadData();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      if (eventSource) eventSource.close();
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   const filteredProformas = proformas.filter((pf) => {

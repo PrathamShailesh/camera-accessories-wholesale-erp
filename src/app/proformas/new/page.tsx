@@ -465,8 +465,27 @@ function ProformaBuilder() {
         <div className="space-y-3">
           {items.map((item, idx) => {
             const product = products.find((p) => p.id === item.productId);
-            // TODO: Implement API-based stock availability check
-            const stockCheck = { available: true, availableAtDepot: 999, alternativeDepots: [] };
+            
+            // Calculate real live stock for the selected depot
+            const selectedDepotQty =
+              product?.depotBreakdown && typeof product.depotBreakdown[item.selectedDepotId] === 'number'
+                ? product.depotBreakdown[item.selectedDepotId]
+                : (product?.totalStock || 0);
+
+            // Find alternative depots that have stock available
+            const alternativeDepots = depots
+              .filter((d) => d.id !== item.selectedDepotId && (product?.depotBreakdown?.[d.id] || 0) > 0)
+              .map((d) => ({
+                depotId: d.id,
+                depotName: d.name,
+                availableQty: product?.depotBreakdown?.[d.id] || 0,
+              }));
+
+            const stockCheck = {
+              available: selectedDepotQty >= item.quantity,
+              availableAtDepot: selectedDepotQty,
+              alternativeDepots,
+            };
 
             return (
               <div

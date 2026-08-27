@@ -36,8 +36,6 @@ export default function SalesReportsPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 4000);
-    return () => clearInterval(interval);
   }, []);
 
   const filteredInvoices = invoices.filter((i) => {

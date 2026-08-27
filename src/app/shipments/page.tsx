@@ -26,8 +26,6 @@ export default function ShipmentsPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   const filtered = shipments.filter((s) => {

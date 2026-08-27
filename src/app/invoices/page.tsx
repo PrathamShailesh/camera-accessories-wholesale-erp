@@ -46,8 +46,6 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 4000);
-    return () => clearInterval(interval);
   }, []);
 
   const isDepotUser = currentUser.role === 'DEPOT_USER';

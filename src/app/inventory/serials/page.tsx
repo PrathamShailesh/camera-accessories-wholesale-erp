@@ -28,8 +28,6 @@ export default function SerialsPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   const filtered = serials.filter((s) => {

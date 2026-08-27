@@ -34,8 +34,6 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
-    return () => clearInterval(interval);
   }, [id]);
 
   if (!product) {

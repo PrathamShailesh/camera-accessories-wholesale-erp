@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { deductStockForInvoice } from '@/lib/inventory-service';
 
 export async function GET() {
   try {
@@ -83,50 +84,44 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Create invoice items
-      for (const item of proforma.items) {
-        await prisma.invoiceItem.create({
-          data: {
-            invoiceId: invoice.id,
-            productId: item.productId,
-            productSku: item.productSku,
-            productName: item.productName,
-            brand: item.brand,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            taxRate: item.taxRate,
-            taxAmount: item.taxAmount,
-            totalPrice: item.totalPrice,
-            depotId,
-            depotName: depot.name,
-            trackSerial: item.trackSerial,
-            isPicked: false,
-          },
-        });
-
-        // Allocate serial numbers if tracking is enabled
-        if (item.trackSerial) {
-          const serials = await prisma.serialNumber.findMany({
-            where: {
+        // Create invoice items
+        for (const item of proforma.items) {
+          await prisma.invoiceItem.create({
+            data: {
+              invoiceId: invoice.id,
               productId: item.productId,
+              productSku: item.productSku,
+              productName: item.productName,
+              brand: item.brand,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              taxRate: item.taxRate,
+              taxAmount: item.taxAmount,
+              totalPrice: item.totalPrice,
               depotId,
-              status: 'IN_STOCK',
+              depotName: depot.name,
+              trackSerial: item.trackSerial,
+              isPicked: false,
             },
-            take: item.quantity,
           });
-
-          for (const serial of serials) {
-            await prisma.serialNumber.update({
-              where: { id: serial.id },
-              data: {
-                status: 'ALLOCATED',
-                invoiceId: invoice.id,
-                invoiceNumber: invoice.invoiceNumber,
-              },
-            });
-          }
         }
-      }
+
+        // Deduct inventory from PostgreSQL database & allocate serials
+        await deductStockForInvoice(
+          invoice.id,
+          proforma.items.map((i) => ({
+            productId: i.productId,
+            productSku: i.productSku,
+            productName: i.productName,
+            quantity: i.quantity,
+            depotId,
+            trackSerial: i.trackSerial,
+            unitPrice: i.unitPrice,
+          })),
+          depotId,
+          invoice.invoiceNumber,
+          proforma.customerCompany || proforma.customerName
+        );
 
       // Update proforma status
       await prisma.proforma.update({

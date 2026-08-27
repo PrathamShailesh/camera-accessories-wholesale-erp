@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -19,6 +19,9 @@ import {
   ExternalLink,
   ChevronRight,
   FileText,
+  Radio,
+  Bell,
+  Zap,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatUSD, formatDate, getStatusBadgeClasses } from '@/lib/utils';
@@ -39,17 +42,40 @@ export default function ProformaDetailPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [emailSentSuccess, setEmailSentSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [liveNotification, setLiveNotification] = useState<string | null>(null);
+  const [isLiveConnected, setIsLiveConnected] = useState(false);
 
-  const loadData = async () => {
+  const prevStatusRef = useRef<string | null>(null);
+
+  const loadData = async (silent = false) => {
     try {
-      const res = await fetch(`/api/proformas/${id}`);
+      const res = await fetch(`/api/proformas/${id}`, { cache: 'no-store' });
       if (!res.ok) {
-        setProforma(null);
+        if (!silent) setProforma(null);
         return;
       }
       const data = await res.json();
+
+      // Check if status changed in real-time
+      if (prevStatusRef.current && prevStatusRef.current !== data.status) {
+        if (data.status === 'CONFIRMED') {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#0c8ae9', '#10b981', '#38bdf8', '#fbbf24'],
+          });
+          setLiveNotification('🎉 Live Update: Customer just confirmed and accepted this quotation!');
+        } else if (data.status === 'CONVERTED') {
+          setLiveNotification('✅ Live Update: Quotation was converted to Tax Invoice.');
+        } else {
+          setLiveNotification(`⚡ Live Update: Status changed to ${data.status}`);
+        }
+      }
+      prevStatusRef.current = data.status;
+
       setProforma(data);
-      
+
       const depsRes = await fetch('/api/depots');
       if (depsRes.ok) {
         const allDepots = await depsRes.json();
@@ -59,15 +85,53 @@ export default function ProformaDetailPage() {
         }
       }
     } catch (error) {
-      console.error('Error loading proforma:', error);
-      setProforma(null);
+      if (!silent) {
+        console.error('Error loading proforma:', error);
+        setProforma(null);
+      }
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
+  // Real-time synchronization: SSE stream + Fast adaptive polling
   useEffect(() => {
-    loadData();
+    loadData(false);
+
+    // 1. Setup Server-Sent Events (SSE) stream for instant push
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource(`/api/events?id=${id}`);
+      eventSource.onopen = () => {
+        setIsLiveConnected(true);
+      };
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'PROFORMA_UPDATED' || payload.type === 'PROFORMA_CONFIRMED') {
+            if (payload.id === id || payload.proformaNumber === id || !payload.id) {
+              loadData(true);
+            }
+          }
+        } catch {}
+      };
+      eventSource.onerror = () => {
+        setIsLiveConnected(false);
+      };
+    } catch (err) {
+      console.warn('SSE connection failed, relying on adaptive polling:', err);
+    }
+
+    // 2. Focus revalidation on tab switch
+    const onFocus = () => loadData(true);
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+      window.removeEventListener('focus', onFocus);
+    };
   }, [id]);
 
   if (isLoading) {
@@ -101,6 +165,7 @@ export default function ProformaDetailPage() {
       if (res.ok) {
         const updated = await res.json();
         setProforma(updated);
+        prevStatusRef.current = updated.status;
       }
     } catch (error) {
       console.error('Error updating status:', error);
@@ -136,7 +201,7 @@ export default function ProformaDetailPage() {
       // Update state and route to invoice after brief moment
       setTimeout(() => {
         router.push(`/invoices/${newInvoice.id}`);
-      }, 1200);
+      }, 1000);
     } catch (err: any) {
       setErrorMessage(err.message || 'Conversion failed');
       setIsConverting(false);
@@ -178,6 +243,22 @@ export default function ProformaDetailPage() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-16 max-w-5xl mx-auto">
+      {/* Real-Time Live Notification Banner */}
+      {liveNotification && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-900 border border-emerald-500/50 shadow-glow-emerald flex items-center justify-between animate-bounce">
+          <div className="flex items-center gap-3 text-emerald-300 text-xs font-bold">
+            <Zap className="h-5 w-5 text-emerald-400 animate-pulse" />
+            <span>{liveNotification}</span>
+          </div>
+          <button
+            onClick={() => setLiveNotification(null)}
+            className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded bg-slate-800"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Top Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -197,6 +278,19 @@ export default function ProformaDetailPage() {
               >
                 <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} />
                 {proforma.status}
+              </span>
+
+              {/* Live Synchronization Status Badge */}
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-mono border ${
+                  isLiveConnected
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                    : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
+                }`}
+                title="Real-time live synchronization is active"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span>Live Sync</span>
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -237,7 +331,7 @@ export default function ProformaDetailPage() {
             </button>
           )}
 
-          {/* Mark Confirmed */}
+          {/* Mark Confirmed (Manual Override) */}
           {proforma.status === 'SENT' && (
             <button
               onClick={() => handleStatusChange('CONFIRMED')}
@@ -301,83 +395,84 @@ export default function ProformaDetailPage() {
                 : 'bg-slate-900 border-slate-800 text-slate-500'
             }`}
           >
-            <div className="font-bold">2. Sent to Customer</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">{proforma.customerEmail}</div>
+            <div className="font-bold">2. Sent to Client</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">
+              {proforma.status === 'DRAFT' ? 'Pending Send' : 'Email Delivered'}
+            </div>
           </div>
 
           <div
             className={`p-2.5 rounded-xl border transition-all ${
               ['CONFIRMED', 'CONVERTED'].includes(proforma.status)
-                ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300'
+                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
                 : 'bg-slate-900 border-slate-800 text-slate-500'
             }`}
           >
             <div className="font-bold">3. Deal Confirmed</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">Ready for invoicing</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">
+              {proforma.status === 'CONFIRMED' || proforma.status === 'CONVERTED'
+                ? 'Customer Accepted'
+                : 'Awaiting Customer'}
+            </div>
           </div>
 
           <div
             className={`p-2.5 rounded-xl border transition-all ${
               proforma.status === 'CONVERTED'
-                ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
                 : 'bg-slate-900 border-slate-800 text-slate-500'
             }`}
           >
-            <div className="font-bold">4. Converted to Tax Invoice</div>
+            <div className="font-bold">4. Tax Invoice</div>
             <div className="text-[10px] text-slate-400 mt-0.5">
-              {proforma.convertedToInvoiceNumber || 'Pending'}
+              {proforma.status === 'CONVERTED' ? proforma.convertedToInvoiceNumber : 'Pending Conversion'}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Breakdown Grid */}
+      {/* Main Split Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Line Items & Pricing */}
+        {/* Left 2 Cols: Line Items & Totals */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Items Table */}
-          <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden shadow-lg">
-            <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
-                Quoted Equipment & Optical Hardware
+          <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
+                Quotation Line Items ({proforma.items?.length || 0})
               </h3>
-              <span className="text-xs text-slate-400 font-mono">
-  {proforma.items?.length ?? 0} line items
-</span>
+              <span className="text-xs text-slate-400">Currency: USD ($)</span>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="erp-table">
-                <thead>
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-950/60 border-b border-slate-800 text-slate-400 font-mono">
                   <tr>
-                    <th>Item & SKU</th>
-                    <th>Depot</th>
-                    <th className="text-right">Qty</th>
-                    <th className="text-right">Unit Price</th>
-                    <th className="text-right">Total (USD)</th>
+                    <th className="py-2.5 px-4 font-semibold">SKU / Item</th>
+                    <th className="py-2.5 px-4 font-semibold text-center">Qty</th>
+                    <th className="py-2.5 px-4 font-semibold text-right">Unit Price</th>
+                    <th className="py-2.5 px-4 font-semibold text-right">Discount</th>
+                    <th className="py-2.5 px-4 font-semibold text-right">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {proforma.items?.map((item, idx) => (
-                    <tr key={idx}>
-                      <td>
-                        <div className="font-semibold text-white text-xs">{item.productName}</div>
-                        <div className="text-[10px] font-mono text-slate-400">
-                          SKU: {item.productSku} • Brand: {item.brand}
+                  {proforma.items?.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-800/30">
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-white">{item.productName}</div>
+                        <div className="text-[10px] font-mono text-slate-400 mt-0.5">
+                          {item.productSku} • {item.brand}
                         </div>
                       </td>
-                      <td>
-                        <span className="text-[11px] text-slate-300">
-                          {item.selectedDepotName || 'Dubai Logistics Hub'}
-                        </span>
-                      </td>
-                      <td className="text-right font-mono font-bold text-xs text-white">
+                      <td className="py-3 px-4 text-center font-mono font-bold text-white">
                         {item.quantity}
                       </td>
-                      <td className="text-right font-mono text-xs text-slate-300">
+                      <td className="py-3 px-4 text-right font-mono text-slate-300">
                         {formatUSD(item.unitPrice)}
                       </td>
-                      <td className="text-right font-mono font-bold text-xs text-white">
+                      <td className="py-3 px-4 text-right font-mono text-slate-400">
+                        {item.discountPercent > 0 ? `${item.discountPercent}%` : '—'}
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono font-bold text-white">
                         {formatUSD(item.totalPrice)}
                       </td>
                     </tr>
@@ -386,15 +481,15 @@ export default function ProformaDetailPage() {
               </table>
             </div>
 
-            {/* Calculations Breakdown */}
-            <div className="p-6 bg-slate-950/80 border-t border-slate-800 flex flex-col items-end space-y-2 text-xs font-mono">
+            {/* Totals Summary */}
+            <div className="p-4 bg-slate-950/40 border-t border-slate-800 flex flex-col items-end space-y-1.5 text-xs font-mono">
               <div className="flex justify-between w-64 text-slate-400">
                 <span>Subtotal:</span>
-                <span className="text-white font-bold">{formatUSD(proforma.subtotal)}</span>
+                <span className="text-white">{formatUSD(proforma.subtotal)}</span>
               </div>
               {proforma.discountAmount > 0 && (
-                <div className="flex justify-between w-64 text-emerald-400">
-                  <span>Discount ({proforma.discountPercent}%):</span>
+                <div className="flex justify-between w-64 text-amber-400">
+                  <span>Special Discount:</span>
                   <span>-{formatUSD(proforma.discountAmount)}</span>
                 </div>
               )}
@@ -417,11 +512,11 @@ export default function ProformaDetailPage() {
           {proforma.status === 'CONFIRMED' && (
             <div className="p-5 rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 shadow-glow-emerald space-y-3">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-emerald-400" />
+                <Sparkles className="h-5 w-5 text-emerald-400 animate-spin" style={{ animationDuration: '4s' }} />
                 <h3 className="text-sm font-bold text-white">Ready for 1-Click Tax Invoice Conversion</h3>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Converting this deal will automatically generate a legally binding Tax Invoice (e.g. <code>INV-2026-00003</code>), reserve stock and serial numbers, and assign the fulfilment task directly to the destination depot warehouse.
+                Converting this deal will automatically generate a legally binding Tax Invoice, deduct stock across depots, allocate serial numbers, and assign the fulfilment task directly to the destination warehouse.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
@@ -445,7 +540,7 @@ export default function ProformaDetailPage() {
                 <button
                   onClick={handleConvert}
                   disabled={isConverting}
-                  className="w-full sm:w-auto mt-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-glow-emerald transition-all"
+                  className="w-full sm:w-auto mt-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-glow-emerald transition-all active:scale-98"
                 >
                   <Sparkles className="h-4 w-4" />
                   <span>{isConverting ? 'Processing Conversion...' : 'Execute Conversion Now'}</span>
@@ -520,14 +615,14 @@ export default function ProformaDetailPage() {
         />
       )}
 
-      {/* Email Customer Simulator Modal */}
+      {/* Email Customer Modal */}
       {isEmailModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Mail className="h-5 w-5 text-brand-400" />
-                <h3 className="text-sm font-bold text-white">Send Proforma to Customer</h3>
+                <h3 className="text-sm font-bold text-white">Send Quote via Email</h3>
               </div>
               <button
                 onClick={() => setIsEmailModalOpen(false)}
@@ -537,65 +632,48 @@ export default function ProformaDetailPage() {
               </button>
             </div>
 
-            <div className="space-y-3 text-xs text-slate-300">
-              <div>
-                <label className="block text-slate-400 mb-1">To Email:</label>
-                <input
-                  type="text"
-                  disabled
-                  value={proforma.customerEmail}
-                  className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-xs font-mono text-slate-300"
-                />
+            {emailSentSuccess ? (
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 shrink-0" />
+                <span>Quotation email sent successfully with interactive confirmation link!</span>
               </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Subject:</label>
-                <input
-                  type="text"
-                  readOnly
-                  value={`Proforma Quotation ${proforma.proformaNumber} - GROWTH BRIDGE Camera Wholesale`}
-                  className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-300"
-                />
-              </div>
-
-              <div className="p-3 rounded-xl border border-slate-800 bg-slate-950/60 space-y-2 text-[11px] text-slate-400">
-                <p>Dear {proforma.customerName},</p>
-                <p>
-                  Please find attached your requested wholesale Proforma Invoice #{proforma.proformaNumber} for <strong>{formatUSD(proforma.grandTotal)}</strong>.
+            ) : (
+              <div className="space-y-3 text-xs">
+                <p className="text-slate-300">
+                  An official quotation notification will be delivered to:
                 </p>
-                <p>Equipment is allocated from our regional hubs. Kindly reply to confirm your deal.</p>
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                  <div className="text-white font-semibold">{proforma.customerCompany}</div>
+                  <div className="text-brand-400 font-mono">{proforma.customerEmail}</div>
+                  <div className="text-slate-400 font-mono">Amount: {formatUSD(proforma.grandTotal)}</div>
+                </div>
+                <p className="text-slate-400 text-[11px]">
+                  The email contains an interactive link for the customer to review the proforma and confirm the deal with 1 click.
+                </p>
+
+                {errorMessage && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[11px]">
+                    {errorMessage}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    onClick={() => setIsEmailModalOpen(false)}
+                    className="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSendEmail}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold shadow-glow"
+                  >
+                    <Send className="h-4 w-4" />
+                    <span>Send Email Now</span>
+                  </button>
+                </div>
               </div>
-
-              {errorMessage && (
-                <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              {emailSentSuccess && (
-                <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>Proforma email dispatched successfully to customer!</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
-              <button
-                onClick={() => setIsEmailModalOpen(false)}
-                className="px-4 py-2 rounded-lg text-xs text-slate-400 hover:text-white"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSendEmail}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow"
-              >
-                <Send className="h-3.5 w-3.5" />
-                <span>Send Quotation</span>
-              </button>
-            </div>
+            )}
           </div>
         </div>
       )}

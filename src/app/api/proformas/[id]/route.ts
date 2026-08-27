@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { broadcastSystemEvent } from '@/lib/events-emitter';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -67,6 +68,19 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         },
       },
     });
+
+    // Broadcast real-time event to open client portals and admin dashboards
+    try {
+      broadcastSystemEvent({
+        type: proforma.status === 'CONFIRMED' ? 'PROFORMA_CONFIRMED' : 'PROFORMA_UPDATED',
+        id: proforma.id,
+        proformaNumber: proforma.proformaNumber,
+        status: proforma.status,
+        data: proforma,
+      });
+    } catch (evtErr) {
+      console.warn('Could not broadcast system event:', evtErr);
+    }
 
     return NextResponse.json(proforma);
   } catch (error) {

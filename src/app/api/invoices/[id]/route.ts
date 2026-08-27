@@ -147,6 +147,19 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       });
     }
 
+    if (fulfilmentStatus === 'SHIPPED' || fulfilmentStatus === 'DELIVERED') {
+      const targetSerialStatus = fulfilmentStatus === 'DELIVERED' ? 'DELIVERED' : 'DISPATCHED';
+      await prisma.serialNumber.updateMany({
+        where: {
+          invoiceId: existing.id,
+          status: 'ALLOCATED',
+        },
+        data: {
+          status: targetSerialStatus as any,
+        },
+      });
+    }
+
     const invoice = await prisma.taxInvoice.update({
       where: { id: existing.id },
       data: updateData,

@@ -74,8 +74,6 @@ export default function UsersManagementPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
   }, []);
 
   const handleCreateUser = async (e: React.FormEvent) => {

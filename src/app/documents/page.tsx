@@ -34,8 +34,6 @@ export default function DocumentsPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   const filteredDocs = documents.filter((doc) => {

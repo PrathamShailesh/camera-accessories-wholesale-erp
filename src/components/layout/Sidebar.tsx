@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -26,11 +26,29 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import dataStore from '@/lib/data-store';
+import { User } from '@/types/erp';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const currentUser = dataStore.getCurrentUser();
-  const isDepotUser = currentUser.role === 'DEPOT_USER';
+  const [currentUser, setCurrentUser] = useState<User>(dataStore.getCurrentUser());
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    setCurrentUser(dataStore.getCurrentUser());
+
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && data.user) {
+          setCurrentUser(data.user);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const isDepotUser = isMounted && currentUser?.role === 'DEPOT_USER';
+  const isSuperAdmin = !isMounted || currentUser?.role === 'SUPER_ADMIN';
 
   const navSections = [
     {
@@ -80,11 +98,29 @@ export default function Sidebar() {
     },
   ];
 
+  // Collect all visible item hrefs to compute precise route active states
+  const allHrefs = navSections.flatMap((s) => s.items.filter((i) => !i.hidden).map((i) => i.href));
+
+  const isItemActive = (href: string) => {
+    if (pathname === href) return true;
+    if (pathname.startsWith(href + '/')) {
+      // Ensure no more specific sibling/child menu item matches this pathname
+      const hasMoreSpecificMatch = allHrefs.some(
+        (otherHref) =>
+          otherHref !== href &&
+          otherHref.length > href.length &&
+          (pathname === otherHref || pathname.startsWith(otherHref + '/'))
+      );
+      return !hasMoreSpecificMatch;
+    }
+    return false;
+  };
+
   return (
-    <aside className="w-64 shrink-0 border-r border-slate-800 bg-slate-925 flex flex-col justify-between hidden md:flex sticky top-16 overflow-y-auto">
+    <aside className="w-64 shrink-0 border-r border-slate-800 bg-slate-925/95 flex flex-col justify-between hidden md:flex h-full min-h-0 overflow-hidden select-none">
       {/* Depot sandboxing alert if Depot User */}
       {isDepotUser && (
-        <div className="m-3 p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs">
+        <div className="shrink-0 m-3 p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs">
           <div className="flex items-center gap-1.5 font-semibold">
             <ShieldAlert className="h-3.5 w-3.5" />
             <span>Sandboxed View</span>
@@ -96,7 +132,7 @@ export default function Sidebar() {
       )}
 
       {/* Nav Menu */}
-      <div className="py-4 px-3 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto py-4 px-3 space-y-6">
         {navSections.map((section, idx) => {
           const visibleItems = section.items.filter((i) => !i.hidden);
           if (visibleItems.length === 0) return null;
@@ -108,7 +144,7 @@ export default function Sidebar() {
               </div>
               <div className="space-y-1">
                 {visibleItems.map((item) => {
-                  const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                  const isActive = isItemActive(item.href);
                   const Icon = item.icon;
 
                   return (
@@ -151,7 +187,7 @@ export default function Sidebar() {
       </div>
 
       {/* Cloudinary CDN Indicator Footer */}
-      <div className="p-3 border-t border-slate-800/80 bg-slate-950/60">
+      <div className="shrink-0 p-3 border-t border-slate-800/80 bg-slate-950/80">
         <div className="flex items-center justify-between text-[11px]">
           <div className="flex items-center gap-1.5 text-slate-400">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />

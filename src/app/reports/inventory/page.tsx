@@ -25,8 +25,6 @@ export default function InventoryReportsPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   const lowStock = products.filter((p) => (p.totalStock || 0) <= p.minStockLevel);

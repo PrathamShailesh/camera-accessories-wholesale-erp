@@ -48,8 +48,6 @@ export default function TransfersPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   const handleCreateTransfer = (e: React.FormEvent) => {

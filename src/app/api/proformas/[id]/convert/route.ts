@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { deductStockForInvoice } from '@/lib/inventory-service';
+import { broadcastSystemEvent } from '@/lib/events-emitter';
 
 export async function POST(
   req: NextRequest,
@@ -95,6 +97,23 @@ export async function POST(
       });
     }
 
+    // Deduct stock in database & allocate serials
+    await deductStockForInvoice(
+      invoice.id,
+      proforma.items.map((i) => ({
+        productId: i.productId,
+        productSku: i.productSku,
+        productName: i.productName,
+        quantity: i.quantity,
+        depotId: i.selectedDepotId || finalDepotId,
+        trackSerial: i.trackSerial,
+        unitPrice: i.unitPrice,
+      })),
+      finalDepotId,
+      invoice.invoiceNumber,
+      proforma.customerCompany || proforma.customerName
+    );
+
     // Update proforma status
     await prisma.proforma.update({
       where: { id: proforma.id },
@@ -117,6 +136,16 @@ export async function POST(
       where: { id: invoice.id },
       include: { items: true, customer: true, depot: true },
     });
+
+    try {
+      broadcastSystemEvent({
+        type: 'PROFORMA_UPDATED',
+        id: proforma.id,
+        proformaNumber: proforma.proformaNumber,
+        status: 'CONVERTED',
+        data: completeInvoice || invoice,
+      });
+    } catch {}
 
     return NextResponse.json(completeInvoice || invoice, { status: 201 });
   } catch (error: any) {

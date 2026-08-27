@@ -81,8 +81,6 @@ export default function DepotMobilePage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
-    return () => clearInterval(interval);
   }, [selectedDepotId]);
 
   const activeDepotObj = depots.find((d) => d.id === selectedDepotId);

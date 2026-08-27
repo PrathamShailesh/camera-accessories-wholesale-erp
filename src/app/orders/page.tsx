@@ -36,8 +36,28 @@ export default function OrdersPipelinePage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 4000);
-    return () => clearInterval(interval);
+
+    // SSE listener for instant stage changes
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/events');
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (['PROFORMA_UPDATED', 'PROFORMA_CONFIRMED', 'INVOICE_CREATED'].includes(payload.type)) {
+            loadData();
+          }
+        } catch {}
+      };
+    } catch {}
+
+    const onFocus = () => loadData();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      if (eventSource) eventSource.close();
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   return (

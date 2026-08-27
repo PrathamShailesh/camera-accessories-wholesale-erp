@@ -23,15 +23,22 @@ export default function InventoryPage() {
   const [depots, setDepots] = useState<Depot[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const loadData = () => {
-    setProducts(dataStore.getProducts());
-    setDepots(dataStore.getDepots());
+  const loadData = async () => {
+    try {
+      const [prodsRes, depsRes] = await Promise.all([
+        fetch('/api/products').then((r) => (r.ok ? r.json() : null)),
+        fetch('/api/depots').then((r) => (r.ok ? r.json() : null)),
+      ]);
+      setProducts(prodsRes || dataStore.getProducts());
+      setDepots(depsRes || dataStore.getDepots());
+    } catch {
+      setProducts(dataStore.getProducts());
+      setDepots(dataStore.getDepots());
+    }
   };
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   const totalStockValuation = products.reduce(

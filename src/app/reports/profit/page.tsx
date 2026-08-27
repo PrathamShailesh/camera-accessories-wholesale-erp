@@ -29,8 +29,6 @@ export default function ProfitabilityPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   const totalRevenue = metrics.reduce((sum, m) => sum + m.totalRevenue, 0);

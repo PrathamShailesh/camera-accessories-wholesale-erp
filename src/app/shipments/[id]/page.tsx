@@ -48,8 +48,6 @@ export default function ShipmentDetailPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
-    return () => clearInterval(interval);
   }, [id]);
 
   if (!shipment) {

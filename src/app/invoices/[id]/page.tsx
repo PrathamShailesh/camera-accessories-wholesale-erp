@@ -98,8 +98,6 @@ export default function InvoiceDetailPage() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 4000);
-    return () => clearInterval(interval);
   }, [id]);
 
   if (isLoading) {
