@@ -1,0 +1,670 @@
+// Camera & Accessories Wholesale ERP - Prisma Database Schema
+// Supported on PostgreSQL (Local Docker / Supabase / Neon / AWS RDS)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  MANAGER
+  DEPOT_USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SerialStatus {
+  IN_STOCK
+  ALLOCATED
+  DISPATCHED
+  RETURNED
+  DEFECTIVE
+}
+
+enum TransactionType {
+  STOCK_IN
+  STOCK_TRANSFER
+  STOCK_ADJUSTMENT
+  SALE_DISPATCH
+  RETURN
+}
+
+enum TransferStatus {
+  PENDING
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+enum AdjustmentReason {
+  DAMAGED
+  CYCLE_COUNT
+  FOUND
+  DEFECTIVE
+  OTHER
+}
+
+enum PaymentTerms {
+  NET_15
+  NET_30
+  NET_60
+  IMMEDIATE
+  ADVANCE_50
+  CASH_IN_ADVANCE
+}
+
+enum CustomerStatus {
+  ACTIVE
+  ON_HOLD
+  INACTIVE
+}
+
+enum ProformaStatus {
+  DRAFT
+  SENT
+  CONFIRMED
+  CONVERTED
+  CANCELLED
+}
+
+enum InvoicePaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+}
+
+enum InvoiceFulfilmentStatus {
+  DRAFT
+  SENT
+  CONFIRMED
+  PROCESSING
+  READY_FOR_PACKING
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum CourierProvider {
+  DHL_EXPRESS
+  FEDEX_INTERNATIONAL
+  ARAMEX
+  EMIRATES_SKYCARGO
+  UPS
+  OTHER
+}
+
+enum ShipmentStatus {
+  READY
+  DISPATCHED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+}
+
+enum DocumentCategory {
+  AIRWAY_BILL
+  TAX_INVOICE
+  PROFORMA
+  PACKING_PHOTO
+  INSPECTION_REPORT
+  CUSTOMS_DOC
+  OTHER
+}
+
+model User {
+  id                String     @id @default(cuid())
+  name              String
+  email             String     @unique
+  avatar            String?
+  role              UserRole   @default(DEPOT_USER)
+  assignedDepotId   String?
+  assignedDepotName String?
+  phone             String?
+  status            UserStatus @default(ACTIVE)
+  passwordHash      String     @default("")
+  lastLogin         DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  depot             Depot?     @relation(fields: [assignedDepotId], references: [id], onDelete: SetNull)
+  auditLogs         AuditLog[]
+
+  @@index([role])
+  @@index([assignedDepotId])
+}
+
+model Depot {
+  id                String     @id @default(cuid())
+  code              String     @unique
+  name              String
+  address           String
+  city              String
+  country           String
+  contactPerson     String
+  phone             String
+  email             String
+  isCentralHub      Boolean    @default(false)
+  activeOrdersCount Int        @default(0)
+  totalStockUnits   Int        @default(0)
+  totalStockValue   Float      @default(0)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  users             User[]
+  inventories       DepotInventory[]
+  serialNumbers     SerialNumber[]
+  taxInvoices       TaxInvoice[]
+  shipments         Shipment[]
+
+  @@index([country])
+}
+
+model Category {
+  id           String    @id @default(cuid())
+  name         String    @unique
+  slug         String    @unique
+  description  String?
+  icon         String?
+  productCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  products     Product[]
+}
+
+model Product {
+  id             String           @id @default(cuid())
+  sku            String           @unique
+  name           String
+  brand          String
+  model          String?
+  categoryId     String
+  categoryName   String?
+  subcategory    String?
+  description    String           @default("")
+  imageUrl       String           @default("https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800")
+  barcode        String           @unique
+  trackSerial    Boolean          @default(true)
+  purchasePrice  Float            @default(0)
+  sellingPrice   Float            @default(0)
+  wholesalePrice Float            @default(0)
+  taxRate        Float            @default(5)
+  minStockLevel  Int              @default(10)
+  status         String           @default("ACTIVE")
+  totalStock     Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  category       Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  inventories    DepotInventory[]
+  serialNumbers  SerialNumber[]
+  proformaItems  ProformaItem[]
+  invoiceItems   InvoiceItem[]
+  transferItems  StockTransferItem[]
+  transactions   StockTransaction[]
+  adjustments    StockAdjustment[]
+
+  @@index([brand])
+  @@index([categoryId])
+  @@index([barcode])
+}
+
+model SerialNumber {
+  id            String       @id @default(cuid())
+  productId     String
+  productSku    String
+  productName   String
+  serialNumber  String       @unique
+  depotId       String
+  depotName     String
+  status        SerialStatus @default(IN_STOCK)
+  invoiceId     String?
+  invoiceNumber String?
+  historyJson   String?      @default("[]") // JSON string for tracking movement history
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  product       Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  depot         Depot        @relation(fields: [depotId], references: [id], onDelete: Restrict)
+  invoice       TaxInvoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([depotId])
+  @@index([status])
+  @@index([serialNumber])
+}
+
+model DepotInventory {
+  id                String   @id @default(cuid())
+  productId         String
+  depotId           String
+  quantity          Int      @default(0)
+  allocatedQuantity Int      @default(0)
+  availableQuantity Int      @default(0)
+  minStockLevel     Int      @default(5)
+  updatedAt         DateTime @updatedAt
+
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  depot             Depot    @relation(fields: [depotId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, depotId])
+  @@index([depotId])
+  @@index([productId])
+}
+
+model StockTransaction {
+  id              String          @id @default(cuid())
+  type            TransactionType
+  productId       String
+  productSku      String
+  productName     String
+  sourceDepotId   String?
+  sourceDepotName String?
+  targetDepotId   String?
+  targetDepotName String?
+  quantity        Int
+  unitCost        Float           @default(0)
+  referenceNumber String
+  notes           String?
+  createdBy       String          @default("System")
+  createdAt       DateTime        @default(now())
+
+  product         Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model StockTransfer {
+  id                   String              @id @default(cuid())
+  transferNumber       String              @unique
+  sourceDepotId        String
+  sourceDepotName      String
+  destinationDepotId   String
+  destinationDepotName String
+  status               TransferStatus      @default(PENDING)
+  notes                String?
+  createdBy            String              @default("System")
+  createdAt            DateTime            @default(now())
+  receivedAt           DateTime?
+
+  items                StockTransferItem[]
+
+  @@index([status])
+  @@index([transferNumber])
+}
+
+model StockTransferItem {
+  id              String        @id @default(cuid())
+  transferId      String
+  productId       String
+  productSku      String
+  productName     String
+  quantity        Int
+  serialNumbers   String[]      @default([])
+
+  transfer        StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([transferId])
+}
+
+model StockAdjustment {
+  id          String           @id @default(cuid())
+  productId   String
+  productSku  String
+  productName String
+  depotId     String
+  depotName   String
+  deltaQty    Int
+  previousQty Int
+  newQty      Int
+  reason      AdjustmentReason @default(CYCLE_COUNT)
+  user        String           @default("Manager")
+  notes       String?
+  createdAt   DateTime         @default(now())
+
+  product     Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([depotId])
+}
+
+model Customer {
+  id             String         @id @default(cuid())
+  customerCode   String         @unique
+  companyName    String
+  contactPerson  String
+  email          String         @unique
+  phone          String?
+  billingAddress String
+  shippingAddress String
+  country        String         @default("United Arab Emirates")
+  taxNumber      String         @default("TAX-PENDING")
+  paymentTerms   PaymentTerms   @default(NET_30)
+  creditLimit    Float          @default(50000)
+  currentBalance Float          @default(0)
+  notes          String?
+  status         CustomerStatus @default(ACTIVE)
+  totalOrders    Int            @default(0)
+  totalSpent     Float          @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  proformas      Proforma[]
+  taxInvoices    TaxInvoice[]
+  shipments      Shipment[]
+
+  @@index([customerCode])
+  @@index([companyName])
+  @@index([status])
+}
+
+model Supplier {
+  id            String   @id @default(cuid())
+  name          String
+  contactPerson String
+  email         String
+  phone         String?
+  address       String
+  country       String
+  taxId         String?
+  paymentTerms  String   @default("NET_30")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Proforma {
+  id                      String         @id @default(cuid())
+  proformaNumber          String         @unique
+  customerId              String
+  customerName            String
+  customerEmail           String
+  customerCompany         String
+  customerPhone           String?
+  billingAddress          String
+  shippingAddress         String
+  managerId               String         @default("usr-mgr")
+  managerName             String         @default("Marcus Vance")
+  issueDate               DateTime       @default(now())
+  expiryDate              DateTime
+  paymentTerms            String         @default("NET 30 days from dispatch")
+  deliveryTerms           String         @default("Air Freight via Courier (CIF)")
+  notes                   String?
+  subtotal                Float          @default(0)
+  discountPercent         Float          @default(0)
+  discountAmount          Float          @default(0)
+  taxAmount               Float          @default(0)
+  shippingCost            Float          @default(0)
+  otherCharges            Float          @default(0)
+  grandTotal              Float          @default(0)
+  currency                String         @default("USD")
+  status                  ProformaStatus @default(DRAFT)
+  convertedToInvoiceId    String?
+  convertedToInvoiceNumber String?
+  convertedAt             DateTime?
+  pdfUrl                  String?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+
+  customer                Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items                   ProformaItem[]
+
+  @@index([proformaNumber])
+  @@index([customerId])
+  @@index([status])
+}
+
+model ProformaItem {
+  id                String   @id @default(cuid())
+  proformaId        String
+  productId         String
+  productSku        String
+  productName       String
+  brand             String   @default("Canon")
+  quantity          Int      @default(1)
+  unitPrice         Float    @default(0)
+  discountPercent   Float    @default(0)
+  taxRate           Float    @default(5)
+  taxAmount         Float    @default(0)
+  totalPrice        Float    @default(0)
+  selectedDepotId   String?
+  selectedDepotName String?
+  trackSerial       Boolean  @default(true)
+
+  proforma          Proforma @relation(fields: [proformaId], references: [id], onDelete: Cascade)
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([proformaId])
+  @@index([productId])
+}
+
+model TaxInvoice {
+  id               String                  @id @default(cuid())
+  invoiceNumber    String                  @unique
+  proformaId       String?
+  proformaNumber   String?
+  customerId       String
+  customerName     String
+  customerEmail    String
+  customerCompany  String
+  customerPhone    String?
+  billingAddress   String
+  shippingAddress  String
+  depotId          String
+  depotName        String
+  managerId        String                  @default("usr-mgr")
+  managerName      String                  @default("Marcus Vance")
+  issueDate        DateTime                @default(now())
+  dueDate          DateTime
+  paymentTerms     String                  @default("NET 30 days from dispatch")
+  paymentStatus    InvoicePaymentStatus    @default(UNPAID)
+  fulfilmentStatus InvoiceFulfilmentStatus @default(READY_FOR_PACKING)
+  subtotal         Float                   @default(0)
+  discountAmount   Float                   @default(0)
+  taxAmount        Float                   @default(0)
+  shippingCost     Float                   @default(0)
+  otherCharges     Float                   @default(0)
+  grandTotal       Float                   @default(0)
+  currency         String                  @default("USD")
+  notes            String?
+  internalRemarks  String?
+  shipmentId       String?
+  pdfUrl           String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  customer         Customer                @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  depot            Depot                   @relation(fields: [depotId], references: [id], onDelete: Restrict)
+  items            InvoiceItem[]
+  serialNumbers    SerialNumber[]
+  packingDetails   PackingDetails?
+  shipment         Shipment?
+
+  @@index([invoiceNumber])
+  @@index([customerId])
+  @@index([depotId])
+  @@index([fulfilmentStatus])
+}
+
+model InvoiceItem {
+  id               String     @id @default(cuid())
+  invoiceId        String
+  productId        String
+  productSku       String
+  productName      String
+  brand            String     @default("Canon")
+  quantity         Int        @default(1)
+  unitPrice        Float      @default(0)
+  taxRate          Float      @default(5)
+  taxAmount        Float      @default(0)
+  totalPrice       Float      @default(0)
+  depotId          String
+  depotName        String
+  allocatedSerials String[]   @default([])
+  trackSerial      Boolean    @default(true)
+  isPicked         Boolean    @default(false)
+
+  invoice          TaxInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product          Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([invoiceId])
+  @@index([productId])
+}
+
+model PackingDetails {
+  id              String     @id @default(cuid())
+  invoiceId       String     @unique
+  packedBy        String
+  packedAt        DateTime   @default(now())
+  packageCount    Int        @default(1)
+  totalWeightKg   Float      @default(5.0)
+  lengthCm        Float      @default(40)
+  widthCm         Float      @default(30)
+  heightCm        Float      @default(20)
+  boxNumber       String?
+  packagePhotoUrl String?
+  packingNotes    String?
+
+  invoice         TaxInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model Shipment {
+  id                 String          @id @default(cuid())
+  shipmentNumber     String          @unique
+  invoiceId          String          @unique
+  invoiceNumber      String
+  customerId         String
+  customerName       String
+  customerCompany    String
+  destinationCountry String
+  shippingAddress    String
+  depotId            String
+  depotName          String
+  courier            CourierProvider @default(DHL_EXPRESS)
+  customCourierName  String?
+  airwayBillNumber   String
+  trackingUrl        String          @default("")
+  status             ShipmentStatus  @default(DISPATCHED)
+  totalWeightKg      Float           @default(5.0)
+  packageCount       Int             @default(1)
+  dispatchedAt       DateTime        @default(now())
+  deliveredAt        DateTime?
+  awbDocumentUrl     String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  invoice            TaxInvoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  customer           Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  depot              Depot           @relation(fields: [depotId], references: [id], onDelete: Restrict)
+
+  @@index([shipmentNumber])
+  @@index([airwayBillNumber])
+  @@index([status])
+}
+
+model CloudDocument {
+  id                 String           @id @default(cuid())
+  title              String
+  fileName           String
+  fileType           String
+  fileFormat         String
+  fileSize           Int
+  cloudinaryUrl      String
+  cloudinaryPublicId String
+  category           DocumentCategory @default(OTHER)
+  relatedEntityType  String?
+  relatedEntityId    String?
+  relatedEntityLabel String?
+  uploadedBy         String           @default("usr-admin")
+  uploadedByName     String           @default("Admin User")
+  uploadedAt         DateTime         @default(now())
+  tags               String[]         @default([])
+
+  @@index([category])
+  @@index([relatedEntityId])
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String
+  userName      String
+  userRole      UserRole @default(DEPOT_USER)
+  action        String
+  entityType    String
+  entityId      String
+  entityLabel   String
+  previousValue String?
+  newValue      String?
+  description   String
+  ipAddress     String   @default("127.0.0.1")
+  timestamp     DateTime @default(now())
+
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([timestamp])
+}
+
+model Notification {
+  id            String    @id @default(cuid())
+  type          String
+  title         String
+  message       String
+  link          String    @default("/dashboard")
+  read          Boolean   @default(false)
+  targetRole    UserRole?
+  targetDepotId String?
+  createdAt     DateTime  @default(now())
+
+  @@index([read])
+  @@index([targetRole])
+  @@index([targetDepotId])
+}
+
+model CompanySettings {
+  id                    String   @id @default("global-settings")
+  companyName           String   @default("GROWTH BRIDGE")
+  tradingName           String   @default("Growth Bridge")
+  logoUrl               String   @default("https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200")
+  taxRegistrationNumber String   @default("VAT-99201-US-GLOBAL")
+  vatGstNumber          String   @default("TRN-100889218200001")
+  companyAddress        String   @default("Office 402, Business Bay, Dubai, UAE")
+  phone                 String   @default("+91 62827 59863")
+  email                 String   @default("contact@growthbridge.com")
+  website               String   @default("https://growthbridge.com")
+  currency              String   @default("USD")
+  currencySymbol        String   @default("$")
+  bankName              String   @default("Commercial Bank of Dubai, Sheikh Zayed Road Branch, Dubai, U.A.E.")
+  accountName           String   @default("Arib Global General Trading LLC")
+  accountNumber         String   @default("AE910230000001002416343")
+  swiftBic              String   @default("CBOUAEADXXX")
+  iban                  String   @default("AE91 0230 0000 0100 2416 343")
+  routingCode           String   @default("CBD-0230")
+  invoicePrefix         String   @default("INV-2026-")
+  proformaPrefix        String   @default("PF-2026-")
+  invoiceNextNumber     Int      @default(3)
+  proformaNextNumber    Int      @default(3)
+  defaultPaymentTerms   String   @default("Cash In Advance")
+  defaultDeliveryTerms  String   @default("C&F Vietnam Airport")
+  // Email Configuration
+  smtpHost              String   @default("smtp.gmail.com")
+  smtpPort              Int      @default(587)
+  smtpUser              String   @default("cumrahware@gmail.com")
+  smtpPassword          String   @default("")
+  smtpFromName          String   @default("GROWTH BRIDGE ERP")
+  smtpFromEmail         String   @default("cumrahware@gmail.com")
+  updatedAt             DateTime @updatedAt
+}
