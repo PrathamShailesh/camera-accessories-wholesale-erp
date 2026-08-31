@@ -27,6 +27,28 @@ import {
 } from 'lucide-react';
 import dataStore from '@/lib/data-store';
 import { User } from '@/types/erp';
+import { hasPermission, isDepotScoped, NAV_SECTIONS } from '@/lib/rbac';
+
+const iconMap: Record<string, any> = {
+  LayoutDashboard,
+  FileCheck2,
+  Receipt,
+  ShoppingCart,
+  Users,
+  Package,
+  Boxes,
+  Barcode,
+  ArrowLeftRight,
+  SlidersHorizontal,
+  Building2,
+  Truck,
+  FolderLock,
+  TrendingUp,
+  BarChart3,
+  ScrollText,
+  Settings,
+  Smartphone,
+};
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -47,56 +69,26 @@ export default function Sidebar() {
       .catch(() => {});
   }, []);
 
-  const isDepotUser = isMounted && currentUser?.role === 'DEPOT_USER';
-  const isSuperAdmin = !isMounted || currentUser?.role === 'SUPER_ADMIN';
+  const isDepotUser = isMounted && isDepotScoped({
+    userId: currentUser.id,
+    email: currentUser.email,
+    role: currentUser.role as any,
+    assignedDepotId: currentUser.assignedDepotId,
+  });
 
-  const navSections = [
-    {
-      title: 'SALES & ORDERS',
-      items: [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, hidden: false },
-        { name: 'Proformas', href: '/proformas', icon: FileCheck2, hidden: isDepotUser },
-        { name: 'Tax Invoices', href: '/invoices', icon: Receipt, hidden: false },
-        { name: 'Order Pipeline', href: '/orders', icon: ShoppingCart, hidden: false },
-        { name: 'Customers', href: '/customers', icon: Users, hidden: isDepotUser },
-      ],
-    },
-    {
-      title: 'INVENTORY & HARDWARE',
-      items: [
-        { name: 'Product Catalog', href: '/products', icon: Package, hidden: false },
-        { name: 'Depot Stock Matrix', href: '/inventory', icon: Boxes, hidden: false },
-        { name: 'Serial Numbers', href: '/inventory/serials', icon: Barcode, hidden: false },
-        { name: 'Stock Transfers', href: '/inventory/transfers', icon: ArrowLeftRight, hidden: false },
-        { name: 'Stock Adjustments', href: '/inventory/adjustments', icon: SlidersHorizontal, hidden: isDepotUser },
-      ],
-    },
-    {
-      title: 'DEPOT & FULFILMENT',
-      items: [
-        { name: 'Depot Hubs', href: '/depots', icon: Building2, hidden: isDepotUser },
-        { name: 'Mobile Depot UI', href: '/depot-mobile', icon: Smartphone, highlight: true, hidden: false },
-        { name: 'Shipments & AWBs', href: '/shipments', icon: Truck, hidden: false },
-      ],
-    },
-    {
-      title: 'DOCS & CLOUD STORAGE',
-      items: [
-        { name: 'Documents Hub', href: '/documents', icon: FolderLock, hidden: false },
-      ],
-    },
-    {
-      title: 'ANALYTICS & AUDIT',
-      items: [
-        { name: 'Profitability & BI', href: '/reports/profit', icon: TrendingUp, hidden: isDepotUser },
-        { name: 'Sales Reports', href: '/reports/sales', icon: BarChart3, hidden: isDepotUser },
-        { name: 'Inventory Reports', href: '/reports/inventory', icon: Boxes, hidden: isDepotUser },
-        { name: 'Audit Logs', href: '/audit-logs', icon: ScrollText, hidden: isDepotUser },
-        { name: 'User Management', href: '/users', icon: Users, hidden: currentUser.role !== 'SUPER_ADMIN' },
-        { name: 'ERP Settings', href: '/settings', icon: Settings, hidden: currentUser.role !== 'SUPER_ADMIN' },
-      ],
-    },
-  ];
+  // Permission-based navigation sections
+  const navSections = NAV_SECTIONS.map(section => ({
+    title: section.title,
+    items: section.items
+      .filter(item => hasPermission(currentUser?.role, item.permission))
+      .map(item => ({
+        name: item.name,
+        href: item.href,
+        icon: iconMap[item.icon] || LayoutDashboard,
+        highlight: item.highlight,
+        hidden: false,
+      }))
+  })).filter(section => section.items.length > 0);
 
   // Collect all visible item hrefs to compute precise route active states
   const allHrefs = navSections.flatMap((s) => s.items.filter((i) => !i.hidden).map((i) => i.href));
@@ -134,8 +126,7 @@ export default function Sidebar() {
       {/* Nav Menu */}
       <div className="flex-1 min-h-0 overflow-y-auto py-4 px-3 space-y-6">
         {navSections.map((section, idx) => {
-          const visibleItems = section.items.filter((i) => !i.hidden);
-          if (visibleItems.length === 0) return null;
+          if (section.items.length === 0) return null;
 
           return (
             <div key={idx}>
@@ -143,7 +134,7 @@ export default function Sidebar() {
                 {section.title}
               </div>
               <div className="space-y-1">
-                {visibleItems.map((item) => {
+                {section.items.map((item) => {
                   const isActive = isItemActive(item.href);
                   const Icon = item.icon;
 

@@ -55,6 +55,10 @@ export default function UsersManagementPage() {
   const [editPhone, setEditPhone] = useState('');
   const [editStatus, setEditStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
 
+  // Delete confirmation modal
+  const [deleteTargetUser, setDeleteTargetUser] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const loadData = async () => {
     try {
       const [usersRes, depotsRes] = await Promise.all([
@@ -190,12 +194,19 @@ export default function UsersManagementPage() {
     loadData();
   };
 
-  const handleDeleteUser = async (u: User) => {
-    if (confirm(`Are you sure you want to delete user account "${u.name}"?`)) {
-      await fetch(`/api/users/${u.id}`, {
+  const handleDeleteUser = async () => {
+    if (!deleteTargetUser) return;
+    setIsDeleting(true);
+    try {
+      await fetch(`/api/users/${deleteTargetUser.id}`, {
         method: 'DELETE',
       });
+      setDeleteTargetUser(null);
       loadData();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -426,7 +437,7 @@ export default function UsersManagementPage() {
                         <Edit2 className="h-3.5 w-3.5" />
                       </button>
                       <button
-                        onClick={() => handleDeleteUser(u)}
+                        onClick={() => setDeleteTargetUser(u)}
                         title="Delete User"
                         className="p-1.5 rounded-lg border border-slate-700 bg-slate-800 text-rose-400 hover:text-rose-300 hover:border-rose-500/40 transition-colors"
                       >
@@ -765,6 +776,53 @@ export default function UsersManagementPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTargetUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5 text-rose-400" />
+                <h3 className="text-sm font-bold text-white">Delete User Account</h3>
+              </div>
+              <button
+                onClick={() => setDeleteTargetUser(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-300">
+              Are you sure you want to delete the user account for <strong className="text-white">{deleteTargetUser.name}</strong> ({deleteTargetUser.email})?
+            </div>
+
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[11px]">
+              <p className="font-semibold mb-1">This action cannot be undone.</p>
+              <p>All user data and permissions will be permanently removed.</p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setDeleteTargetUser(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                disabled={isDeleting}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>{isDeleting ? 'Deleting...' : 'Delete User'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { guardApi } from '@/lib/api-auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await guardApi(req, 'customers.read');
+  if (!auth.ok) return auth.response;
+
   try {
     const customers = await prisma.customer.findMany({
       orderBy: { createdAt: 'desc' },
@@ -14,6 +18,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await guardApi(req, 'customers.write');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     

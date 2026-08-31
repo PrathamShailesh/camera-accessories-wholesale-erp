@@ -12,15 +12,15 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
 import { formatUSD } from '@/lib/utils';
 import { Product } from '@/types/erp';
 
 export default function InventoryReportsPage() {
   const [products, setProducts] = useState<Product[]>([]);
 
-  const loadData = () => {
-    setProducts(dataStore.getProducts());
+  const loadData = async () => {
+    const res = await fetch('/api/products');
+    if (res.ok) setProducts(await res.json());
   };
 
   useEffect(() => {

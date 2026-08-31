@@ -210,6 +210,19 @@ async function main() {
     }),
     prisma.user.create({
       data: {
+        id: 'usr-erp',
+        name: 'Priya Menon',
+        email: 'priya.erp@lenscore.com',
+        role: 'ERP_USER',
+        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
+        phone: '+971 4 555 0190',
+        status: 'ACTIVE',
+        passwordHash: hashSeedPassword('ErpUser@Growth2026!'),
+        lastLogin: new Date('2026-08-24T13:10:00Z'),
+      },
+    }),
+    prisma.user.create({
+      data: {
         id: 'usr-dep-dxb',
         name: 'Tariq Al-Mansoor',
         email: 'tariq.dxb@lenscore.com',

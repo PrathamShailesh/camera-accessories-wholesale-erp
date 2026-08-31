@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyPassword, generateAuthToken } from '@/lib/auth';
+import { verifyPassword, signAuthPayload } from '@/lib/auth';
 import dataStore from '@/lib/data-store';
 
 export async function POST(req: NextRequest) {
@@ -81,7 +81,13 @@ export async function POST(req: NextRequest) {
     });
 
     // 4. Generate Auth Token
-    const token = generateAuthToken(user.id, user.email);
+    const token = await signAuthPayload({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      assignedDepotId: user.assignedDepotId || null,
+      timestamp: Date.now(),
+    });
 
     // 5. Response with user info and secure HTTP cookie
     const safeUser = {

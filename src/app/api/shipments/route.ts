@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { guardApi, depotIdFilter } from '@/lib/api-auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await guardApi(req, 'shipments.read');
+  if (!auth.ok) return auth.response;
+
   try {
+    const depotFilter = depotIdFilter(auth.user);
     const shipments = await prisma.shipment.findMany({
+      where: depotFilter ? { depotId: depotFilter } : undefined,
       include: {
         invoice: true,
         customer: true,
@@ -19,10 +25,14 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await guardApi(req, 'shipments.write');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     const { invoiceId, courier, airwayBillNumber, trackingUrl, totalWeightKg, packageCount, awbDocumentUrl } = body;
 
+    const depotFilter = depotIdFilter(auth.user);
     const invoice = await prisma.taxInvoice.findUnique({
       where: { id: invoiceId },
       include: { customer: true, depot: true },
@@ -30,6 +40,11 @@ export async function POST(req: NextRequest) {
 
     if (!invoice) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+    }
+
+    // Check depot access for depot users
+    if (depotFilter && invoice.depotId !== depotFilter) {
+      return NextResponse.json({ error: 'Forbidden: invoice is outside your assigned depot' }, { status: 403 });
     }
 
     // Generate shipment number
@@ -90,9 +105,22 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const auth = await guardApi(req, 'shipments.write');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     const { id, status } = body;
+
+    const depotFilter = depotIdFilter(auth.user);
+    
+    // Check depot access for depot users
+    if (depotFilter) {
+      const shipment = await prisma.shipment.findUnique({ where: { id } });
+      if (shipment && shipment.depotId !== depotFilter) {
+        return NextResponse.json({ error: 'Forbidden: shipment is outside your assigned depot' }, { status: 403 });
+      }
+    }
 
     if (status === 'DELIVERED') {
       const shipment = await prisma.shipment.update({

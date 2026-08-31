@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { guardApi, depotIdFilter } from '@/lib/api-auth';
 
 export async function GET(req: NextRequest) {
+  const auth = await guardApi(req, 'serials.read');
+  if (!auth.ok) return auth.response;
+
   try {
     const { searchParams } = new URL(req.url);
     const productId = searchParams.get('productId');
-    const depotId = searchParams.get('depotId');
+    let depotId = searchParams.get('depotId');
     const status = searchParams.get('status');
+
+    // For depot users, enforce their assigned depot
+    const depotFilter = depotIdFilter(auth.user);
+    if (depotFilter) {
+      depotId = depotFilter;
+    }
 
     const serials = await prisma.serialNumber.findMany({
       where: {
@@ -29,6 +39,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await guardApi(req, 'serials.write');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     

@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { assertDepotAccess, depotIdFilter, guardApi } from '@/lib/api-auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await guardApi(req, 'inventory.read');
+  if (!auth.ok) return auth.response;
   try {
+    const scopedDepotId = depotIdFilter(auth.user);
     const transfers = await prisma.stockTransfer.findMany({
+      where: scopedDepotId ? { OR: [{ sourceDepotId: scopedDepotId }, { destinationDepotId: scopedDepotId }] } : undefined,
       include: {
         items: true,
       },
@@ -17,6 +22,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await guardApi(req, 'inventory.transfer');
+  if (!auth.ok) return auth.response;
   try {
     const body = await req.json();
     const { sourceDepotId, destinationDepotId, items, notes } = body;
@@ -24,6 +31,8 @@ export async function POST(req: NextRequest) {
     if (sourceDepotId === destinationDepotId) {
       return NextResponse.json({ error: 'Source and destination depots must be different' }, { status: 400 });
     }
+    const denied = assertDepotAccess(auth.user, sourceDepotId);
+    if (denied) return denied;
 
     const sourceDepot = await prisma.depot.findUnique({
       where: { id: sourceDepotId },
@@ -74,6 +83,9 @@ export async function POST(req: NextRequest) {
           serialNumbers: item.serialNumbers || [],
         },
       });
+
+      const inventory = await prisma.depotInventory.findUnique({ where: { productId_depotId: { productId: item.productId, depotId: sourceDepotId } } });
+      if (!inventory || inventory.availableQuantity < item.quantity) throw new Error(`Insufficient stock for ${product.sku}`);
 
       // Update depot inventory
       await prisma.depotInventory.updateMany({

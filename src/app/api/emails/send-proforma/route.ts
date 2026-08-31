@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendProformaEmail } from '@/lib/email-service';
 import { prisma } from '@/lib/prisma';
+import { guardApi } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest) {
+  const auth = await guardApi(req, 'proformas.write');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     let { proformaNumber, proformaId, customerEmail, customerName, grandTotal, appUrl } = body;

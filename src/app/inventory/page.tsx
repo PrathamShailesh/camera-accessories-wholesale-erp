@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Plus,
+  AlertCircle,
 } from 'lucide-react';
 import dataStore from '@/lib/data-store';
 import { formatUSD } from '@/lib/utils';
@@ -22,18 +23,31 @@ export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [depots, setDepots] = useState<Depot[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const [prodsRes, depsRes] = await Promise.all([
         fetch('/api/products').then((r) => (r.ok ? r.json() : null)),
         fetch('/api/depots').then((r) => (r.ok ? r.json() : null)),
       ]);
-      setProducts(prodsRes || dataStore.getProducts());
-      setDepots(depsRes || dataStore.getDepots());
+      if (prodsRes && depsRes) {
+        setProducts(Array.isArray(prodsRes) ? prodsRes : []);
+        setDepots(Array.isArray(depsRes) ? depsRes : []);
+      } else {
+        setError('Failed to load inventory data');
+        setProducts(dataStore.getProducts());
+        setDepots(dataStore.getDepots());
+      }
     } catch {
+      setError('Something went wrong. Please try again.');
       setProducts(dataStore.getProducts());
       setDepots(dataStore.getDepots());
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -58,6 +72,14 @@ export default function InventoryPage() {
     }
     return true;
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="text-slate-400 text-sm">Loading inventory...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in pb-16">
@@ -121,6 +143,13 @@ export default function InventoryPage() {
           <span className="text-[11px] text-slate-400">Locked against overselling</span>
         </div>
       </div>
+
+      {error && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {/* Search */}
       <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center justify-between">

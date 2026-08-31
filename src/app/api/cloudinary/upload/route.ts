@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadToCloudinary } from '@/lib/cloudinary';
-import dataStore from '@/lib/data-store';
-import { DocumentCategory, RelatedEntityType } from '@/types/erp';
+import { prisma } from '@/lib/prisma';
+import { depotIdFilter, guardApi } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest) {
+  const auth = await guardApi(req, 'documents.write');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     const {
@@ -31,15 +34,7 @@ export async function POST(req: NextRequest) {
       );
     } catch (uploadErr: any) {
       console.warn('Cloudinary direct upload note:', uploadErr?.message);
-      // Fallback in case of mock/network edge case
-      uploadRes = {
-        secure_url: fileData.startsWith('data:') ? fileData : `https://res.cloudinary.com/camera-erp-dev2/image/upload/v1724500000/documents/${fileName || 'doc.pdf'}`,
-        url: fileData.startsWith('data:') ? fileData : `http://res.cloudinary.com/camera-erp-dev2/image/upload/v1724500000/documents/${fileName || 'doc.pdf'}`,
-        public_id: `camera-erp-dev2/documents/${Date.now()}`,
-        format: fileName ? fileName.split('.').pop() || 'pdf' : 'pdf',
-        bytes: 250000,
-        resource_type: 'auto',
-      };
+      return NextResponse.json({ error: 'Document upload failed. Please retry.' }, { status: 502 });
     }
 
     // Determine format & file type
@@ -48,7 +43,7 @@ export async function POST(req: NextRequest) {
     const fileType = isImage ? `image/${format}` : 'application/pdf';
 
     // Register in centralized Cloud Documents Hub
-    const cloudDoc = dataStore.addCloudDocument({
+    const cloudDoc = await prisma.cloudDocument.create({ data: {
       title: title || fileName || `Document ${new Date().toLocaleDateString()}`,
       fileName: fileName || `Upload_${Date.now()}.${format}`,
       fileType,
@@ -56,12 +51,15 @@ export async function POST(req: NextRequest) {
       fileSize: uploadRes.bytes || 150000,
       cloudinaryUrl: uploadRes.secure_url || uploadRes.url,
       cloudinaryPublicId: uploadRes.public_id,
-      category: category as DocumentCategory,
-      relatedEntityType: relatedEntityType as RelatedEntityType,
+      category: category as any,
+      relatedEntityType,
       relatedEntityId,
       relatedEntityLabel,
       tags: Array.isArray(tags) ? tags : [category],
-    });
+      uploadedBy: auth.user.id,
+      uploadedByName: auth.user.name,
+      depotId: depotIdFilter(auth.user) || null,
+    }});
 
     return NextResponse.json({
       success: true,

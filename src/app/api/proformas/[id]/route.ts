@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { broadcastSystemEvent } from '@/lib/events-emitter';
+import { guardApi } from '@/lib/api-auth';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await guardApi(req, 'proformas.read');
+  if (!auth.ok) return auth.response;
+
   try {
     let proforma = await prisma.proforma.findUnique({
       where: { id: params.id },
@@ -38,6 +42,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await guardApi(req, 'proformas.write');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     const { status, notes } = body;
@@ -90,6 +97,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await guardApi(req, 'proformas.write');
+  if (!auth.ok) return auth.response;
+
   try {
     await prisma.proforma.delete({
       where: { id: params.id },

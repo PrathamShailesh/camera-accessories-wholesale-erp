@@ -12,7 +12,6 @@ import {
   DollarSign,
   Printer,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
 import { formatUSD, formatDate } from '@/lib/utils';
 import { TaxInvoice } from '@/types/erp';
 
@@ -26,12 +25,8 @@ export default function SalesReportsPage() {
       if (res.ok) {
         const data = await res.json();
         setInvoices(data);
-      } else {
-        setInvoices(dataStore.getInvoices());
       }
-    } catch {
-      setInvoices(dataStore.getInvoices());
-    }
+    } catch {}
   };
 
   useEffect(() => {

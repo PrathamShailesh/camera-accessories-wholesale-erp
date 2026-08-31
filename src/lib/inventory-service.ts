@@ -139,13 +139,13 @@ export async function deductStockForInvoice(
 
       // 5. Synchronize in-memory dataStore
       try {
-        const memoryProd = dataStore.getProductById(product.id) || dataStore.getProductBySku(product.sku);
+        const memoryProd = dataStore.getProductById(product.id) || dataStore.getProducts().find((p) => p.sku === product.sku);
         if (memoryProd && memoryProd.depotBreakdown) {
           memoryProd.depotBreakdown[finalDepotId] = Math.max(
             0,
             (memoryProd.depotBreakdown[finalDepotId] || 0) - qty
           );
-          memoryProd.totalStock = Object.values(memoryProd.depotBreakdown).reduce((a, b) => a + b, 0);
+          memoryProd.totalStock = Object.values(memoryProd.depotBreakdown).reduce((a: number, b: number) => a + b, 0);
         }
       } catch (err) {
         console.error('Error syncing memory dataStore on stock deduction:', err);

@@ -15,6 +15,7 @@ import {
   Building2,
   Sparkles,
   Image as ImageIcon,
+  AlertCircle,
 } from 'lucide-react';
 import dataStore from '@/lib/data-store';
 import { formatFileSize, formatDateTime } from '@/lib/utils';
@@ -27,9 +28,27 @@ export default function DocumentsPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<CloudDocument | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const loadData = () => {
-    setDocuments(dataStore.getDocuments());
+  const loadData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/documents');
+      if (res.ok) {
+        const data = await res.json();
+        setDocuments(Array.isArray(data) ? data : []);
+      } else {
+        setError('Failed to load documents');
+        setDocuments(dataStore.getDocuments());
+      }
+    } catch {
+      setError('Something went wrong. Please try again.');
+      setDocuments(dataStore.getDocuments());
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -73,6 +92,14 @@ export default function DocumentsPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="text-slate-400 text-sm">Loading documents...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in pb-16">
       {/* Header */}
@@ -97,6 +124,13 @@ export default function DocumentsPage() {
           <span>Upload Document / Photo</span>
         </button>
       </div>
+
+      {error && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">

@@ -1,4 +1,4 @@
-export type UserRole = 'SUPER_ADMIN' | 'MANAGER' | 'DEPOT_USER';
+export type UserRole = 'SUPER_ADMIN' | 'MANAGER' | 'ERP_USER' | 'DEPOT_USER';
 
 export interface User {
   id: string;
@@ -493,6 +493,7 @@ export interface BusinessInsight {
 }
 
 export interface CompanySettings {
+  id?: string;
   companyName: string;
   tradingName: string;
   logoUrl: string;
@@ -504,7 +505,7 @@ export interface CompanySettings {
   website: string;
   currency: string;
   currencySymbol: string;
-  bankDetails: {
+  bankDetails?: {
     bankName: string;
     accountName: string;
     accountNumber: string;
@@ -516,6 +517,13 @@ export interface CompanySettings {
   proformaPrefix: string;
   invoiceNextNumber: number;
   proformaNextNumber: number;
-  defaultPaymentTerms: string;
-  defaultDeliveryTerms: string;
+  defaultPaymentTerms?: string;
+  defaultDeliveryTerms?: string;
+  smtpFromEmail?: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  swiftBic?: string;
+  iban?: string;
+  routingCode?: string;
 }

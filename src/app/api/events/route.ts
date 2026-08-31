@@ -1,10 +1,13 @@
 import { NextRequest } from 'next/server';
 import { eventsEmitter, SystemEventPayload } from '@/lib/events-emitter';
+import { guardApi } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
+  const auth = await guardApi(req, 'authenticated');
+  if (!auth.ok) return auth.response;
   const entityId = req.nextUrl.searchParams.get('id');
 
   const encoder = new TextEncoder();

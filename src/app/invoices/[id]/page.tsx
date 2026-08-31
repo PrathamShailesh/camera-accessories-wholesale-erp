@@ -41,6 +41,9 @@ export default function InvoiceDetailPage() {
   const [isPackingModalOpen, setIsPackingModalOpen] = useState(false);
   const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPicking, setIsPicking] = useState(false);
+  const [isPacking, setIsPacking] = useState(false);
+  const [isShipping, setIsShipping] = useState(false);
 
   // Packing modal fields
   const [packedBy, setPackedBy] = useState('');
@@ -123,6 +126,7 @@ export default function InvoiceDetailPage() {
   const badge = getStatusBadgeClasses(invoice.fulfilmentStatus);
 
   const handlePickAll = async () => {
+    setIsPicking(true);
     try {
       const res = await fetch(`/api/invoices/${invoice.id}`, {
         method: 'PUT',
@@ -140,11 +144,13 @@ export default function InvoiceDetailPage() {
       const picks = invoice.items?.map((i) => ({ itemId: i.id, serials: i.allocatedSerials || [] })) || [];
       dataStore.pickInvoiceItems(invoice.id, picks);
     } catch {}
+    setIsPicking(false);
     loadData();
   };
 
   const handlePackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsPacking(true);
     try {
       const res = await fetch(`/api/invoices/${invoice.id}`, {
         method: 'PUT',
@@ -176,12 +182,14 @@ export default function InvoiceDetailPage() {
         packagePhotoUrl: packagePhotoUrl || 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&auto=format&fit=crop&q=80',
       });
     } catch {}
+    setIsPacking(false);
     setIsPackingModalOpen(false);
     loadData();
   };
 
   const handleShipSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsShipping(true);
     try {
       const res = await fetch(`/api/invoices/${invoice.id}`, {
         method: 'PUT',
@@ -217,6 +225,7 @@ export default function InvoiceDetailPage() {
         packagePhotoUrl,
       });
     } catch {}
+    setIsShipping(false);
     setIsShippingModalOpen(false);
     loadData();
   };
@@ -273,30 +282,33 @@ export default function InvoiceDetailPage() {
           {invoice.fulfilmentStatus === 'READY_FOR_PACKING' && (
             <button
               onClick={handlePickAll}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-glow-amber transition-all"
+              disabled={isPicking}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-glow-amber transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Boxes className="h-4 w-4" />
-              <span>Confirm Items Picked</span>
+              <span>{isPicking ? 'Picking...' : 'Confirm Items Picked'}</span>
             </button>
           )}
 
           {invoice.fulfilmentStatus === 'PROCESSING' && (
             <button
               onClick={() => setIsPackingModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-glow-amber transition-all"
+              disabled={isPacking}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-glow-amber transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Package className="h-4 w-4" />
-              <span>Pack Order & Take Inspection Photo</span>
+              <span>{isPacking ? 'Packing...' : 'Pack Order & Take Inspection Photo'}</span>
             </button>
           )}
 
           {invoice.fulfilmentStatus === 'PACKED' && (
             <button
               onClick={() => setIsShippingModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-glow transition-all animate-pulse"
+              disabled={isShipping}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-glow transition-all animate-pulse disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Truck className="h-4 w-4" />
-              <span>Dispatch & Enter Airway Bill (AWB)</span>
+              <span>{isShipping ? 'Dispatching...' : 'Dispatch & Enter Airway Bill (AWB)'}</span>
             </button>
           )}
         </div>

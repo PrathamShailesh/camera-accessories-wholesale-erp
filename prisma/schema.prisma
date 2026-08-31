@@ -13,6 +13,7 @@ datasource db {
 enum UserRole {
   SUPER_ADMIN
   MANAGER
+  ERP_USER
   DEPOT_USER
 }
 
@@ -452,7 +453,7 @@ model ProformaItem {
 model TaxInvoice {
   id               String                  @id @default(cuid())
   invoiceNumber    String                  @unique
-  proformaId       String?
+  proformaId       String?                 @unique
   proformaNumber   String?
   customerId       String
   customerName     String
@@ -586,6 +587,7 @@ model CloudDocument {
   relatedEntityType  String?
   relatedEntityId    String?
   relatedEntityLabel String?
+  depotId            String?
   uploadedBy         String           @default("usr-admin")
   uploadedByName     String           @default("Admin User")
   uploadedAt         DateTime         @default(now())
@@ -593,6 +595,7 @@ model CloudDocument {
 
   @@index([category])
   @@index([relatedEntityId])
+  @@index([depotId])
 }
 
 model AuditLog {

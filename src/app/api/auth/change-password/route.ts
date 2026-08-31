@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { hashPassword, verifyPassword, verifyAuthToken } from '@/lib/auth';
+import { hashPassword, verifyPassword } from '@/lib/auth';
+import { guardApi } from '@/lib/api-auth';
 import dataStore from '@/lib/data-store';
 
 export async function POST(req: NextRequest) {
+  const auth = await guardApi(req, 'authenticated');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     const { currentPassword, newPassword, targetUserId } = body;
@@ -12,22 +16,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'New password must be at least 6 characters long' }, { status: 400 });
     }
 
-    // Determine acting user from cookie or dataStore
-    const token = req.cookies.get('erp_auth_token')?.value;
-    let actingUserId = dataStore.getCurrentUser()?.id || 'usr-admin';
-
-    if (token) {
-      const decoded = verifyAuthToken(token);
-      if (decoded?.userId) {
-        actingUserId = decoded.userId;
-      }
-    }
-
-    let actingUser: any = await prisma.user.findUnique({ where: { id: actingUserId } }).catch(() => null);
-    if (!actingUser) {
-      actingUser = dataStore.getUserById(actingUserId) || dataStore.getCurrentUser();
-    }
-    const isSuperAdmin = actingUser?.role === 'SUPER_ADMIN';
+    const acting = auth.user;
+    const actingUserId = acting.id;
+    const isSuperAdmin = acting.role === 'SUPER_ADMIN';
 
     // If super admin is resetting another user's password directly:
     if (targetUserId && targetUserId !== actingUserId) {
@@ -65,7 +56,7 @@ export async function POST(req: NextRequest) {
         entityType: 'USER',
         entityId: target.id,
         entityLabel: `${target.name} (${target.role})`,
-        description: `Password reset by Super Admin (${actingUser?.name || 'Admin'})`,
+        description: `Password reset by Super Admin (${acting?.name || 'Admin'})`,
       });
 
       return NextResponse.json({ success: true, message: `Password for ${target.name} has been reset successfully` });

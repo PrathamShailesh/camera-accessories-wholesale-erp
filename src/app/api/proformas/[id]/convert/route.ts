@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { deductStockForInvoice } from '@/lib/inventory-service';
 import { broadcastSystemEvent } from '@/lib/events-emitter';
+import { guardApi } from '@/lib/api-auth';
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await guardApi(req, 'invoices.write');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     const { depotId } = body;
@@ -28,6 +32,9 @@ export async function POST(
       return NextResponse.json({ error: 'Proforma not found' }, { status: 404 });
     }
 
+    if (proforma.status === 'CONVERTED' && proforma.convertedToInvoiceId) {
+      return NextResponse.json({ error: `Proforma already converted to ${proforma.convertedToInvoiceNumber || 'a tax invoice'}`, invoiceId: proforma.convertedToInvoiceId }, { status: 409 });
+    }
     if (proforma.status !== 'CONFIRMED') {
       return NextResponse.json({ error: 'Proforma must be confirmed before conversion' }, { status: 400 });
     }
@@ -48,6 +55,10 @@ export async function POST(
     const invoiceNumber = `${settings?.invoicePrefix || 'INV-2026-'}${String(nextNumber).padStart(5, '0')}`;
 
     // Create the invoice
+    const existingInvoice = await prisma.taxInvoice.findFirst({ where: { proformaId: proforma.id }, select: { id: true, invoiceNumber: true } });
+    if (existingInvoice) {
+      return NextResponse.json({ error: `Proforma already converted to ${existingInvoice.invoiceNumber}`, invoiceId: existingInvoice.id }, { status: 409 });
+    }
     const invoice = await prisma.taxInvoice.create({
       data: {
         invoiceNumber,

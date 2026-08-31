@@ -13,6 +13,7 @@ import {
   Boxes,
   Clock,
   ArrowRight,
+  AlertCircle,
 } from 'lucide-react';
 import dataStore from '@/lib/data-store';
 import { formatUSD, formatDate, getStatusBadgeClasses } from '@/lib/utils';
@@ -26,18 +27,22 @@ export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedDoc, setSelectedDoc] = useState<TaxInvoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
+    setError(null);
     try {
       setCurrentUser(dataStore.getCurrentUser());
       const res = await fetch('/api/invoices');
       if (res.ok) {
         const data = await res.json();
-        setInvoices(data);
+        setInvoices(Array.isArray(data) ? data : []);
       } else {
+        setError('Failed to load invoices');
         setInvoices(dataStore.getInvoices());
       }
     } catch {
+      setError('Something went wrong. Please try again.');
       setInvoices(dataStore.getInvoices());
     } finally {
       setIsLoading(false);
@@ -71,6 +76,14 @@ export default function InvoicesPage() {
     .filter((i) => i.fulfilmentStatus !== 'CANCELLED')
     .reduce((sum, i) => sum + i.grandTotal, 0);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="text-slate-400 text-sm">Loading invoices...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Top Header */}
@@ -87,6 +100,13 @@ export default function InvoicesPage() {
           </p>
         </div>
       </div>
+
+      {error && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -152,8 +172,11 @@ export default function InvoicesPage() {
             <tbody className="divide-y divide-slate-800/60">
               {filteredInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-slate-400 text-xs">
-                    No invoices found.
+                  <td colSpan={8} className="text-center py-12">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Receipt className="h-8 w-8 text-slate-500" />
+                      <span className="text-slate-400 text-xs">No invoices found</span>
+                    </div>
                   </td>
                 </tr>
               ) : (

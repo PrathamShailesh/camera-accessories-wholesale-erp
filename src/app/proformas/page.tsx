@@ -14,6 +14,7 @@ import {
   Building2,
   Calendar,
   CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
 import dataStore from '@/lib/data-store';
 import { formatUSD, formatDate, getStatusBadgeClasses } from '@/lib/utils';
@@ -25,16 +26,26 @@ export default function ProformasPage() {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedDoc, setSelectedDoc] = useState<Proforma | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/proformas');
       if (res.ok) {
         const data = await res.json();
-        setProformas(data);
+        setProformas(Array.isArray(data) ? data : []);
+      } else {
+        setError('Failed to load proformas');
+        setProformas(dataStore.getProformas());
       }
     } catch {
+      setError('Something went wrong. Please try again.');
       setProformas(dataStore.getProformas());
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,6 +90,14 @@ export default function ProformasPage() {
 
   const totalProformaValue = filteredProformas.reduce((sum, pf) => sum + pf.grandTotal, 0);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="text-slate-400 text-sm">Loading proformas...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Header */}
@@ -105,6 +124,13 @@ export default function ProformasPage() {
           </Link>
         </div>
       </div>
+
+      {error && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">

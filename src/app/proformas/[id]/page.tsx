@@ -44,6 +44,9 @@ export default function ProformaDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [liveNotification, setLiveNotification] = useState<string | null>(null);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
+  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+  const [conversionSuccess, setConversionSuccess] = useState(false);
+  const [generatedInvoiceNumber, setGeneratedInvoiceNumber] = useState<string>('');
 
   const prevStatusRef = useRef<string | null>(null);
 
@@ -198,10 +201,13 @@ export default function ProformaDetailPage() {
         colors: ['#0c8ae9', '#10b981', '#38bdf8', '#fbbf24'],
       });
 
-      // Update state and route to invoice after brief moment
-      setTimeout(() => {
-        router.push(`/invoices/${newInvoice.id}`);
-      }, 1000);
+      setGeneratedInvoiceNumber(newInvoice.invoiceNumber);
+      setConversionSuccess(true);
+      setIsConverting(false);
+      setIsConvertModalOpen(false);
+
+      // Reload proforma to update status
+      loadData(true);
     } catch (err: any) {
       setErrorMessage(err.message || 'Conversion failed');
       setIsConverting(false);
@@ -345,7 +351,7 @@ export default function ProformaDetailPage() {
           {/* Convert to Tax Invoice Button */}
           {proforma.status === 'CONFIRMED' && (
             <button
-              onClick={handleConvert}
+                onClick={() => setIsConvertModalOpen(true)}
               disabled={isConverting}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-glow-emerald transition-all animate-pulse"
             >
@@ -538,14 +544,36 @@ export default function ProformaDetailPage() {
                 </div>
 
                 <button
-                  onClick={handleConvert}
+                  onClick={() => setIsConvertModalOpen(true)}
                   disabled={isConverting}
                   className="w-full sm:w-auto mt-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-glow-emerald transition-all active:scale-98"
                 >
                   <Sparkles className="h-4 w-4" />
-                  <span>{isConverting ? 'Processing Conversion...' : 'Execute Conversion Now'}</span>
+                  <span>{isConverting ? 'Processing Conversion...' : 'Convert to Tax Invoice'}</span>
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Already Converted Box */}
+          {proforma.status === 'CONVERTED' && (
+            <div className="p-5 rounded-2xl border border-slate-700 bg-slate-900/50 space-y-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                <h3 className="text-sm font-bold text-white">Already Converted</h3>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                This proforma has already been converted to Tax Invoice <span className="font-mono text-emerald-400">{proforma.convertedToInvoiceNumber || 'N/A'}</span>
+              </p>
+              {proforma.convertedToInvoiceId && (
+                <Link
+                  href={`/invoices/${proforma.convertedToInvoiceId}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium transition-colors"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>View Invoice</span>
+                </Link>
+              )}
             </div>
           )}
         </div>
@@ -670,6 +698,125 @@ export default function ProformaDetailPage() {
                   >
                     <Send className="h-4 w-4" />
                     <span>Send Email Now</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Convert Confirmation Modal */}
+      {isConvertModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-emerald-400" />
+                <h3 className="text-sm font-bold text-white">Convert Proforma to Tax Invoice</h3>
+              </div>
+              <button
+                onClick={() => setIsConvertModalOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            {conversionSuccess ? (
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 shrink-0" />
+                  <span>Tax Invoice generated successfully!</span>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Invoice Number:</span>
+                    <span className="text-emerald-400 font-mono font-bold">{generatedInvoiceNumber}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Proforma Number:</span>
+                    <span className="text-white font-mono">{proforma.proformaNumber}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Customer:</span>
+                    <span className="text-white">{proforma.customerCompany}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Total Amount:</span>
+                    <span className="text-white font-bold">{formatUSD(proforma.grandTotal)}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    onClick={() => setIsConvertModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 text-xs">
+                <p className="text-slate-300">
+                  Are you sure you want to convert this proforma to a Tax Invoice?
+                </p>
+                
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Proforma Number:</span>
+                    <span className="text-white font-mono">{proforma.proformaNumber}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Customer:</span>
+                    <span className="text-white">{proforma.customerCompany}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Total Amount:</span>
+                    <span className="text-white font-bold">{formatUSD(proforma.grandTotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Items:</span>
+                    <span className="text-white">{proforma.items?.length || 0} line items</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Selected Depot:</span>
+                    <span className="text-white">{depots.find(d => d.id === selectedDepotId)?.name || 'Not selected'}</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px]">
+                  <p className="font-semibold mb-1">What will happen:</p>
+                  <ul className="space-y-1 list-disc list-inside">
+                    <li>Tax Invoice will be generated</li>
+                    <li>Stock will be deducted from selected depot</li>
+                    <li>Serial numbers will be allocated</li>
+                    <li>Fulfilment task will be assigned</li>
+                    <li>Proforma status will change to CONVERTED</li>
+                  </ul>
+                </div>
+
+                {errorMessage && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[11px]">
+                    {errorMessage}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    onClick={() => setIsConvertModalOpen(false)}
+                    disabled={isConverting}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-medium disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConvert}
+                    disabled={isConverting || !selectedDepotId}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-glow-emerald text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span>{isConverting ? 'Converting...' : 'Convert to Tax Invoice'}</span>
                   </button>
                 </div>
               </div>

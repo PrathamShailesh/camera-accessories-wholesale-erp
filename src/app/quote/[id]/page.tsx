@@ -560,8 +560,9 @@ export default function PublicQuotePortalPage() {
       {/* PDF Document Print Modal */}
       {isPrintModalOpen && (
         <PrintableDocumentModal
-          type="PROFORMA"
-          document={proforma}
+          documentType="PROFORMA"
+          data={proforma}
+          isOpen={isPrintModalOpen}
           onClose={() => setIsPrintModalOpen(false)}
         />
       )}

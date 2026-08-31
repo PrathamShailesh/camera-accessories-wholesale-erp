@@ -7,22 +7,21 @@ import {
   TrendingUp,
   Package,
   Boxes,
-  Truck,
-  FileCheck2,
-  Receipt,
-  Building2,
+  Users,
+  Clock,
   AlertTriangle,
-  Lightbulb,
-  ArrowRight,
+  Sparkles,
   PlusCircle,
   FolderLock,
-  ExternalLink,
-  ChevronRight,
-  Sparkles,
-  Camera,
-  CheckCircle2,
-  Clock,
+  ArrowRight,
   Printer,
+  AlertCircle,
+  Lightbulb,
+  ChevronRight,
+  Receipt,
+  Building2,
+  Truck,
+  ExternalLink,
 } from 'lucide-react';
 import { formatUSD, formatDate, getStatusBadgeClasses } from '@/lib/utils';
 import { TaxInvoice, Shipment, BusinessInsight, ProfitabilityMetric, User } from '@/types/erp';
@@ -46,9 +45,11 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<ProfitabilityMetric[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<{ type: 'TAX_INVOICE' | 'PROFORMA'; data: any } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   const loadData = async () => {
+    setError(null);
     try {
       // Load current user from session
       try {
@@ -69,12 +70,18 @@ export default function DashboardPage() {
         fetch('/api/invoices'),
         fetch('/api/shipments'),
       ]);
+      
+      if (!dashboardRes.ok || !invoicesRes.ok || !shipmentsRes.ok) {
+        setError('Failed to load dashboard data');
+        return;
+      }
+      
       const dashboard = await dashboardRes.json();
       const invoicesData = await invoicesRes.json();
       const shipmentsData = await shipmentsRes.json();
       setDashboardData(dashboard);
-      setInvoices(invoicesData);
-      setShipments(shipmentsData);
+      setInvoices(Array.isArray(invoicesData) ? invoicesData : []);
+      setShipments(Array.isArray(shipmentsData) ? shipmentsData : []);
       
       // Generate insights from dashboard data
       const generatedInsights: BusinessInsight[] = [];
@@ -103,6 +110,7 @@ export default function DashboardPage() {
       setInsights(generatedInsights);
     } catch (error) {
       console.error('Error loading dashboard:', error);
+      setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -155,6 +163,13 @@ export default function DashboardPage() {
               : `Operating in USD ($) • 4 Regional Depots Active (Dubai, Bangalore, Mumbai, Singapore)`}
           </p>
         </div>
+
+        {error && (
+          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2 w-full">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">

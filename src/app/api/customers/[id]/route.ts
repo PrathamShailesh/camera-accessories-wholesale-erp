@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { guardApi } from '@/lib/api-auth';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await guardApi(req, 'customers.read');
+  if (!auth.ok) return auth.response;
+
   try {
     const customer = await prisma.customer.findUnique({
       where: { id: params.id },
@@ -24,6 +28,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await guardApi(req, 'customers.write');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     const {
@@ -68,6 +75,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await guardApi(req, 'customers.write');
+  if (!auth.ok) return auth.response;
+
   try {
     await prisma.customer.delete({
       where: { id: params.id },

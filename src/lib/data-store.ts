@@ -109,6 +109,16 @@ const INITIAL_USERS: User[] = [
     lastLogin: '2026-08-24T11:45:00Z',
   },
   {
+    id: 'usr-erp',
+    name: 'Priya Menon',
+    email: 'priya.erp@lenscore.com',
+    role: 'ERP_USER',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
+    phone: '+971 4 555 0190',
+    status: 'ACTIVE',
+    lastLogin: '2026-08-24T13:10:00Z',
+  },
+  {
     id: 'usr-dep-dxb',
     name: 'Tariq Al-Mansoor',
     email: 'tariq.dxb@lenscore.com',
@@ -1553,8 +1563,8 @@ class DataStore {
       managerName: this.currentUser.name,
       issueDate,
       expiryDate,
-      paymentTerms: data.paymentTerms || this.settings.defaultPaymentTerms,
-      deliveryTerms: data.deliveryTerms || this.settings.defaultDeliveryTerms,
+      paymentTerms: data.paymentTerms || this.settings.defaultPaymentTerms || 'NET 30',
+      deliveryTerms: data.deliveryTerms || this.settings.defaultDeliveryTerms || 'Standard delivery',
       notes: data.notes,
       items: proformaItems,
       subtotal: Number(subtotal.toFixed(2)),
@@ -1951,7 +1961,7 @@ class DataStore {
     // If Airway Bill doc was uploaded to Cloudinary, register in documents hub
     if (shippingData.airwayBillDocUrl) {
       this.addCloudDocument({
-        title: `Airway Bill ${shippingData.airwayBillNumber} (${inv.customerCompany})`,
+        title: `Airway Bill ${shippingData.airwayBillNumber} (${inv?.customerCompany || 'Customer'})`,
         fileName: `AWB_${shippingData.airwayBillNumber}.pdf`,
         fileType: 'application/pdf',
         fileFormat: 'pdf',
@@ -1961,7 +1971,7 @@ class DataStore {
         relatedEntityType: 'SHIPMENT',
         relatedEntityId: newShipment.id,
         relatedEntityLabel: `Shipment #${shipmentNum} (AWB: ${shippingData.airwayBillNumber})`,
-        tags: ['Airway Bill', shippingData.courier, inv.customerCompany],
+        tags: ['Airway Bill', shippingData.courier, inv?.customerCompany || 'Customer'],
       });
     }
 
@@ -1970,12 +1980,12 @@ class DataStore {
       entityType: 'SHIPMENT',
       entityId: newShipment.id,
       entityLabel: `${shipmentNum} (${shippingData.airwayBillNumber})`,
-      description: `Dispatched order ${inv.invoiceNumber} via ${shippingData.courier} with Airway Bill ${shippingData.airwayBillNumber}`,
+      description: `Dispatched order ${inv?.invoiceNumber || invoiceId} via ${shippingData.courier} with Airway Bill ${shippingData.airwayBillNumber}`,
     });
 
     this.addNotification({
       type: 'SHIPMENT_DISPATCHED',
-      title: `Order Shipped: ${inv.invoiceNumber}`,
+      title: `Order Shipped: ${inv?.invoiceNumber || invoiceId}`,
       message: `Shipment #${shipmentNum} dispatched via ${shippingData.courier}. AWB: ${shippingData.airwayBillNumber}.`,
       link: `/shipments/${newShipment.id}`,
       targetRole: 'SUPER_ADMIN',

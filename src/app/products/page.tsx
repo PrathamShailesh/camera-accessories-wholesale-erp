@@ -37,6 +37,7 @@ export default function ProductsPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Form fields for Create Product Modal
   const [name, setName] = useState('');
@@ -61,6 +62,7 @@ export default function ProductsPage() {
   });
 
   const loadData = async () => {
+    setError(null);
     try {
       const [productsRes, depotsRes] = await Promise.all([
         fetch('/api/products'),
@@ -69,6 +71,8 @@ export default function ProductsPage() {
       if (productsRes.ok) {
         const productsData = await productsRes.json();
         setProducts(Array.isArray(productsData) ? productsData : []);
+      } else {
+        setError('Failed to load products');
       }
       if (depotsRes.ok) {
         const depotsData = await depotsRes.json();
@@ -76,6 +80,7 @@ export default function ProductsPage() {
       }
     } catch (error) {
       console.error('Error loading products from database:', error);
+      setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -304,6 +309,13 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {/* Products Grid */}
       {loading ? (

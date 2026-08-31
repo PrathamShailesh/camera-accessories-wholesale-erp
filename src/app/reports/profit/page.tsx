@@ -14,7 +14,6 @@ import {
   Building2,
   PieChart,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
 import { formatUSD } from '@/lib/utils';
 import { ProfitabilityMetric, BusinessInsight } from '@/types/erp';
 
@@ -22,9 +21,13 @@ export default function ProfitabilityPage() {
   const [metrics, setMetrics] = useState<ProfitabilityMetric[]>([]);
   const [insights, setInsights] = useState<BusinessInsight[]>([]);
 
-  const loadData = () => {
-    setMetrics(dataStore.getProfitabilityMetrics());
-    setInsights(dataStore.getBusinessInsights());
+  const loadData = async () => {
+    const res = await fetch('/api/dashboard/stats');
+    if (res.ok) {
+      const data = await res.json();
+      setMetrics(data.profitability || []);
+      setInsights(data.insights || []);
+    }
   };
 
   useEffect(() => {
@@ -34,7 +37,7 @@ export default function ProfitabilityPage() {
   const totalRevenue = metrics.reduce((sum, m) => sum + m.totalRevenue, 0);
   const totalCost = metrics.reduce((sum, m) => sum + m.totalCost, 0);
   const totalProfit = metrics.reduce((sum, m) => sum + m.grossProfit, 0);
-  const overallMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : '24.5';
+  const overallMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : '0.0';
 
   return (
     <div className="space-y-6 animate-fade-in pb-16">

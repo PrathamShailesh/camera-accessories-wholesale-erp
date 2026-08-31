@@ -1,21 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
+import { guardApi, sanitizeProductForRole, depotIdFilter } from '@/lib/api-auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await guardApi(req, 'products.read');
+  if (!auth.ok) return auth.response;
+
   try {
+    const depotFilter = depotIdFilter(auth.user);
     const [products, depots] = await Promise.all([
       prisma.product.findMany({
         include: {
           category: true,
           inventories: {
+            where: depotFilter ? { depotId: depotFilter } : undefined,
             include: { depot: true },
           },
-          serialNumbers: true,
+          serialNumbers: depotFilter ? {
+            where: { depotId: depotFilter }
+          } : true,
         },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.depot.findMany({ select: { id: true, code: true, name: true } }),
+      prisma.depot.findMany({ 
+        where: depotFilter ? { id: depotFilter } : undefined,
+        select: { id: true, code: true, name: true } 
+      }),
     ]);
 
     const formatted = products.map((product) => {
@@ -31,7 +42,7 @@ export async function GET() {
         totalStock += inv.quantity;
       }
 
-      return {
+      const productData = {
         id: product.id,
         sku: product.sku,
         name: product.name,
@@ -56,6 +67,8 @@ export async function GET() {
         createdAt: product.createdAt.toISOString(),
         updatedAt: product.updatedAt.toISOString(),
       };
+
+      return sanitizeProductForRole(productData, auth.user.role);
     });
 
     return NextResponse.json(formatted);
@@ -66,6 +79,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await guardApi(req, 'products.write');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     const {

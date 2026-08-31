@@ -12,6 +12,7 @@ import {
   Mail,
   ArrowRight,
   ShieldCheck,
+  AlertCircle,
 } from 'lucide-react';
 import dataStore from '@/lib/data-store';
 import { formatUSD } from '@/lib/utils';
@@ -19,14 +20,40 @@ import { Depot } from '@/types/erp';
 
 export default function DepotsPage() {
   const [depots, setDepots] = useState<Depot[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const loadData = () => {
-    setDepots(dataStore.getDepots());
+  const loadData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/depots');
+      if (res.ok) {
+        const data = await res.json();
+        setDepots(Array.isArray(data) ? data : []);
+      } else {
+        setError('Failed to load depots');
+        setDepots(dataStore.getDepots());
+      }
+    } catch {
+      setError('Something went wrong. Please try again.');
+      setDepots(dataStore.getDepots());
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="text-slate-400 text-sm">Loading depots...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in pb-16">
@@ -45,75 +72,89 @@ export default function DepotsPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
       {/* Depots Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {depots.map((d) => (
-          <div
-            key={d.id}
-            className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4 hover:border-slate-700 transition-all flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <span className="px-2.5 py-0.5 rounded text-[10px] font-bold font-mono bg-brand-500/10 text-brand-400 border border-brand-500/30">
-                    {d.code} {d.isCentralHub ? '• CENTRAL HQ' : ''}
-                  </span>
-                  <h3 className="text-lg font-bold text-white mt-1.5">{d.name}</h3>
-                  <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                    <MapPin className="h-3.5 w-3.5 text-slate-500" />
-                    <span>{d.city}, {d.country}</span>
-                  </p>
+        {depots.length === 0 ? (
+          <div className="col-span-full py-16 text-center glass-panel rounded-2xl border border-slate-800 text-slate-400 text-xs">
+            <Building2 className="h-8 w-8 text-slate-500 mx-auto mb-2" />
+            <span>No depots found</span>
+          </div>
+        ) : (
+          depots.map((d) => (
+            <div
+              key={d.id}
+              className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4 hover:border-slate-700 transition-all flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="px-2.5 py-0.5 rounded text-[10px] font-bold font-mono bg-brand-500/10 text-brand-400 border border-brand-500/30">
+                      {d.code} {d.isCentralHub ? '• CENTRAL HQ' : ''}
+                    </span>
+                    <h3 className="text-lg font-bold text-white mt-1.5">{d.name}</h3>
+                    <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                      <MapPin className="h-3.5 w-3.5 text-slate-500" />
+                      <span>{d.city}, {d.country}</span>
+                    </p>
+                  </div>
+
+                  <div className="text-right font-mono">
+                    <div className="text-xs text-slate-500">Active Stock Value</div>
+                    <div className="text-sm font-bold text-emerald-400 font-mono">
+                      {formatUSD(d.totalStockValue)}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="text-right font-mono">
-                  <div className="text-xs text-slate-500">Active Stock Value</div>
-                  <div className="text-sm font-bold text-emerald-400 font-mono">
-                    {formatUSD(d.totalStockValue)}
+                <div className="grid grid-cols-2 gap-3 mt-4 p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs font-mono">
+                  <div>
+                    <span className="text-slate-500 block text-[10px]">Physical Units</span>
+                    <span className="text-white font-bold text-sm">{d.totalStockUnits} Units</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px]">Orders in Fulfilment</span>
+                    <span className="text-amber-400 font-bold text-sm">{d.activeOrdersCount || 0} Orders</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1 text-xs text-slate-300 mt-4 pt-3 border-t border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Depot Manager: <strong>{d.contactPerson}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 text-slate-500" />
+                    <span>{d.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-3.5 w-3.5 text-slate-500" />
+                    <span>{d.email}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-4 p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs font-mono">
-                <div>
-                  <span className="text-slate-500 block text-[10px]">Physical Units</span>
-                  <span className="text-white font-bold text-sm">{d.totalStockUnits} Units</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block text-[10px]">Orders in Fulfilment</span>
-                  <span className="text-amber-400 font-bold text-sm">{d.activeOrdersCount || 0} Orders</span>
-                </div>
-              </div>
-
-              <div className="space-y-1 text-xs text-slate-300 mt-4 pt-3 border-t border-slate-800">
-                <div className="flex items-center gap-2">
-                  <Users className="h-3.5 w-3.5 text-slate-500" />
-                  <span>Depot Manager: <strong>{d.contactPerson}</strong></span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-3.5 w-3.5 text-slate-500" />
-                  <span>{d.phone}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-3.5 w-3.5 text-slate-500" />
-                  <span>{d.email}</span>
-                </div>
+              <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                <span className="text-[11px] text-slate-500 font-mono">
+                  Address: {d.address}
+                </span>
+                <Link
+                  href="/depot-mobile"
+                  className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
+                >
+                  <span>Launch Depot Hub App</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
             </div>
-
-            <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-              <span className="text-[11px] text-slate-500 font-mono">
-                Address: {d.address}
-              </span>
-              <Link
-                href="/depot-mobile"
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
-              >
-                <span>Launch Depot Hub App</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

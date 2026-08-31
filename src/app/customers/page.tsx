@@ -34,6 +34,7 @@ export default function CustomersPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Form fields (used for both create & edit)
   const [companyName, setCompanyName] = useState('');
@@ -50,14 +51,18 @@ export default function CustomersPage() {
   const [notes, setNotes] = useState('');
 
   const loadData = async () => {
+    setError(null);
     try {
       const response = await fetch('/api/customers');
       if (response.ok) {
         const data = await response.json();
         setCustomers(Array.isArray(data) ? data : []);
+      } else {
+        setError('Failed to load customers');
       }
     } catch (error) {
       console.error('Error loading customers:', error);
+      setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -265,6 +270,13 @@ export default function CustomersPage() {
           />
         </div>
       </div>
+
+      {error && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {/* Customers Cards */}
       {loading ? (

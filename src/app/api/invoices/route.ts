@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { depotIdFilter, guardApi } from '@/lib/api-auth';
 import { deductStockForInvoice } from '@/lib/inventory-service';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await guardApi(req, 'invoices.read');
+  if (!auth.ok) return auth.response;
+
   try {
+    const scopedDepotId = depotIdFilter(auth.user);
     const invoices = await prisma.taxInvoice.findMany({
+      where: scopedDepotId ? { depotId: scopedDepotId } : undefined,
       include: {
         customer: true,
         depot: true,
@@ -20,11 +26,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await guardApi(req, 'invoices.write');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     const { proformaId, depotId } = body;
 
-    // If converting from proforma
     if (proformaId) {
       const proforma = await prisma.proforma.findUnique({
         where: { id: proformaId },
@@ -47,14 +55,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Depot not found' }, { status: 404 });
       }
 
-      // Get current invoice number
       const settings = await prisma.companySettings.findUnique({
         where: { id: 'global-settings' },
       });
       const nextNumber = settings?.invoiceNextNumber || 1;
       const invoiceNumber = `${settings?.invoicePrefix || 'INV-2026-'}${String(nextNumber).padStart(5, '0')}`;
 
-      // Create invoice
       const invoice = await prisma.taxInvoice.create({
         data: {
           invoiceNumber,
@@ -84,46 +90,43 @@ export async function POST(req: NextRequest) {
         },
       });
 
-        // Create invoice items
-        for (const item of proforma.items) {
-          await prisma.invoiceItem.create({
-            data: {
-              invoiceId: invoice.id,
-              productId: item.productId,
-              productSku: item.productSku,
-              productName: item.productName,
-              brand: item.brand,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              taxRate: item.taxRate,
-              taxAmount: item.taxAmount,
-              totalPrice: item.totalPrice,
-              depotId,
-              depotName: depot.name,
-              trackSerial: item.trackSerial,
-              isPicked: false,
-            },
-          });
-        }
-
-        // Deduct inventory from PostgreSQL database & allocate serials
-        await deductStockForInvoice(
-          invoice.id,
-          proforma.items.map((i) => ({
-            productId: i.productId,
-            productSku: i.productSku,
-            productName: i.productName,
-            quantity: i.quantity,
+      for (const item of proforma.items) {
+        await prisma.invoiceItem.create({
+          data: {
+            invoiceId: invoice.id,
+            productId: item.productId,
+            productSku: item.productSku,
+            productName: item.productName,
+            brand: item.brand,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            taxRate: item.taxRate,
+            taxAmount: item.taxAmount,
+            totalPrice: item.totalPrice,
             depotId,
-            trackSerial: i.trackSerial,
-            unitPrice: i.unitPrice,
-          })),
-          depotId,
-          invoice.invoiceNumber,
-          proforma.customerCompany || proforma.customerName
-        );
+            depotName: depot.name,
+            trackSerial: item.trackSerial,
+            isPicked: false,
+          },
+        });
+      }
 
-      // Update proforma status
+      await deductStockForInvoice(
+        invoice.id,
+        proforma.items.map((i) => ({
+          productId: i.productId,
+          productSku: i.productSku,
+          productName: i.productName,
+          quantity: i.quantity,
+          depotId,
+          trackSerial: i.trackSerial,
+          unitPrice: i.unitPrice,
+        })),
+        depotId,
+        invoice.invoiceNumber,
+        proforma.customerCompany || proforma.customerName
+      );
+
       await prisma.proforma.update({
         where: { id: proformaId },
         data: {
@@ -134,13 +137,11 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Update invoice number counter
       await prisma.companySettings.update({
         where: { id: 'global-settings' },
         data: { invoiceNextNumber: nextNumber + 1 },
       });
 
-      // Fetch complete invoice
       const completeInvoice = await prisma.taxInvoice.findUnique({
         where: { id: invoice.id },
         include: { items: true, customer: true, depot: true },

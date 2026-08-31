@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { guardApi } from '@/lib/api-auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await guardApi(req, 'proformas.read');
+  if (!auth.ok) return auth.response;
+
   try {
     const proformas = await prisma.proforma.findMany({
       include: {
@@ -18,6 +22,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await guardApi(req, 'proformas.write');
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     const { items, customerId, discountPercent, shippingCost, notes, deliveryTerms, paymentTerms, expiryDays } = body;

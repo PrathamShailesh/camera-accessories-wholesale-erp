@@ -1,0 +1,373 @@
+/**
+ * Central RBAC matrix for Growth Bridge ERP.
+ * Used by Edge middleware (pages + APIs) and by Node API handlers.
+ * Keep this file free of Node-only imports so it can run on the Edge runtime.
+ */
+
+export type UserRole = 'SUPER_ADMIN' | 'MANAGER' | 'ERP_USER' | 'DEPOT_USER';
+
+export const ALL_ROLES: UserRole[] = ['SUPER_ADMIN', 'MANAGER', 'ERP_USER', 'DEPOT_USER'];
+
+export type Permission =
+  | 'dashboard.view'
+  | 'proformas.read'
+  | 'proformas.write'
+  | 'invoices.read'
+  | 'invoices.write'
+  | 'invoices.fulfil'
+  | 'orders.read'
+  | 'customers.read'
+  | 'customers.write'
+  | 'products.read'
+  | 'products.write'
+  | 'products.view_cost'
+  | 'inventory.read'
+  | 'inventory.adjust'
+  | 'inventory.transfer'
+  | 'serials.read'
+  | 'serials.write'
+  | 'depots.read'
+  | 'depots.directory'
+  | 'depots.write'
+  | 'depot_mobile.view'
+  | 'shipments.read'
+  | 'shipments.write'
+  | 'documents.read'
+  | 'documents.write'
+  | 'documents.delete'
+  | 'reports.sales'
+  | 'reports.inventory'
+  | 'reports.profit'
+  | 'audit.read'
+  | 'users.read'
+  | 'users.write'
+  | 'settings.read'
+  | 'settings.write'
+  | 'search.use';
+
+const ALL_PERMISSIONS: Permission[] = [
+  'dashboard.view',
+  'proformas.read',
+  'proformas.write',
+  'invoices.read',
+  'invoices.write',
+  'invoices.fulfil',
+  'orders.read',
+  'customers.read',
+  'customers.write',
+  'products.read',
+  'products.write',
+  'products.view_cost',
+  'inventory.read',
+  'inventory.adjust',
+  'inventory.transfer',
+  'serials.read',
+  'serials.write',
+  'depots.read',
+  'depots.directory',
+  'depots.write',
+  'depot_mobile.view',
+  'shipments.read',
+  'shipments.write',
+  'documents.read',
+  'documents.write',
+  'documents.delete',
+  'reports.sales',
+  'reports.inventory',
+  'reports.profit',
+  'audit.read',
+  'users.read',
+  'users.write',
+  'settings.read',
+  'settings.write',
+  'search.use',
+];
+
+const ROLE_PERMISSIONS: Record<UserRole, ReadonlySet<Permission>> = {
+  SUPER_ADMIN: new Set(ALL_PERMISSIONS),
+
+  MANAGER: new Set<Permission>([
+    'dashboard.view',
+    'proformas.read',
+    'proformas.write',
+    'invoices.read',
+    'invoices.write',
+    'invoices.fulfil',
+    'orders.read',
+    'customers.read',
+    'customers.write',
+    'products.read',
+    'products.write',
+    'products.view_cost',
+    'inventory.read',
+    'inventory.adjust',
+    'inventory.transfer',
+    'serials.read',
+    'serials.write',
+    'depots.read',
+    'depots.directory',
+    'depot_mobile.view',
+    'shipments.read',
+    'shipments.write',
+    'documents.read',
+    'documents.write',
+    'documents.delete',
+    'reports.sales',
+    'reports.inventory',
+    'reports.profit',
+    'audit.read',
+    'search.use',
+  ]),
+
+  ERP_USER: new Set<Permission>([
+    'dashboard.view',
+    'proformas.read',
+    'proformas.write',
+    'invoices.read',
+    'invoices.write',
+    'orders.read',
+    'customers.read',
+    'customers.write',
+    'products.read',
+    'products.write',
+    'inventory.read',
+    'inventory.transfer',
+    'serials.read',
+    'depots.read',
+    'depots.directory',
+    'depot_mobile.view',
+    'shipments.read',
+    'documents.read',
+    'documents.write',
+    'reports.sales',
+    'reports.inventory',
+    'search.use',
+  ]),
+
+  DEPOT_USER: new Set<Permission>([
+    'dashboard.view',
+    'invoices.read',
+    'invoices.fulfil',
+    'orders.read',
+    'products.read',
+    'inventory.read',
+    'inventory.transfer',
+    'serials.read',
+    'depots.read',
+    'depot_mobile.view',
+    'shipments.read',
+    'shipments.write',
+    'documents.read',
+    'documents.write',
+    'search.use',
+  ]),
+};
+
+export function isUserRole(value: unknown): value is UserRole {
+  return value === 'SUPER_ADMIN' || value === 'MANAGER' || value === 'ERP_USER' || value === 'DEPOT_USER';
+}
+
+export function hasPermission(role: UserRole | string | undefined | null, permission: Permission): boolean {
+  if (!isUserRole(role)) return false;
+  return ROLE_PERMISSIONS[role].has(permission);
+}
+
+export function listPermissions(role: UserRole): Permission[] {
+  return ALL_PERMISSIONS.filter((p) => ROLE_PERMISSIONS[role].has(p));
+}
+
+export type AuthSession = {
+  userId: string;
+  email: string;
+  role: UserRole;
+  assignedDepotId?: string | null;
+  status?: string;
+};
+
+export function isDepotScoped(session: AuthSession | null | undefined): boolean {
+  return session?.role === 'DEPOT_USER';
+}
+
+export function canViewCosts(role: UserRole | string | undefined | null): boolean {
+  return hasPermission(role, 'products.view_cost');
+}
+
+/** Page routes (longest prefix first). */
+const PAGE_PERMISSIONS: Array<{ prefix: string; permission: Permission }> = [
+  { prefix: '/reports/profit', permission: 'reports.profit' },
+  { prefix: '/reports/sales', permission: 'reports.sales' },
+  { prefix: '/reports/inventory', permission: 'reports.inventory' },
+  { prefix: '/inventory/adjustments', permission: 'inventory.adjust' },
+  { prefix: '/inventory/transfers', permission: 'inventory.read' },
+  { prefix: '/inventory/serials', permission: 'serials.read' },
+  { prefix: '/inventory', permission: 'inventory.read' },
+  { prefix: '/depot', permission: 'depot_mobile.view' },
+  { prefix: '/depot-mobile', permission: 'depot_mobile.view' },
+  { prefix: '/proformas', permission: 'proformas.read' },
+  { prefix: '/invoices', permission: 'invoices.read' },
+  { prefix: '/orders', permission: 'orders.read' },
+  { prefix: '/customers', permission: 'customers.read' },
+  { prefix: '/products', permission: 'products.read' },
+  { prefix: '/depots', permission: 'depots.directory' },
+  { prefix: '/shipments', permission: 'shipments.read' },
+  { prefix: '/documents', permission: 'documents.read' },
+  { prefix: '/audit-logs', permission: 'audit.read' },
+  { prefix: '/users', permission: 'users.read' },
+  { prefix: '/settings', permission: 'settings.read' },
+  { prefix: '/dashboard', permission: 'dashboard.view' },
+];
+
+export const PUBLIC_PAGE_PREFIXES = ['/login', '/quote', '/portal', '/view', '/unauthorized'];
+
+export function isPublicPagePath(pathname: string): boolean {
+  if (pathname === '/') return true;
+  return PUBLIC_PAGE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+export function permissionForPage(pathname: string): Permission | 'public' {
+  if (isPublicPagePath(pathname)) return 'public';
+  const match = PAGE_PERMISSIONS.find((r) => pathname === r.prefix || pathname.startsWith(`${r.prefix}/`));
+  return match?.permission ?? 'dashboard.view';
+}
+
+export function canAccessPage(role: UserRole | string | undefined | null, pathname: string): boolean {
+  const permission = permissionForPage(pathname);
+  if (permission === 'public') return true;
+  return hasPermission(role, permission);
+}
+
+export function homePathForRole(role: UserRole | string | undefined | null): string {
+  return role === 'DEPOT_USER' ? '/depot' : '/dashboard';
+}
+
+type ApiRule = {
+  methods: string[];
+  test: (pathname: string) => boolean;
+  permission: Permission | 'public' | 'authenticated';
+};
+
+const API_RULES: ApiRule[] = [
+  { methods: ['POST'], test: (p) => p === '/api/auth/login', permission: 'public' },
+  { methods: ['POST'], test: (p) => p === '/api/auth/logout', permission: 'public' },
+  { methods: ['GET'], test: (p) => p === '/api/auth/me', permission: 'authenticated' },
+  { methods: ['POST'], test: (p) => p === '/api/auth/change-password', permission: 'authenticated' },
+  { methods: ['GET'], test: (p) => p === '/api/auth/session', permission: 'authenticated' },
+  { methods: ['POST'], test: (p) => p === '/api/auth/session', permission: 'users.write' },
+  { methods: ['GET'], test: (p) => p === '/api/events', permission: 'authenticated' },
+  { methods: ['GET'], test: (p) => p === '/api/settings', permission: 'public' },
+  { methods: ['PATCH', 'PUT', 'POST'], test: (p) => p === '/api/settings', permission: 'settings.write' },
+
+  { methods: ['GET'], test: (p) => p === '/api/users' || p.startsWith('/api/users/'), permission: 'users.read' },
+  { methods: ['POST', 'PUT', 'PATCH', 'DELETE'], test: (p) => p === '/api/users' || p.startsWith('/api/users/'), permission: 'users.write' },
+
+  { methods: ['GET'], test: (p) => p === '/api/audit-logs' || p.startsWith('/api/audit-logs/'), permission: 'audit.read' },
+
+  { methods: ['POST'], test: (p) => p.startsWith('/api/invoices/') && p.endsWith('/pick'), permission: 'invoices.fulfil' },
+  { methods: ['POST'], test: (p) => p.startsWith('/api/invoices/') && p.endsWith('/pack'), permission: 'invoices.fulfil' },
+  { methods: ['POST'], test: (p) => p.startsWith('/api/invoices/') && p.endsWith('/ship'), permission: 'invoices.fulfil' },
+  { methods: ['POST'], test: (p) => p.startsWith('/api/invoices/') && p.endsWith('/convert'), permission: 'invoices.write' },
+  { methods: ['PUT', 'PATCH'], test: (p) => /^\/api\/invoices\/[^/]+$/.test(p), permission: 'authenticated' },
+  { methods: ['POST'], test: (p) => p.startsWith('/api/proformas/') && p.endsWith('/convert'), permission: 'invoices.write' },
+  { methods: ['POST'], test: (p) => p.startsWith('/api/proformas/') && p.endsWith('/confirm'), permission: 'proformas.write' },
+
+  { methods: ['GET'], test: (p) => p === '/api/proformas' || p.startsWith('/api/proformas/'), permission: 'proformas.read' },
+  { methods: ['POST', 'PUT', 'PATCH', 'DELETE'], test: (p) => p === '/api/proformas' || p.startsWith('/api/proformas/'), permission: 'proformas.write' },
+  { methods: ['POST'], test: (p) => p === '/api/emails/send-proforma', permission: 'proformas.write' },
+
+  { methods: ['GET'], test: (p) => p === '/api/invoices' || p.startsWith('/api/invoices/'), permission: 'invoices.read' },
+  { methods: ['POST', 'PUT', 'PATCH', 'DELETE'], test: (p) => p === '/api/invoices' || p.startsWith('/api/invoices/'), permission: 'invoices.write' },
+
+  { methods: ['GET'], test: (p) => p === '/api/customers' || p.startsWith('/api/customers/'), permission: 'customers.read' },
+  { methods: ['POST', 'PUT', 'PATCH', 'DELETE'], test: (p) => p === '/api/customers' || p.startsWith('/api/customers/'), permission: 'customers.write' },
+
+  { methods: ['POST'], test: (p) => p === '/api/products/bulk', permission: 'products.write' },
+  { methods: ['GET'], test: (p) => p === '/api/products' || p.startsWith('/api/products/'), permission: 'products.read' },
+  { methods: ['POST', 'PUT', 'PATCH', 'DELETE'], test: (p) => p === '/api/products' || p.startsWith('/api/products/'), permission: 'products.write' },
+
+  { methods: ['POST'], test: (p) => p === '/api/inventory/adjust' || p === '/api/inventory/adjustments', permission: 'inventory.adjust' },
+  { methods: ['GET'], test: (p) => p === '/api/inventory/adjustments', permission: 'inventory.adjust' },
+  { methods: ['POST'], test: (p) => p === '/api/inventory/transfers' || p === '/api/transfers', permission: 'inventory.transfer' },
+  { methods: ['GET'], test: (p) => p === '/api/inventory/transfers' || p === '/api/transfers', permission: 'inventory.read' },
+  { methods: ['GET', 'POST'], test: (p) => p === '/api/inventory/check', permission: 'inventory.read' },
+  { methods: ['GET'], test: (p) => p === '/api/inventory/serials' || p === '/api/serials' || p.startsWith('/api/serials/'), permission: 'serials.read' },
+  { methods: ['POST', 'PUT', 'PATCH', 'DELETE'], test: (p) => p === '/api/serials' || p.startsWith('/api/serials/'), permission: 'serials.write' },
+
+  { methods: ['GET'], test: (p) => p === '/api/depots' || p.startsWith('/api/depots/'), permission: 'depots.read' },
+  { methods: ['POST', 'PUT', 'PATCH', 'DELETE'], test: (p) => p === '/api/depots' || p.startsWith('/api/depots/'), permission: 'depots.write' },
+
+  { methods: ['GET'], test: (p) => p === '/api/shipments' || p.startsWith('/api/shipments/'), permission: 'shipments.read' },
+  { methods: ['POST', 'PUT', 'PATCH', 'DELETE'], test: (p) => p === '/api/shipments' || p.startsWith('/api/shipments/'), permission: 'shipments.write' },
+
+  { methods: ['GET'], test: (p) => p === '/api/documents' || p.startsWith('/api/documents/'), permission: 'documents.read' },
+  { methods: ['POST'], test: (p) => p === '/api/documents' || p.startsWith('/api/documents/') || p === '/api/cloudinary/upload', permission: 'documents.write' },
+  { methods: ['DELETE'], test: (p) => p === '/api/documents' || p.startsWith('/api/documents/'), permission: 'documents.delete' },
+
+  { methods: ['GET'], test: (p) => p === '/api/dashboard' || p === '/api/dashboard/stats', permission: 'dashboard.view' },
+  { methods: ['GET'], test: (p) => p === '/api/search', permission: 'search.use' },
+];
+
+export function resolveApiAccess(pathname: string, method: string): Permission | 'public' | 'authenticated' {
+  const verb = method.toUpperCase();
+  const rule = API_RULES.find((r) => r.methods.includes(verb) && r.test(pathname));
+  return rule?.permission ?? 'authenticated';
+}
+
+export function canAccessApi(
+  role: UserRole | string | undefined | null,
+  pathname: string,
+  method: string
+): boolean {
+  const access = resolveApiAccess(pathname, method);
+  if (access === 'public') return true;
+  if (access === 'authenticated') return isUserRole(role);
+  return hasPermission(role, access);
+}
+
+export const NAV_SECTIONS: Array<{
+  title: string;
+  items: Array<{ name: string; href: string; permission: Permission; highlight?: boolean; icon: string }>;
+}> = [
+  {
+    title: 'SALES & ORDERS',
+    items: [
+      { name: 'Dashboard', href: '/dashboard', permission: 'dashboard.view', icon: 'LayoutDashboard' },
+      { name: 'Proformas', href: '/proformas', permission: 'proformas.read', icon: 'FileCheck2' },
+      { name: 'Tax Invoices', href: '/invoices', permission: 'invoices.read', icon: 'Receipt' },
+      { name: 'Order Pipeline', href: '/orders', permission: 'orders.read', icon: 'ShoppingCart' },
+      { name: 'Customers', href: '/customers', permission: 'customers.read', icon: 'Users' },
+    ],
+  },
+  {
+    title: 'INVENTORY & HARDWARE',
+    items: [
+      { name: 'Product Catalog', href: '/products', permission: 'products.read', icon: 'Package' },
+      { name: 'Depot Stock Matrix', href: '/inventory', permission: 'inventory.read', icon: 'Boxes' },
+      { name: 'Serial Numbers', href: '/inventory/serials', permission: 'serials.read', icon: 'Barcode' },
+      { name: 'Stock Transfers', href: '/inventory/transfers', permission: 'inventory.read', icon: 'ArrowLeftRight' },
+      { name: 'Stock Adjustments', href: '/inventory/adjustments', permission: 'inventory.adjust', icon: 'SlidersHorizontal' },
+    ],
+  },
+  {
+    title: 'DEPOT & FULFILMENT',
+    items: [
+      { name: 'Depot Hubs', href: '/depots', permission: 'depots.directory', icon: 'Building2' },
+      { name: 'Depot Operations', href: '/depot', permission: 'depot_mobile.view', highlight: true, icon: 'Smartphone' },
+      { name: 'Shipments & AWBs', href: '/shipments', permission: 'shipments.read', icon: 'Truck' },
+    ],
+  },
+  {
+    title: 'DOCS & CLOUD STORAGE',
+    items: [{ name: 'Documents Hub', href: '/documents', permission: 'documents.read', icon: 'FolderLock' }],
+  },
+  {
+    title: 'ANALYTICS & AUDIT',
+    items: [
+      { name: 'Profitability & BI', href: '/reports/profit', permission: 'reports.profit', icon: 'TrendingUp' },
+      { name: 'Sales Reports', href: '/reports/sales', permission: 'reports.sales', icon: 'BarChart3' },
+      { name: 'Inventory Reports', href: '/reports/inventory', permission: 'reports.inventory', icon: 'Boxes' },
+      { name: 'Audit Logs', href: '/audit-logs', permission: 'audit.read', icon: 'ScrollText' },
+      { name: 'User Management', href: '/users', permission: 'users.read', icon: 'Users' },
+      { name: 'ERP Settings', href: '/settings', permission: 'settings.read', icon: 'Settings' },
+    ],
+  },
+];

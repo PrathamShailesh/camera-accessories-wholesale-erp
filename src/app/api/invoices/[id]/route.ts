@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { assertDepotAccess, guardApi } from '@/lib/api-auth';
+import { hasPermission } from '@/lib/rbac';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await guardApi(req, 'invoices.read');
+  if (!auth.ok) return auth.response;
+
   try {
     let invoice = await prisma.taxInvoice.findFirst({
       where: {
@@ -30,6 +35,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
+    const depotDenied = assertDepotAccess(auth.user, invoice.depotId);
+    if (depotDenied) return depotDenied;
+
     return NextResponse.json(invoice);
   } catch (error) {
     console.error('Error fetching invoice:', error);
@@ -38,6 +46,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await guardApi(req);
+  if (!auth.ok) return auth.response;
+  if (!hasPermission(auth.user.role, 'invoices.write') && !hasPermission(auth.user.role, 'invoices.fulfil')) {
+    return NextResponse.json({ error: 'Forbidden: your role cannot update invoices' }, { status: 403 });
+  }
+
   try {
     const body = await req.json();
     const {
@@ -80,6 +94,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (!existing) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
+
+    const depotDenied = assertDepotAccess(auth.user, existing.depotId);
+    if (depotDenied) return depotDenied;
 
     const updateData: any = {};
     if (fulfilmentStatus) updateData.fulfilmentStatus = fulfilmentStatus;
@@ -183,7 +200,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await guardApi(req, 'invoices.write');
+  if (!auth.ok) return auth.response;
+
   try {
+    const existing = await prisma.taxInvoice.findUnique({ where: { id: params.id }, select: { depotId: true } });
+    if (!existing) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+    const denied = assertDepotAccess(auth.user, existing.depotId);
+    if (denied) return denied;
     await prisma.taxInvoice.delete({
       where: { id: params.id },
     });

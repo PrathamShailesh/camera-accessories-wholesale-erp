@@ -252,13 +252,13 @@ export default function PrintableDocumentModal({
                       className="border-r border-black p-3 align-bottom text-[10px] leading-relaxed"
                     >
                       <div className="font-bold text-black mb-0.5">Payments to be made to:</div>
-                      <div className="text-black font-medium">{settings.bankDetails.accountName}</div>
-                      <div className="text-black">Bank: {settings.bankDetails.bankName}</div>
+                      <div className="text-black font-medium">{settings.bankDetails?.accountName || settings.accountName || 'Not configured'}</div>
+                      <div className="text-black">Bank: {settings.bankDetails?.bankName || settings.bankName || 'Not configured'}</div>
                       <div className="font-bold text-black">
-                        USD IBAN A/c #: {settings.bankDetails.iban}
+                        USD IBAN A/c #: {settings.bankDetails?.iban || settings.iban || 'Not configured'}
                       </div>
                       <div className="font-bold text-black">
-                        SWIFT: {settings.bankDetails.swiftBic}
+                        SWIFT: {settings.bankDetails?.swiftBic || settings.swiftBic || 'Not configured'}
                       </div>
                     </td>
                     <td className="border-r border-black p-2 align-bottom"></td>

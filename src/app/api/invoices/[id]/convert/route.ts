@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dataStore from '@/lib/data-store';
+import { guardApi } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await guardApi(req, 'invoices.write');
+  if (!auth.ok) return auth.response;
+
   try {
-    const body = await req.json().catch(() => ({}));
-    const { assignedDepotId } = body;
-
-    // params.id is the proformaId
-    const newInvoice = dataStore.convertProformaToTaxInvoice(params.id, assignedDepotId);
-
-    return NextResponse.json({
-      success: true,
-      message: `Proforma converted successfully into Tax Invoice ${newInvoice.invoiceNumber}`,
-      invoice: newInvoice,
-    });
+    return NextResponse.json({ error: 'Use /api/proformas/:id/convert for the database-backed conversion workflow.' }, { status: 410 });
   } catch (error: any) {
     console.error('Conversion Error:', error);
     return NextResponse.json({ error: error.message || 'Conversion failed' }, { status: 400 });

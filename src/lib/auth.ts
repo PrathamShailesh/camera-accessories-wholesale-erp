@@ -4,6 +4,7 @@ import crypto from 'crypto';
 export const DEFAULT_USER_CREDENTIALS: Record<string, { role: string; defaultPass: string }> = {
   'sarah.admin@lenscore.com': { role: 'SUPER_ADMIN', defaultPass: 'Admin@Growth2026!' },
   'marcus.vance@lenscore.com': { role: 'MANAGER', defaultPass: 'Manager@Growth2026!' },
+  'priya.erp@lenscore.com': { role: 'ERP_USER', defaultPass: 'ErpUser@Growth2026!' },
   'tariq.dxb@lenscore.com': { role: 'DEPOT_USER', defaultPass: 'Depot@Dubai2026!' },
   'arun.blr@lenscore.com': { role: 'DEPOT_USER', defaultPass: 'Depot@Bangalore2026!' },
 };
@@ -44,34 +45,5 @@ export function verifyPassword(password: string, storedHash?: string | null, ema
   return false;
 }
 
-/**
- * Generate session auth token
- */
-export function generateAuthToken(userId: string, email: string): string {
-  const payload = Buffer.from(JSON.stringify({ userId, email, timestamp: Date.now() })).toString('base64');
-  const signature = crypto.createHmac('sha256', process.env.NEXTAUTH_SECRET || 'growth-bridge-erp-secret-key-2026')
-    .update(payload)
-    .digest('hex');
-  return `${payload}.${signature}`;
-}
-
-/**
- * Verify session auth token
- */
-export function verifyAuthToken(token: string): { userId: string; email: string } | null {
-  try {
-    const [payload, signature] = token.split('.');
-    if (!payload || !signature) return null;
-
-    const expectedSignature = crypto.createHmac('sha256', process.env.NEXTAUTH_SECRET || 'growth-bridge-erp-secret-key-2026')
-      .update(payload)
-      .digest('hex');
-
-    if (expectedSignature !== signature) return null;
-
-    const data = JSON.parse(Buffer.from(payload, 'base64').toString('utf-8'));
-    return data;
-  } catch {
-    return null;
-  }
-}
+export { signAuthPayload, verifyAuthPayload } from './auth-token';
+export type { TokenPayload } from './auth-token';
