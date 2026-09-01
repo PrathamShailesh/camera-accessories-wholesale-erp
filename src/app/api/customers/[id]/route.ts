@@ -7,12 +7,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (!auth.ok) return auth.response;
 
   try {
+    // Cap order-history relations to the most recent 50 each — a long-time
+    // customer's full history is unbounded otherwise, and the detail page
+    // only needs a recent-activity view, not every order ever placed.
     const customer = await prisma.customer.findUnique({
       where: { id: params.id },
       include: {
-        proformas: true,
-        taxInvoices: true,
-        shipments: true,
+        proformas: { orderBy: { createdAt: 'desc' }, take: 50 },
+        taxInvoices: { orderBy: { createdAt: 'desc' }, take: 50 },
+        shipments: { orderBy: { createdAt: 'desc' }, take: 50 },
       },
     });
 

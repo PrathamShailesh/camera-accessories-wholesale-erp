@@ -22,7 +22,9 @@ import {
   Truck,
   Check,
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+const fireConfetti = (opts: Record<string, unknown>) => {
+  import('canvas-confetti').then((m) => m.default(opts as any)).catch(() => {});
+};
 import { formatUSD, formatDate } from '@/lib/utils';
 import { Proforma, Depot } from '@/types/erp';
 import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
@@ -64,7 +66,7 @@ export default function ProformaDetailPage() {
 
       if (prevStatusRef.current && prevStatusRef.current !== data.status) {
         if (data.status === 'CONFIRMED') {
-          confetti({
+          fireConfetti({
             particleCount: 100,
             spread: 70,
             origin: { y: 0.6 },
@@ -182,7 +184,7 @@ export default function ProformaDetailPage() {
 
       const newInvoice = await res.json();
 
-      confetti({
+      fireConfetti({
         particleCount: 120,
         spread: 80,
         origin: { y: 0.6 },

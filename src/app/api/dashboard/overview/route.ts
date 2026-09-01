@@ -31,7 +31,15 @@ export async function GET(req: NextRequest) {
     const [invoices, products, proformaPending, shipmentsPending, depots, inventoryRows] = await Promise.all([
       prisma.taxInvoice.findMany({
         where: invoiceWhere,
-        include: { items: true },
+        select: {
+          createdAt: true,
+          grandTotal: true,
+          customerId: true,
+          customerName: true,
+          customerCompany: true,
+          depotId: true,
+          items: { select: { productId: true, quantity: true, totalPrice: true } },
+        },
         orderBy: { createdAt: 'asc' },
       }),
       prisma.product.findMany({ select: { id: true, name: true, sku: true, brand: true, categoryName: true, purchasePrice: true } }),

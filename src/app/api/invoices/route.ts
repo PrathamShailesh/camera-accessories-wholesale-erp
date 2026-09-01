@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { depotIdFilter, guardApi } from '@/lib/api-auth';
 import { deductStockForInvoice } from '@/lib/inventory-service';
+import { parsePagination } from '@/lib/pagination';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'invoices.read');
@@ -9,16 +10,27 @@ export async function GET(req: NextRequest) {
 
   try {
     const scopedDepotId = depotIdFilter(auth.user);
+    const { take, skip } = parsePagination(req);
+    // customerCompany/depotName are denormalized onto TaxInvoice itself;
+    // the list view only needs a handful of shipment fields for the
+    // shippingDetails summary below, not the full related records.
     const invoices = await prisma.taxInvoice.findMany({
       where: scopedDepotId ? { depotId: scopedDepotId } : undefined,
       include: {
-        customer: true,
-        depot: true,
-        items: true,
-        packingDetails: true,
-        shipment: true,
+        shipment: {
+          select: {
+            courier: true,
+            airwayBillNumber: true,
+            trackingUrl: true,
+            totalWeightKg: true,
+            packageCount: true,
+            awbDocumentUrl: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
+      take,
+      skip,
     });
 
     const mappedInvoices = invoices.map((inv) => ({

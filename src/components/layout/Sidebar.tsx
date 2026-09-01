@@ -29,6 +29,7 @@ import {
 import dataStore from '@/lib/data-store';
 import { User } from '@/types/erp';
 import { hasPermission, isDepotScoped, NAV_SECTIONS } from '@/lib/rbac';
+import { fetchCurrentUserCached } from '@/lib/client-cache';
 import { cn } from '@/lib/utils';
 
 const iconMap: Record<string, any> = {
@@ -68,14 +69,11 @@ export default function Sidebar() {
       setCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1');
     } catch {}
 
-    fetch('/api/auth/me')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.authenticated && data.user) {
-          setCurrentUser(data.user);
-        }
-      })
-      .catch(() => {});
+    fetchCurrentUserCached().then((data) => {
+      if (data?.authenticated && data.user) {
+        setCurrentUser(data.user);
+      }
+    });
   }, []);
 
   const toggleCollapsed = () => {

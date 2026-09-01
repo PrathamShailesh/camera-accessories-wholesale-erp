@@ -13,6 +13,7 @@ import {
   Mail,
 } from 'lucide-react';
 import ImageUploadField from '@/components/ui/ImageUploadField';
+import { fetchSettingsCached, invalidateSettings } from '@/lib/client-cache';
 
 interface CompanySettings {
   id: string;
@@ -60,11 +61,8 @@ export default function SettingsPage() {
 
   const loadSettings = async () => {
     try {
-      const res = await fetch('/api/settings');
-      if (res.ok) {
-        const data = await res.json();
-        setSettings(data);
-      }
+      const data = await fetchSettingsCached();
+      if (data) setSettings(data);
     } catch (error) {
       console.error('Error loading settings:', error);
     } finally {
@@ -84,6 +82,7 @@ export default function SettingsPage() {
       });
 
       if (res.ok) {
+        invalidateSettings();
         setSavedSuccess(true);
         setTimeout(() => setSavedSuccess(false), 2000);
       }

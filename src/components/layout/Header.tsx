@@ -21,6 +21,7 @@ import {
 import { User, Notification } from '@/types/erp';
 import { formatDateTime } from '@/lib/utils';
 import dataStore from '@/lib/data-store';
+import { fetchCurrentUserCached, fetchSettingsCached, invalidateCurrentUser, invalidateSettings } from '@/lib/client-cache';
 import GlobalSearchModal from '@/components/search/GlobalSearchModal';
 import CloudinaryUploadModal from '@/components/documents/CloudinaryUploadModal';
 import { Avatar } from '@/components/ui/Avatar';
@@ -86,24 +87,18 @@ export default function Header() {
 
   const [settings, setSettings] = useState<any>(null);
 
-  const reloadData = async () => {
+  const reloadData = async (force = false) => {
     try {
-      const [authRes, settingsRes] = await Promise.all([fetch('/api/auth/me'), fetch('/api/settings')]);
+      const [data, setJson] = await Promise.all([fetchCurrentUserCached(force), fetchSettingsCached(force)]);
 
-      if (authRes.ok) {
-        const data = await authRes.json();
-        if (data.authenticated && data.user) {
-          setCurrentUser(data.user);
-          dataStore.setCurrentUser(data.user.id);
-        }
-      } else {
+      if (data?.authenticated && data.user) {
+        setCurrentUser(data.user);
+        dataStore.setCurrentUser(data.user.id);
+      } else if (!data) {
         setCurrentUser(dataStore.getCurrentUser());
       }
 
-      if (settingsRes.ok) {
-        const setJson = await settingsRes.json();
-        setSettings(setJson);
-      }
+      if (setJson) setSettings(setJson);
     } catch {
       setCurrentUser(dataStore.getCurrentUser());
     }
@@ -120,6 +115,7 @@ export default function Header() {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {}
+    invalidateCurrentUser();
     if (typeof window !== 'undefined') {
       localStorage.removeItem('erp_current_user');
     }

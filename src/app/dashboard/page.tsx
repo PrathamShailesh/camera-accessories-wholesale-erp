@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   DollarSign,
   TrendingUp,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import { formatUSD } from '@/lib/utils';
 import { TaxInvoice, Shipment, User } from '@/types/erp';
+import { fetchCurrentUserCached } from '@/lib/client-cache';
 import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
 import { PageHeader, SectionHeader } from '@/components/ui/PageHeader';
 import { KPICard } from '@/components/ui/KPICard';
@@ -30,8 +32,16 @@ import { StatusBadge, MarginBadge } from '@/components/ui/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
 import { Skeleton, SkeletonKPIRow, SkeletonTable, SkeletonCard } from '@/components/ui/Skeleton';
-import { RevenueProfitChart, TrendPoint } from '@/components/dashboard/RevenueProfitChart';
-import { CategoryBreakdownChart } from '@/components/dashboard/CategoryBreakdownChart';
+import type { TrendPoint } from '@/components/dashboard/RevenueProfitChart';
+
+const RevenueProfitChart = dynamic(
+  () => import('@/components/dashboard/RevenueProfitChart').then((m) => m.RevenueProfitChart),
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full" /> }
+);
+const CategoryBreakdownChart = dynamic(
+  () => import('@/components/dashboard/CategoryBreakdownChart').then((m) => m.CategoryBreakdownChart),
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full" /> }
+);
 
 interface OverviewData {
   totals: {
@@ -89,17 +99,13 @@ export default function DashboardPage() {
   const loadData = async () => {
     setError(null);
     try {
-      const userRes = await fetch('/api/auth/me');
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        if (userData.authenticated && userData.user) setCurrentUser(userData.user);
-      }
-
-      const [overviewRes, invoicesRes, shipmentsRes] = await Promise.all([
+      const [userData, overviewRes, invoicesRes, shipmentsRes] = await Promise.all([
+        fetchCurrentUserCached(),
         fetch('/api/dashboard/overview'),
-        fetch('/api/invoices'),
-        fetch('/api/shipments'),
+        fetch('/api/invoices?limit=6'),
+        fetch('/api/shipments?limit=4'),
       ]);
+      if (userData?.authenticated && userData.user) setCurrentUser(userData.user);
 
       if (!overviewRes.ok || !invoicesRes.ok || !shipmentsRes.ok) {
         setError('Unable to load dashboard data.');

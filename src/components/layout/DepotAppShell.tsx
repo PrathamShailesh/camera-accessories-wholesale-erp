@@ -18,6 +18,7 @@ import {
 import dataStore from '@/lib/data-store';
 import { User } from '@/types/erp';
 import { cn } from '@/lib/utils';
+import { fetchCurrentUserCached, fetchSettingsCached } from '@/lib/client-cache';
 import { Badge } from '@/components/ui/Badge';
 
 export default function DepotAppShell({ children }: { children: React.ReactNode }) {
@@ -31,19 +32,13 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
     setIsMounted(true);
     setCurrentUser(dataStore.getCurrentUser());
 
-    fetch('/api/auth/me')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.authenticated && data.user) setCurrentUser(data.user);
-      })
-      .catch(() => {});
+    fetchCurrentUserCached().then((data) => {
+      if (data?.authenticated && data.user) setCurrentUser(data.user);
+    });
 
-    fetch('/api/settings')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) setSettings(data);
-      })
-      .catch(() => {});
+    fetchSettingsCached().then((data) => {
+      if (data) setSettings(data);
+    });
   }, []);
 
   const depotNavItems = [

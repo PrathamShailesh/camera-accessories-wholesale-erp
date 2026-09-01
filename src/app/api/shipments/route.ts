@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guardApi, depotIdFilter } from '@/lib/api-auth';
+import { parsePagination } from '@/lib/pagination';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'shipments.read');
@@ -8,14 +9,14 @@ export async function GET(req: NextRequest) {
 
   try {
     const depotFilter = depotIdFilter(auth.user);
+    const { take, skip } = parsePagination(req);
+    // customerName/customerCompany/depotName/invoiceNumber are denormalized
+    // onto Shipment itself — no relation include needed for the list view.
     const shipments = await prisma.shipment.findMany({
       where: depotFilter ? { depotId: depotFilter } : undefined,
-      include: {
-        invoice: true,
-        customer: true,
-        depot: true,
-      },
       orderBy: { createdAt: 'desc' },
+      take,
+      skip,
     });
     return NextResponse.json(shipments);
   } catch (error) {

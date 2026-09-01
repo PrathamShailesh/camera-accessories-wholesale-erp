@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guardApi, stripUserSecrets } from '@/lib/api-auth';
+import { parsePagination } from '@/lib/pagination';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'users.read');
   if (!auth.ok) return auth.response;
 
   try {
+    const { take, skip } = parsePagination(req, { defaultLimit: 200, maxLimit: 500 });
     const users = await prisma.user.findMany({
-      include: { depot: true },
+      include: { depot: { select: { id: true, name: true, code: true } } },
       orderBy: { createdAt: 'desc' },
+      take,
+      skip,
     });
     return NextResponse.json(users.map((u) => stripUserSecrets(u)));
   } catch (error) {

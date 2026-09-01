@@ -242,6 +242,7 @@ model SerialNumber {
   @@index([depotId])
   @@index([status])
   @@index([serialNumber])
+  @@index([depotId, status, createdAt])
 }
 
 model DepotInventory {
@@ -303,6 +304,7 @@ model StockTransfer {
 
   @@index([status])
   @@index([transferNumber])
+  @@index([createdAt])
 }
 
 model StockTransferItem {
@@ -339,6 +341,7 @@ model StockAdjustment {
 
   @@index([productId])
   @@index([depotId])
+  @@index([createdAt])
 }
 
 model Customer {
@@ -369,6 +372,7 @@ model Customer {
   @@index([customerCode])
   @@index([companyName])
   @@index([status])
+  @@index([createdAt])
 }
 
 model Supplier {
@@ -424,6 +428,7 @@ model Proforma {
   @@index([proformaNumber])
   @@index([customerId])
   @@index([status])
+  @@index([createdAt])
 }
 
 model ProformaItem {
@@ -496,6 +501,7 @@ model TaxInvoice {
   @@index([customerId])
   @@index([depotId])
   @@index([fulfilmentStatus])
+  @@index([depotId, createdAt])
 }
 
 model InvoiceItem {
@@ -572,6 +578,7 @@ model Shipment {
   @@index([shipmentNumber])
   @@index([airwayBillNumber])
   @@index([status])
+  @@index([depotId, createdAt])
 }
 
 model CloudDocument {
@@ -596,6 +603,7 @@ model CloudDocument {
   @@index([category])
   @@index([relatedEntityId])
   @@index([depotId])
+  @@index([depotId, uploadedAt])
 }
 
 model AuditLog {

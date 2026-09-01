@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guardApi } from '@/lib/api-auth';
+import { parsePagination } from '@/lib/pagination';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'proformas.read');
   if (!auth.ok) return auth.response;
 
   try {
+    const { take, skip } = parsePagination(req);
+    // customerCompany/customerName are denormalized onto Proforma itself —
+    // the list view doesn't touch the customer relation or line items, so
+    // no include/select is needed beyond the model's own scalar columns.
     const proformas = await prisma.proforma.findMany({
-      include: {
-        customer: true,
-        items: true,
-      },
       orderBy: { createdAt: 'desc' },
+      take,
+      skip,
     });
     return NextResponse.json(proformas);
   } catch (error) {

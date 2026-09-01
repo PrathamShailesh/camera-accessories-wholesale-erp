@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, cloudinaryThumb } from '@/lib/utils';
 
 const PALETTE = [
   'bg-[#e0e7ff] text-[#4338ca]',
@@ -35,6 +35,8 @@ const sizeClasses = {
   xl: 'h-16 w-16 text-lg',
 };
 
+const sizePx = { xs: 24, sm: 28, md: 36, lg: 48, xl: 64 };
+
 export interface AvatarProps {
   name?: string | null;
   src?: string | null;
@@ -61,9 +63,10 @@ export function Avatar({ name, src, size = 'md', className, ring }: AvatarProps)
       {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={src!}
+          src={cloudinaryThumb(src, sizePx[size] * 2) || src!}
           alt={name || 'Avatar'}
           className="h-full w-full object-cover"
+          loading="lazy"
           onError={() => setErrored(true)}
         />
       ) : (

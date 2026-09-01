@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { assertDepotAccess, depotIdFilter, guardApi } from '@/lib/api-auth';
+import { parsePagination } from '@/lib/pagination';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'inventory.read');
   if (!auth.ok) return auth.response;
   try {
     const scopedDepotId = depotIdFilter(auth.user);
+    const { take, skip } = parsePagination(req);
     const transfers = await prisma.stockTransfer.findMany({
       where: scopedDepotId ? { OR: [{ sourceDepotId: scopedDepotId }, { destinationDepotId: scopedDepotId }] } : undefined,
       include: {
         items: true,
       },
       orderBy: { createdAt: 'desc' },
+      take,
+      skip,
     });
     return NextResponse.json(transfers);
   } catch (error) {

@@ -25,14 +25,15 @@ export async function deductStockForInvoice(
 ) {
   try {
     // 1. Idempotency Check: Prevent duplicate stock deductions for the same invoice
-    const existingTransactions = await prisma.stockTransaction.findMany({
+    const existingTransaction = await prisma.stockTransaction.findFirst({
       where: {
         referenceNumber: invoiceNumber,
         type: 'SALE_DISPATCH',
       },
+      select: { id: true },
     });
 
-    if (existingTransactions.length > 0) {
+    if (existingTransaction) {
       console.log(`ℹ️ Stock for invoice ${invoiceNumber} already deducted (idempotent skip).`);
       return;
     }

@@ -11,7 +11,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       where: { id: params.id },
       include: {
         depot: true,
-        auditLogs: true,
+        // Cap to the most recent activity — this table only grows, and the
+        // detail page doesn't need a full lifetime audit trail loaded here.
+        auditLogs: { orderBy: { timestamp: 'desc' }, take: 50 },
       },
     });
 

@@ -25,7 +25,9 @@ import {
   ChevronRight,
   Info,
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+const fireConfetti = (opts: Record<string, unknown>) => {
+  import('canvas-confetti').then((m) => m.default(opts as any)).catch(() => {});
+};
 import { formatUSD, formatDate, getStatusBadgeClasses } from '@/lib/utils';
 import { Proforma, CompanySettings } from '@/types/erp';
 import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
@@ -99,7 +101,7 @@ export default function PublicQuotePortalPage() {
       setIsConfirmModalOpen(false);
 
       // Trigger Celebration
-      confetti({
+      fireConfetti({
         particleCount: 150,
         spread: 90,
         origin: { y: 0.5 },

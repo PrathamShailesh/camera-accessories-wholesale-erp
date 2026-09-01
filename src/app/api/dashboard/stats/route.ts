@@ -10,20 +10,42 @@ export async function GET(req: NextRequest) {
     const depotId = depotIdFilter(auth.user);
     const invoiceWhere = depotId ? { depotId, fulfilmentStatus: { not: 'CANCELLED' as const } } : { fulfilmentStatus: { not: 'CANCELLED' as const } };
     const [invoices, products, inventory] = await Promise.all([
-      prisma.taxInvoice.findMany({ where: invoiceWhere, include: { items: true } }),
-      prisma.product.findMany(),
-      prisma.depotInventory.findMany({ where: depotId ? { depotId } : undefined }),
+      prisma.taxInvoice.findMany({
+        where: invoiceWhere,
+        select: { grandTotal: true, items: { select: { productId: true, quantity: true, unitPrice: true } } },
+      }),
+      prisma.product.findMany({
+        select: { id: true, name: true, sku: true, brand: true, categoryName: true, purchasePrice: true, sellingPrice: true },
+      }),
+      prisma.depotInventory.findMany({ where: depotId ? { depotId } : undefined, select: { quantity: true } }),
     ]);
     const revenue = invoices.reduce((s, i) => s + i.grandTotal, 0);
     const units = inventory.reduce((s, i) => s + i.quantity, 0);
-    const cost = invoices.reduce((s, i) => s + i.items.reduce((x, item) => {
-      const p = products.find((p) => p.id === item.productId);
-      return x + item.quantity * (p?.purchasePrice || 0);
-    }, 0), 0);
+
+    // Single pass to index products by id and bucket invoice items by
+    // productId — avoids the previous O(products x invoice items) scan
+    // (a fresh flatMap+filter per product, plus a linear product lookup
+    // per invoice item).
+    const productById = new Map(products.map((p) => [p.id, p]));
+    const itemsByProduct = new Map<string, { quantity: number; unitPrice: number }[]>();
+    for (const inv of invoices) {
+      for (const item of inv.items) {
+        const bucket = itemsByProduct.get(item.productId);
+        if (bucket) bucket.push(item);
+        else itemsByProduct.set(item.productId, [item]);
+      }
+    }
+
+    const cost = invoices.reduce(
+      (s, i) =>
+        s +
+        i.items.reduce((x, item) => x + item.quantity * (productById.get(item.productId)?.purchasePrice || 0), 0),
+      0
+    );
     const stats = { totalRevenue: revenue, grossProfit: revenue - cost, totalStockUnits: units, totalProducts: products.length };
     const insights: any[] = [];
     const profitability = products.map((p) => {
-      const sold = invoices.flatMap((i) => i.items).filter((item) => item.productId === p.id);
+      const sold = itemsByProduct.get(p.id) || [];
       const unitsSold = sold.reduce((sum, item) => sum + item.quantity, 0);
       const totalRevenue = sold.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
       const totalCost = unitsSold * p.purchasePrice;

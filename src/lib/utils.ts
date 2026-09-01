@@ -5,6 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Client-safe Cloudinary thumbnail helper — pure string manipulation on a
+// stored secure_url, no SDK/credentials involved (unlike lib/cloudinary.ts,
+// which is server-only). Stored image URLs are always full-resolution
+// originals; this inserts a resize+auto-quality/format transform so list
+// views and avatars don't download full-size images just to show a thumb.
+export function cloudinaryThumb(url: string | undefined | null, size = 200): string | undefined | null {
+  if (!url || !url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
+  const transform = `w_${size},h_${size},c_fill,g_auto,q_auto,f_auto`;
+  return url.replace('/upload/', `/upload/${transform}/`);
+}
+
 export function formatUSD(amount: number | undefined | null): string {
   if (amount === undefined || amount === null || isNaN(amount)) return "$0.00";
   return new Intl.NumberFormat("en-US", {

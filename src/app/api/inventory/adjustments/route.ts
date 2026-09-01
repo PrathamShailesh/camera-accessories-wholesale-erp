@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guardApi, assertDepotAccess } from '@/lib/api-auth';
+import { parsePagination } from '@/lib/pagination';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'inventory.adjust');
   if (!auth.ok) return auth.response;
 
   try {
-    const adjustments = await prisma.stockAdjustment.findMany({ orderBy: { createdAt: 'desc' } });
+    const { take, skip } = parsePagination(req);
+    const adjustments = await prisma.stockAdjustment.findMany({ orderBy: { createdAt: 'desc' }, take, skip });
     return NextResponse.json(adjustments);
   } catch (error: any) {
     console.error('Error fetching stock adjustments:', error);

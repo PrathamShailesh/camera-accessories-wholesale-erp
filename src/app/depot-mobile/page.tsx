@@ -20,6 +20,7 @@ import {
   Printer,
 } from 'lucide-react';
 import dataStore from '@/lib/data-store';
+import { fetchCurrentUserCached } from '@/lib/client-cache';
 import { formatDate, formatUSD } from '@/lib/utils';
 import { TaxInvoice, User, Depot } from '@/types/erp';
 import CloudinaryUploadModal from '@/components/documents/CloudinaryUploadModal';
@@ -43,13 +44,10 @@ export default function DepotMobilePage() {
     let user = dataStore.getCurrentUser();
 
     try {
-      const userRes = await fetch('/api/auth/me');
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        if (userData.authenticated && userData.user) {
-          user = userData.user;
-          setCurrentUser(user);
-        }
+      const userData = await fetchCurrentUserCached();
+      if (userData?.authenticated && userData.user) {
+        user = userData.user;
+        setCurrentUser(user);
       } else if (typeof window !== 'undefined') {
         const storedUser = localStorage.getItem('erp_current_user');
         if (storedUser) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi, sanitizeProductForRole, depotIdFilter } from '@/lib/api-auth';
+import { parsePagination } from '@/lib/pagination';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'products.read');
@@ -9,23 +10,49 @@ export async function GET(req: NextRequest) {
 
   try {
     const depotFilter = depotIdFilter(auth.user);
+    const { take, skip } = parsePagination(req);
     const [products, depots] = await Promise.all([
       prisma.product.findMany({
-        include: {
-          category: true,
+        select: {
+          id: true,
+          sku: true,
+          name: true,
+          brand: true,
+          model: true,
+          categoryId: true,
+          categoryName: true,
+          subcategory: true,
+          description: true,
+          imageUrl: true,
+          barcode: true,
+          trackSerial: true,
+          purchasePrice: true,
+          sellingPrice: true,
+          wholesalePrice: true,
+          taxRate: true,
+          minStockLevel: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          category: { select: { name: true } },
           inventories: {
             where: depotFilter ? { depotId: depotFilter } : undefined,
-            include: { depot: true },
+            select: { depotId: true, quantity: true },
           },
-          serialNumbers: depotFilter ? {
-            where: { depotId: depotFilter }
-          } : true,
+          // Only the count is used (serialCount) — no need to load every serial row.
+          _count: {
+            select: {
+              serialNumbers: depotFilter ? { where: { depotId: depotFilter } } : true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
+        take,
+        skip,
       }),
-      prisma.depot.findMany({ 
+      prisma.depot.findMany({
         where: depotFilter ? { id: depotFilter } : undefined,
-        select: { id: true, code: true, name: true } 
+        select: { id: true, code: true, name: true }
       }),
     ]);
 
@@ -63,7 +90,7 @@ export async function GET(req: NextRequest) {
         status: product.status as 'ACTIVE' | 'ARCHIVED',
         totalStock,
         depotBreakdown,
-        serialCount: product.serialNumbers?.length || 0,
+        serialCount: product._count?.serialNumbers || 0,
         createdAt: product.createdAt.toISOString(),
         updatedAt: product.updatedAt.toISOString(),
       };

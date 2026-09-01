@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   Package,
   Search,
@@ -23,10 +24,11 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-react';
-import { formatUSD } from '@/lib/utils';
+import { formatUSD, cloudinaryThumb } from '@/lib/utils';
 import { Product, Depot } from '@/types/erp';
-import BulkProductImportModal from '@/components/products/BulkProductImportModal';
 import ImageUploadField from '@/components/ui/ImageUploadField';
+
+const BulkProductImportModal = dynamic(() => import('@/components/products/BulkProductImportModal'), { ssr: false });
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -491,11 +493,12 @@ export default function ProductsPage() {
                   {/* Image & Header Badges */}
                   <div className="relative h-48 rounded-xl overflow-hidden mb-3.5 bg-slate-950 border border-slate-800">
                     <img
-                      src={p.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800'}
+                      src={cloudinaryThumb(p.imageUrl, 400) || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400'}
                       alt={p.name}
+                      loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
-                          'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800';
+                          'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400';
                       }}
                       className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -1016,13 +1019,15 @@ export default function ProductsPage() {
       )}
 
       {/* Bulk Product Import Modal */}
-      <BulkProductImportModal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
-        onSuccess={() => {
-          loadData();
-        }}
-      />
+      {isImportModalOpen && (
+        <BulkProductImportModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          onSuccess={() => {
+            loadData();
+          }}
+        />
+      )}
 
       {/* ====================================================================== */}
       {/* EDIT PRODUCT MODAL                                                      */}

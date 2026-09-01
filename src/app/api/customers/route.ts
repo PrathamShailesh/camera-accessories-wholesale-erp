@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guardApi } from '@/lib/api-auth';
+import { parsePagination } from '@/lib/pagination';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'customers.read');
   if (!auth.ok) return auth.response;
 
   try {
+    const { take, skip } = parsePagination(req);
     const customers = await prisma.customer.findMany({
       orderBy: { createdAt: 'desc' },
+      take,
+      skip,
     });
     return NextResponse.json(customers);
   } catch (error) {

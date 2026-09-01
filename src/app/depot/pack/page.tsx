@@ -24,6 +24,7 @@ import {
   Check,
 } from 'lucide-react';
 import { User, TaxInvoice } from '@/types/erp';
+import { fetchCurrentUserCached } from '@/lib/client-cache';
 import { formatUSD } from '@/lib/utils';
 
 export default function DepotPackPage() {
@@ -64,13 +65,10 @@ export default function DepotPackPage() {
     let user: User | null = null;
 
     try {
-      const userRes = await fetch('/api/auth/me');
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        if (userData.authenticated && userData.user) {
-          user = userData.user;
-          setCurrentUser(user);
-        }
+      const userData = await fetchCurrentUserCached();
+      if (userData?.authenticated && userData.user) {
+        user = userData.user;
+        setCurrentUser(user);
       }
     } catch {}
 

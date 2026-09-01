@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { depotIdFilter, guardApi } from '@/lib/api-auth';
+import { parsePagination } from '@/lib/pagination';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'documents.read');
@@ -9,6 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const entityId = searchParams.get('entityId');
+    const { take, skip } = parsePagination(req);
 
     const scopedDepotId = depotIdFilter(auth.user);
     const documents = await prisma.cloudDocument.findMany({
@@ -17,6 +19,8 @@ export async function GET(req: NextRequest) {
         ...(scopedDepotId && { depotId: scopedDepotId }),
       },
       orderBy: { uploadedAt: 'desc' },
+      take,
+      skip,
     });
     return NextResponse.json(documents);
   } catch (error) {
