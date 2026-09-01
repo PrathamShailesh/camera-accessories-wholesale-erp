@@ -22,6 +22,7 @@ import { User } from '@/types/erp';
 export default function DepotAppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<User>(dataStore.getCurrentUser());
+  const [settings, setSettings] = useState<any>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -35,6 +36,13 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
         if (data?.authenticated && data.user) {
           setCurrentUser(data.user);
         }
+      })
+      .catch(() => {});
+
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setSettings(data);
       })
       .catch(() => {});
   }, []);
@@ -68,6 +76,9 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
     }
   };
 
+  const brandName = settings?.tradingName || settings?.companyName || 'GROWTH BRIDGE';
+  const logoUrl = settings?.logoUrl;
+
   return (
     <div className="min-h-screen h-[100dvh] flex flex-col overflow-hidden bg-slate-950">
       {/* Depot Header */}
@@ -75,11 +86,24 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <Smartphone className="h-5 w-5" />
-              </div>
+              {logoUrl ? (
+                <div className="h-10 w-10 rounded-xl overflow-hidden shrink-0 shadow-sm border border-emerald-500/40 bg-slate-900 flex items-center justify-center">
+                  <img
+                    src={logoUrl}
+                    alt={brandName}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="h-10 w-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                  <Smartphone className="h-5 w-5" />
+                </div>
+              )}
               <div>
-                <h1 className="text-lg font-bold text-white">LensCore Depot</h1>
+                <h1 className="text-lg font-bold text-white">{brandName} Depot</h1>
                 <p className="text-xs text-emerald-400 font-mono">
                   {currentUser.assignedDepotName || 'Warehouse Operations'}
                 </p>

@@ -376,7 +376,7 @@ export default function DepotPackPage() {
   const packedCount = invoices.filter((i) => i.fulfilmentStatus === 'PACKED').length;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-24">
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-24">
       {/* Hidden Mobile Native Camera Input */}
       <input
         ref={mobileCameraInputRef}

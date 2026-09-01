@@ -156,7 +156,7 @@ export default function DepotPickPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-24">
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-24">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

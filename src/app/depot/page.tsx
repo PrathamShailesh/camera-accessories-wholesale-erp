@@ -131,148 +131,151 @@ export default function DepotDashboard() {
   ];
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-16">
+    <div className="flex flex-col gap-4 sm:gap-6 max-w-6xl mx-auto pb-20 sm:pb-16 px-1 sm:px-0">
       {/* Depot Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <Building2 className="h-6 w-6 text-emerald-400" />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-              Depot Operations Command
-            </h1>
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex items-start sm:items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-400 shrink-0" />
+              <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white truncate">
+                Depot Operations
+              </h1>
+            </div>
+            <p className="text-[11px] sm:text-sm text-slate-400 mt-0.5 sm:mt-1 leading-relaxed">
+              <strong className="text-emerald-400 font-mono text-[10px] sm:text-xs">{currentUser?.assignedDepotName || 'Central Logistics Hub'}</strong>
+              <span className="hidden sm:inline"> • Live order queues & quick dispatch</span>
+            </p>
           </div>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Warehouse location: <strong className="text-emerald-400 font-mono">{currentUser?.assignedDepotName || 'Central Logistics Hub'}</strong> • Live order queues & quick dispatch
-          </p>
-        </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button
-            onClick={loadData}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 text-xs hover:bg-slate-800 transition-colors"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            <span>Refresh</span>
-          </button>
-          <Link
-            href="/depot/inventory"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition-colors"
-          >
-            <Layers className="h-3.5 w-3.5 text-cyan-400" />
-            <span>Depot Inventory</span>
-          </Link>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button
+              onClick={loadData}
+              className="flex items-center justify-center gap-1.5 h-9 w-9 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 text-xs hover:bg-slate-800 active:bg-slate-700 transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+            <Link
+              href="/depot/inventory"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white text-[11px] sm:text-xs font-semibold border border-slate-700 transition-colors"
+            >
+              <Layers className="h-3.5 w-3.5 text-cyan-400" />
+              <span className="hidden xs:inline">Depot</span>
+              <span>Inventory</span>
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Stat Cards Pipeline */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Stat Cards Pipeline — 3-column horizontal scroll on mobile, grid on desktop */}
+      <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-1 sm:pb-0 snap-x snap-mandatory -mx-1 px-1 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:overflow-visible scrollbar-none">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
             <Link
               key={stat.title}
               href={stat.href}
-              className="p-5 sm:p-6 rounded-3xl border bg-slate-900/60 hover:bg-slate-900 border-slate-800/80 hover:border-slate-700 transition-all group flex flex-col justify-between shadow-lg"
+              className="min-w-[72%] xs:min-w-[65%] sm:min-w-0 snap-start p-4 sm:p-6 rounded-2xl sm:rounded-3xl border bg-slate-900/60 hover:bg-slate-900 active:bg-slate-800 border-slate-800/80 hover:border-slate-700 transition-all group flex flex-col justify-between shadow-lg"
             >
               <div>
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-xs font-bold font-mono text-slate-400">{stat.title}</span>
-                    <p className="text-3xl font-black text-white mt-1 font-mono tracking-tight">{stat.value}</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">{stat.subtitle}</p>
+                    <span className="text-[10px] sm:text-xs font-bold font-mono text-slate-400">{stat.title}</span>
+                    <p className="text-2xl sm:text-3xl font-black text-white mt-0.5 sm:mt-1 font-mono tracking-tight">{stat.value}</p>
+                    <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">{stat.subtitle}</p>
                   </div>
-                  <div className={`h-12 w-12 rounded-2xl ${stat.bgColor} ${stat.borderColor} border flex items-center justify-center ${stat.color} group-hover:scale-105 transition-transform`}>
-                    <Icon className="h-6 w-6" />
+                  <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl ${stat.bgColor} ${stat.borderColor} border flex items-center justify-center ${stat.color} group-hover:scale-105 transition-transform`}>
+                    <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 mt-5 pt-3 border-t border-slate-800/60 text-xs font-semibold text-brand-400 group-hover:text-brand-300 transition-colors">
+              <div className="flex items-center gap-1.5 mt-3 sm:mt-5 pt-2.5 sm:pt-3 border-t border-slate-800/60 text-[11px] sm:text-xs font-semibold text-brand-400 group-hover:text-brand-300 transition-colors">
                 <span>{stat.actionText}</span>
-                <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
           );
         })}
       </div>
 
-      {/* Search & Filter Toolbar for High-Volume Packing */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3 shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Quick Search Bar */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search by Invoice #, Customer, SKU, Serial Barcode, AWB..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-xs focus:border-brand-500 focus:outline-none transition-colors"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-white"
-              >
-                Clear
-              </button>
-            )}
-          </div>
+      {/* Search & Filter Toolbar */}
+      <div className="p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-slate-900/80 border border-slate-800 flex flex-col gap-2.5 sm:gap-3 shadow-xl">
+        {/* Quick Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search invoice, customer, SKU, serial..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 sm:pl-10 pr-14 py-2.5 sm:py-2.5 rounded-xl sm:rounded-2xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-xs focus:border-brand-500 focus:outline-none transition-colors"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 hover:text-white bg-slate-800 px-2 py-0.5 rounded-md active:bg-slate-700"
+            >
+              Clear
+            </button>
+          )}
+        </div>
 
-          {/* Quick Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            <button
-              onClick={() => setFilterStatus('ALL')}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
-                filterStatus === 'ALL'
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-              }`}
-            >
-              All ({invoices.length})
-            </button>
-            <button
-              onClick={() => setFilterStatus('READY_FOR_PACKING')}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
-                filterStatus === 'READY_FOR_PACKING'
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-slate-950 text-slate-400 hover:text-amber-400 border border-slate-800'
-              }`}
-            >
-              To Pick ({readyToPick.length})
-            </button>
-            <button
-              onClick={() => setFilterStatus('IN_PACKING')}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
-                filterStatus === 'IN_PACKING'
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-slate-950 text-slate-400 hover:text-brand-400 border border-slate-800'
-              }`}
-            >
-              To Pack ({inPacking.length})
-            </button>
-            <button
-              onClick={() => setFilterStatus('DISPATCHED')}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
-                filterStatus === 'DISPATCHED'
-                  ? 'bg-cyan-600 text-white'
-                  : 'bg-slate-950 text-slate-400 hover:text-cyan-400 border border-slate-800'
-              }`}
-            >
-              Dispatched ({dispatched.length})
-            </button>
-          </div>
+        {/* Quick Filter Tabs — horizontal scroll on mobile */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1 sm:mx-0 sm:px-0">
+          <button
+            onClick={() => setFilterStatus('ALL')}
+            className={`px-3 py-2 rounded-xl text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${
+              filterStatus === 'ALL'
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            All ({invoices.length})
+          </button>
+          <button
+            onClick={() => setFilterStatus('READY_FOR_PACKING')}
+            className={`px-3 py-2 rounded-xl text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${
+              filterStatus === 'READY_FOR_PACKING'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'bg-slate-950 text-slate-400 hover:text-amber-400 border border-slate-800'
+            }`}
+          >
+            To Pick ({readyToPick.length})
+          </button>
+          <button
+            onClick={() => setFilterStatus('IN_PACKING')}
+            className={`px-3 py-2 rounded-xl text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${
+              filterStatus === 'IN_PACKING'
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'bg-slate-950 text-slate-400 hover:text-brand-400 border border-slate-800'
+            }`}
+          >
+            To Pack ({inPacking.length})
+          </button>
+          <button
+            onClick={() => setFilterStatus('DISPATCHED')}
+            className={`px-3 py-2 rounded-xl text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${
+              filterStatus === 'DISPATCHED'
+                ? 'bg-cyan-600 text-white shadow-sm'
+                : 'bg-slate-950 text-slate-400 hover:text-cyan-400 border border-slate-800'
+            }`}
+          >
+            Dispatched ({dispatched.length})
+          </button>
         </div>
       </div>
 
-      {/* Orders List Table / Feed */}
-      <div className="bg-slate-900/60 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
-        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
-            Depot Orders Feed ({filteredOrders.length} matching)
+      {/* Orders List — card-based feed */}
+      <div className="bg-slate-900/60 rounded-2xl sm:rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
+        <div className="px-3.5 py-3 sm:p-5 border-b border-slate-800 flex items-center justify-between gap-2">
+          <h2 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
+            Orders Feed ({filteredOrders.length})
           </h2>
-          <span className="text-[11px] font-mono text-slate-500">
-            {searchQuery ? `Filtered by "${searchQuery}"` : 'All assigned orders'}
+          <span className="text-[10px] sm:text-[11px] font-mono text-slate-500 truncate max-w-[45%]">
+            {searchQuery ? `"${searchQuery}"` : 'All orders'}
           </span>
         </div>
 
@@ -282,10 +285,10 @@ export default function DepotDashboard() {
             <p className="text-xs text-slate-400">Loading orders...</p>
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="text-center py-12 space-y-2">
-            <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto opacity-60" />
+          <div className="text-center py-10 sm:py-12 space-y-2 px-4">
+            <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10 text-emerald-400 mx-auto opacity-60" />
             <p className="text-sm font-semibold text-white">No orders matching search</p>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            <p className="text-[11px] sm:text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
               Try searching with another invoice number, customer name, SKU code, or serial barcode.
             </p>
           </div>
@@ -302,11 +305,12 @@ export default function DepotDashboard() {
               return (
                 <div
                   key={invoice.id}
-                  className="p-4 sm:p-5 hover:bg-slate-800/30 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="p-3 sm:p-5 hover:bg-slate-800/30 active:bg-slate-800/50 transition-colors"
                 >
-                  <div className="flex items-start sm:items-center gap-3.5">
+                  {/* Top row: icon + invoice info */}
+                  <div className="flex items-start gap-2.5 sm:gap-3.5">
                     <div
-                      className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                      className={`h-9 w-9 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${
                         isToPick
                           ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                           : isToPack
@@ -314,18 +318,19 @@ export default function DepotDashboard() {
                           : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
                       }`}
                     >
-                      {isToPick && <Boxes className="h-5 w-5" />}
-                      {isToPack && <Package className="h-5 w-5" />}
-                      {isDispatched && <Truck className="h-5 w-5" />}
+                      {isToPick && <Boxes className="h-4 w-4 sm:h-5 sm:w-5" />}
+                      {isToPack && <Package className="h-4 w-4 sm:h-5 sm:w-5" />}
+                      {isDispatched && <Truck className="h-4 w-4 sm:h-5 sm:w-5" />}
                     </div>
 
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-bold text-white">
+                    <div className="flex-1 min-w-0 space-y-1">
+                      {/* Invoice number + status badge */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <span className="font-mono text-[13px] sm:text-sm font-bold text-white">
                           {invoice.invoiceNumber}
                         </span>
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ${
+                          className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold font-mono leading-none ${
                             isToPick
                               ? 'bg-amber-500/20 text-amber-300'
                               : isToPack
@@ -337,30 +342,31 @@ export default function DepotDashboard() {
                         </span>
                       </div>
 
-                      <div className="text-xs text-slate-300 font-semibold">
+                      {/* Customer */}
+                      <div className="text-[11px] sm:text-xs text-slate-300 font-semibold truncate">
                         {invoice.customerCompany}
-                        <span className="text-slate-500 font-normal ml-2">
+                        <span className="text-slate-500 font-normal ml-1.5">
                           ({invoice.items?.length || 0} items)
                         </span>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-mono text-slate-400">
+                      {/* Metadata row */}
+                      <div className="flex flex-wrap items-center gap-x-2.5 sm:gap-x-3 gap-y-0.5 text-[10px] sm:text-[11px] font-mono text-slate-400">
                         <span>Total: <strong className="text-white">{formatUSD(invoice.grandTotal)}</strong></span>
                         {invoice.shippingDetails?.airwayBillNumber && (
-                          <span className="text-cyan-400 flex items-center gap-1">
-                            <Barcode className="h-3 w-3" />
-                            <span>AWB: {invoice.shippingDetails.airwayBillNumber}</span>
+                          <span className="text-cyan-400 flex items-center gap-0.5">
+                            <Barcode className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <span className="truncate max-w-[90px] sm:max-w-none">AWB: {invoice.shippingDetails.airwayBillNumber}</span>
                           </span>
                         )}
-                        <span>Date: {formatDate(invoice.issueDate || invoice.createdAt)}</span>
+                        <span className="hidden xs:inline">Date: {formatDate(invoice.issueDate || invoice.createdAt)}</span>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    {/* Action Button — visible inline on all sizes */}
                     <Link
                       href={nextActionLink}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                      className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all shrink-0 active:scale-95 ${
                         isToPick
                           ? 'bg-amber-600 hover:bg-amber-500 text-white'
                           : isToPack
@@ -368,8 +374,9 @@ export default function DepotDashboard() {
                           : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
                       }`}
                     >
-                      <span>{nextActionText}</span>
-                      <ChevronRight className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{nextActionText}</span>
+                      <span className="sm:hidden">{isToPick ? 'Pick' : isToPack ? 'Pack' : 'Track'}</span>
+                      <ChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </Link>
                   </div>
                 </div>

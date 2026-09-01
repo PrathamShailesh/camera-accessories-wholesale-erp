@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Package,
   Clock,
+  Truck,
 } from 'lucide-react';
 import dataStore from '@/lib/data-store';
 import { formatDate } from '@/lib/utils';
@@ -29,20 +30,39 @@ export default function TransfersPage() {
   const [quantity, setQuantity] = useState(5);
   const [notes, setNotes] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const loadData = () => {
-    setTransfers(dataStore.getTransfers());
-    const allProducts = dataStore.getProducts();
-    setProducts(allProducts);
-    const allDepots = dataStore.getDepots();
-    setDepots(allDepots);
+  const loadData = async () => {
+    try {
+      const [transRes, prodsRes, depsRes] = await Promise.all([
+        fetch('/api/inventory/transfers'),
+        fetch('/api/products'),
+        fetch('/api/depots'),
+      ]);
 
-    if (!sourceDepotId && allDepots.length >= 2) {
-      setSourceDepotId(allDepots[1].id); // e.g. Dubai
-      setDestDepotId(allDepots[0].id);   // e.g. Bangalore
-    }
-    if (!productId && allProducts.length > 0) {
-      setProductId(allProducts[0].id);
+      const transData = transRes.ok ? await transRes.json() : [];
+      const prodsData = prodsRes.ok ? await prodsRes.json() : [];
+      const depsData = depsRes.ok ? await depsRes.json() : [];
+
+      setTransfers(Array.isArray(transData) ? transData : []);
+      setProducts(Array.isArray(prodsData) ? prodsData : []);
+      setDepots(Array.isArray(depsData) ? depsData : []);
+
+      if (depsData.length >= 2) {
+        setSourceDepotId(depsData[1].id); // e.g. Dubai
+        setDestDepotId(depsData[0].id);   // e.g. Bangalore
+      } else if (depsData.length > 0) {
+        setSourceDepotId(depsData[0].id);
+      }
+
+      if (prodsData.length > 0) {
+        setProductId(prodsData[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading transfer data:', error);
+      setTransfers(dataStore.getTransfers());
+      setProducts(dataStore.getProducts());
+      setDepots(dataStore.getDepots());
     }
   };
 
@@ -50,30 +70,66 @@ export default function TransfersPage() {
     loadData();
   }, []);
 
-  const handleCreateTransfer = (e: React.FormEvent) => {
+  const handleCreateTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (sourceDepotId === destDepotId) {
       setErrorMessage('Source and destination depots must be different');
       return;
     }
 
+    if (!productId) {
+      setErrorMessage('Please select equipment to transfer');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage('');
+
     try {
-      dataStore.createTransfer(
-        sourceDepotId,
-        destDepotId,
-        [{ productId, quantity: Number(quantity) }],
-        notes
-      );
+      const res = await fetch('/api/inventory/transfers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceDepotId,
+          destinationDepotId: destDepotId,
+          items: [{ productId, quantity: Number(quantity) }],
+          notes,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Transfer failed');
+      }
+
       setIsModalOpen(false);
       setErrorMessage('');
+      setNotes('');
       loadData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Transfer failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, status: 'IN_TRANSIT' | 'COMPLETED') => {
+    try {
+      const res = await fetch('/api/inventory/transfers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status }),
+      });
+      if (res.ok) {
+        loadData();
+      }
+    } catch (err) {
+      console.error('Failed to update transfer status:', err);
     }
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-16">
+    <div className="flex flex-col gap-6 animate-fade-in pb-16">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -90,23 +146,72 @@ export default function TransfersPage() {
                 Inter-Depot Stock Transfers
               </h1>
             </div>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Rebalance stock between Dubai, Bangalore, Mumbai & Singapore with automated ledger deduction.
+            <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+              Rebalance stock between regional fulfillment centers with automated ledger debits and tracking.
             </p>
           </div>
         </div>
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow transition-all"
         >
           <Plus className="h-4 w-4" />
-          <span>New Inter-Hub Transfer</span>
+          <span>New Stock Transfer</span>
         </button>
       </div>
 
-      {/* Transfers List */}
-      <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden shadow-lg">
+      {/* KPI Ribbon */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-mono uppercase text-slate-400">Total Transfers</p>
+            <p className="text-xl font-bold text-white mt-1">{transfers.length}</p>
+          </div>
+          <div className="p-3 rounded-xl bg-brand-500/10 text-brand-400">
+            <ArrowLeftRight className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-mono uppercase text-slate-400">Pending Dispatch</p>
+            <p className="text-xl font-bold text-amber-400 mt-1">
+              {transfers.filter((t) => t.status === 'PENDING').length}
+            </p>
+          </div>
+          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400">
+            <Clock className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-mono uppercase text-slate-400">In Transit</p>
+            <p className="text-xl font-bold text-sky-400 mt-1">
+              {transfers.filter((t) => t.status === 'IN_TRANSIT').length}
+            </p>
+          </div>
+          <div className="p-3 rounded-xl bg-sky-500/10 text-sky-400">
+            <Package className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-mono uppercase text-slate-400">Completed (Done)</p>
+            <p className="text-xl font-bold text-emerald-400 mt-1">
+              {transfers.filter((t) => t.status === 'COMPLETED').length}
+            </p>
+          </div>
+          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Transfers Ledger Table */}
+      <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
         {transfers.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <div className="mx-auto w-12 h-12 rounded-2xl bg-slate-800/80 text-brand-400 flex items-center justify-center">
@@ -138,6 +243,7 @@ export default function TransfersPage() {
                   <th>Created By</th>
                   <th>Date</th>
                   <th>Status</th>
+                  <th className="text-right">Action / Workflow</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
@@ -166,9 +272,52 @@ export default function TransfersPage() {
                     <td className="font-sans text-slate-400">{tr.createdBy}</td>
                     <td className="text-slate-400">{formatDate(tr.createdAt)}</td>
                     <td>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        {tr.status}
-                      </span>
+                      {tr.status === 'PENDING' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                          <Clock className="h-3 w-3" />
+                          <span>PENDING</span>
+                        </span>
+                      )}
+                      {tr.status === 'IN_TRANSIT' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-400 border border-sky-500/30">
+                          <Package className="h-3 w-3" />
+                          <span>IN TRANSIT</span>
+                        </span>
+                      )}
+                      {tr.status === 'COMPLETED' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          <CheckCircle2 className="h-3 w-3" />
+                          <span>DONE / COMPLETED</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="text-right font-sans">
+                      {tr.status === 'PENDING' && (
+                        <button
+                          onClick={() => handleUpdateStatus(tr.id, 'IN_TRANSIT')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-semibold transition-colors shadow-sm"
+                          title={`Dispatch from ${tr.sourceDepotName}`}
+                        >
+                          <Truck className="h-3.5 w-3.5" />
+                          <span>Dispatch ({tr.sourceDepotName})</span>
+                        </button>
+                      )}
+                      {tr.status === 'IN_TRANSIT' && (
+                        <button
+                          onClick={() => handleUpdateStatus(tr.id, 'COMPLETED')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-colors shadow-sm animate-pulse"
+                          title={`Confirm receipt at ${tr.destinationDepotName}`}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span>Receive at {tr.destinationDepotName}</span>
+                        </button>
+                      )}
+                      {tr.status === 'COMPLETED' && (
+                        <span className="text-emerald-400 text-xs font-medium inline-flex items-center gap-1.5">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span>Stock Received ({tr.destinationDepotName})</span>
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -242,11 +391,21 @@ export default function TransfersPage() {
                   onChange={(e) => setProductId(e.target.value)}
                   className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white"
                 >
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.sku})
-                    </option>
-                  ))}
+                  {products.length === 0 ? (
+                    <option value="">No products available</option>
+                  ) : (
+                    products.map((p) => {
+                      const avail =
+                        p.depotBreakdown && typeof p.depotBreakdown[sourceDepotId] === 'number'
+                          ? p.depotBreakdown[sourceDepotId]
+                          : p.totalStock;
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.sku}) — Available: {avail} units
+                        </option>
+                      );
+                    })
+                  )}
                 </select>
               </div>
 
@@ -283,9 +442,10 @@ export default function TransfersPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-glow"
+                  disabled={isSubmitting || products.length === 0}
+                  className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-glow disabled:opacity-50"
                 >
-                  Execute Transfer
+                  {isSubmitting ? 'Transferring...' : 'Execute Stock Transfer'}
                 </button>
               </div>
             </form>

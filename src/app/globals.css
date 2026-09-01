@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide scrollbar utility for horizontal-scroll containers on mobile */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 :root {
   --background: #f7f7f5;
   --foreground: #242421;
@@ -87,6 +96,41 @@ body {
 [class*="rounded-3xl"], [class*="rounded-2xl"] { border-radius: 14px; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible { outline: 2px solid #7585e6; outline-offset: 2px; }
+
+/* Fixed overlays and modals must NEVER inherit margin-top from parent space-y utilities */
+.fixed,
+[class*="fixed"],
+div[class*="fixed"] {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin: 0 !important;
+}
+
+[class*="space-y-"] > .fixed,
+[class*="space-y-"] > [class*="fixed"],
+[class*="space-y-"] > :not([hidden]).fixed,
+[class*="space-y-"] > :not([hidden])[class*="fixed"],
+[class*="space-y-"] > div[class*="fixed"] {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  margin: 0 !important;
+}
+
+/* Neutralize unwanted space-y margin-top cascading in modal cards, forms, and grid items */
+form [class*="space-y-"] > :not([hidden]) ~ :not([hidden]),
+.modal-body [class*="space-y-"] > :not([hidden]) ~ :not([hidden]),
+[role="dialog"] [class*="space-y-"] > :not([hidden]) ~ :not([hidden]),
+.grid > * {
+  --tw-space-y-reverse: 0 !important;
+}
+
+/* Ensure flex gap layout works reliably across all form cards without inherited margin-top */
+form .flex > *,
+.grid > * {
+  margin-top: 0 !important;
+}
 
 /* Premium Glassmorphism Classes */
 .glass-panel {

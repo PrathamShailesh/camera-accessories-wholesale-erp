@@ -163,3 +163,42 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to create transfer' }, { status: 500 });
   }
 }
+
+export async function PATCH(req: NextRequest) {
+  const auth = await guardApi(req, 'inventory.transfer');
+  if (!auth.ok) return auth.response;
+  try {
+    const body = await req.json();
+    const { id, status } = body;
+
+    if (!id || !status) {
+      return NextResponse.json({ error: 'Transfer ID and target status are required' }, { status: 400 });
+    }
+
+    const existing = await prisma.stockTransfer.findUnique({
+      where: { id },
+      include: { items: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Stock transfer not found' }, { status: 404 });
+    }
+
+    const updateData: { status: any; receivedAt?: Date } = { status };
+    if (status === 'COMPLETED') {
+      updateData.receivedAt = new Date();
+    }
+
+    const updated = await prisma.stockTransfer.update({
+      where: { id },
+      data: updateData,
+      include: { items: true },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error('Error updating transfer status:', error);
+    return NextResponse.json({ error: 'Failed to update transfer status' }, { status: 500 });
+  }
+}
+

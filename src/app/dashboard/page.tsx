@@ -146,7 +146,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
+    <div className="flex flex-col gap-6 animate-fade-in pb-12">
       {/* Top Banner / Welcome Bar */}
       <div className="workspace-hero flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-5 rounded-2xl border shadow-glass">
         <div>

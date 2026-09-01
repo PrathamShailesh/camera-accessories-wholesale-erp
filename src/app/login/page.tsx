@@ -34,8 +34,9 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [settings, setSettings] = useState<any>(null);
 
-  // Load saved email if user previously enabled Remember Me
+  // Load saved email and global settings
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedEmail = localStorage.getItem('erp_remembered_email');
@@ -43,6 +44,13 @@ export default function LoginPage() {
         setEmail(savedEmail);
       }
     }
+
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setSettings(data);
+      })
+      .catch(() => {});
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -107,6 +115,9 @@ export default function LoginPage() {
     }
   };
 
+  const brandName = settings?.tradingName || settings?.companyName || 'GROWTH BRIDGE';
+  const logoUrl = settings?.logoUrl;
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center items-center p-4 sm:p-6 relative overflow-hidden selection:bg-brand-500 selection:text-white">
       {/* Background ambient lighting */}
@@ -120,11 +131,26 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-6 relative z-10">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-brand-600 via-brand-500 to-cyan-500 text-white shadow-glow mb-1 ring-1 ring-white/20">
-            <Camera className="h-7 w-7 text-white" />
+          <div className="flex justify-center mb-1">
+            {logoUrl ? (
+              <div className="h-16 w-16 rounded-2xl overflow-hidden shadow-glow border border-slate-700/80 bg-slate-900 flex items-center justify-center">
+                <img
+                  src={logoUrl}
+                  alt={brandName}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-brand-600 via-brand-500 to-cyan-500 text-white shadow-glow ring-1 ring-white/20">
+                <Camera className="h-7 w-7 text-white" />
+              </div>
+            )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center justify-center gap-2">
-            GROWTH BRIDGE
+            {brandName}
             <span className="text-[10px] uppercase font-mono font-bold tracking-widest px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
               ERP
             </span>

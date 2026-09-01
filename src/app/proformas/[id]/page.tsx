@@ -257,7 +257,7 @@ export default function ProformaDetailPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-16 max-w-5xl mx-auto">
+    <div className="flex flex-col gap-6 animate-fade-in pb-16 max-w-5xl mx-auto">
       {/* Real-Time Live Notification Banner */}
       {liveNotification && (
         <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-900 border border-emerald-500/50 shadow-glow-emerald flex items-center justify-between animate-bounce">

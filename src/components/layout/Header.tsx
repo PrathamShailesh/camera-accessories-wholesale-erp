@@ -53,17 +53,28 @@ export default function Header() {
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
 
+  const [settings, setSettings] = useState<any>(null);
+
   const reloadData = async () => {
     try {
-      const res = await fetch('/api/auth/me');
-      if (res.ok) {
-        const data = await res.json();
+      const [authRes, settingsRes] = await Promise.all([
+        fetch('/api/auth/me'),
+        fetch('/api/settings'),
+      ]);
+
+      if (authRes.ok) {
+        const data = await authRes.json();
         if (data.authenticated && data.user) {
           setCurrentUser(data.user);
           dataStore.setCurrentUser(data.user.id);
         }
       } else {
         setCurrentUser(dataStore.getCurrentUser());
+      }
+
+      if (settingsRes.ok) {
+        const setJson = await settingsRes.json();
+        setSettings(setJson);
       }
     } catch {
       setCurrentUser(dataStore.getCurrentUser());
@@ -120,13 +131,13 @@ export default function Header() {
       setPasswordSuccess('Password changed successfully!');
       setTimeout(() => {
         setIsChangePasswordOpen(false);
+        setPasswordSuccess('');
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
-        setPasswordSuccess('');
-      }, 1500);
+      }, 1200);
     } catch (err: any) {
-      setPasswordError(err.message || 'Failed to update password');
+      setPasswordError(err.message || 'Failed to update password.');
     } finally {
       setIsSubmittingPassword(false);
     }
@@ -139,18 +150,37 @@ export default function Header() {
     reloadData();
   };
 
+  const brandName = settings?.tradingName || settings?.companyName || 'GROWTH BRIDGE';
+  const logoUrl = settings?.logoUrl;
+
   return (
     <>
       <header className="shrink-0 z-30 flex h-14 w-full items-center justify-between border-b border-[#e8e8e4] bg-[#fbfbfa]/95 px-4 sm:px-5 backdrop-blur-md">
         {/* Left: Mobile menu & Brand */}
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#5b6ee1] text-white shadow-sm group-hover:scale-105 transition-transform">
-              <Camera className="h-5 w-5 text-white" />
-            </div>
+            {logoUrl ? (
+              <div className="h-9 w-9 rounded-lg overflow-hidden shrink-0 shadow-sm border border-slate-700/60 bg-slate-900 group-hover:scale-105 transition-transform flex items-center justify-center">
+                <img
+                  src={logoUrl}
+                  alt={brandName}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    // Fallback to camera icon if image fails
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#5b6ee1] text-white shadow-sm group-hover:scale-105 transition-transform shrink-0">
+                <Camera className="h-5 w-5 text-white" />
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold tracking-tight text-slate-900 text-sm">LensCore</span>
+                <span className="font-semibold tracking-tight text-slate-900 text-sm">
+                  {brandName}
+                </span>
                 <span className="rounded bg-[#eef0ff] px-1.5 py-0.5 text-[9px] font-semibold text-[#596cd1] uppercase tracking-wider">
                   ERP
                 </span>

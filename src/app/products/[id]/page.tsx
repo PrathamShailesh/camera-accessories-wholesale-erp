@@ -51,7 +51,7 @@ export default function ProductDetailPage() {
   const marginPct = ((marginVal / product.sellingPrice) * 100).toFixed(1);
 
   return (
-    <div className="space-y-6 animate-fade-in pb-16 max-w-5xl mx-auto">
+    <div className="flex flex-col gap-6 animate-fade-in pb-16 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

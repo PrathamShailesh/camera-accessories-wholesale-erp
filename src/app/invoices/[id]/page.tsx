@@ -215,7 +215,7 @@ export default function InvoiceDetailPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-16 max-w-5xl mx-auto">
+    <div className="flex flex-col gap-6 animate-fade-in pb-16 max-w-5xl mx-auto">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">

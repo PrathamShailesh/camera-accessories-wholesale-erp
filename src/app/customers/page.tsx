@@ -230,7 +230,7 @@ export default function CustomersPage() {
   });
 
   return (
-    <div className="space-y-6 animate-fade-in pb-16">
+    <div className="flex flex-col gap-6 animate-fade-in pb-16">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -465,7 +465,7 @@ export default function CustomersPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">
                         Company Name <span className="text-rose-400">*</span>
                       </label>
@@ -479,7 +479,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">
                         Primary Contact Person <span className="text-rose-400">*</span>
                       </label>
@@ -493,7 +493,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">
                         Work Email <span className="text-rose-400">*</span>
                       </label>
@@ -507,7 +507,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Phone / WhatsApp</label>
                       <input
                         type="tel"
@@ -520,13 +520,13 @@ export default function CustomersPage() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
                   <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
                     2. Location & Tax Registration
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Country / Region</label>
                       <input
                         type="text"
@@ -537,7 +537,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Tax / VAT / GST Number</label>
                       <input
                         type="text"
@@ -548,7 +548,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Billing Address</label>
                       <textarea
                         rows={2}
@@ -559,7 +559,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Shipping Address</label>
                       <textarea
                         rows={2}
@@ -572,13 +572,13 @@ export default function CustomersPage() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
                   <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
                     3. Commercial Terms & Credit
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Payment Terms</label>
                       <select
                         value={paymentTerms}
@@ -593,7 +593,7 @@ export default function CustomersPage() {
                       </select>
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Credit Limit ($ USD)</label>
                       <input
                         type="number"
@@ -605,7 +605,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="sm:col-span-2 space-y-1">
+                    <div className="sm:col-span-2 flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Internal Notes & Commercial Profile</label>
                       <textarea
                         rows={2}
@@ -724,7 +724,7 @@ export default function CustomersPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">
                         Company Name <span className="text-rose-400">*</span>
                       </label>
@@ -737,7 +737,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">
                         Primary Contact Person <span className="text-rose-400">*</span>
                       </label>
@@ -750,7 +750,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">
                         Work Email <span className="text-rose-400">*</span>
                       </label>
@@ -763,7 +763,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Phone / WhatsApp</label>
                       <input
                         type="tel"
@@ -775,13 +775,13 @@ export default function CustomersPage() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
                   <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
                     2. Location & Tax Registration
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Country / Region</label>
                       <input
                         type="text"
@@ -791,7 +791,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Tax / VAT / GST Number</label>
                       <input
                         type="text"
@@ -801,7 +801,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Billing Address</label>
                       <textarea
                         rows={2}
@@ -811,7 +811,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Shipping Address</label>
                       <textarea
                         rows={2}
@@ -823,13 +823,13 @@ export default function CustomersPage() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
                   <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
                     3. Commercial Terms & Credit
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Payment Terms</label>
                       <select
                         value={paymentTerms}
@@ -844,7 +844,7 @@ export default function CustomersPage() {
                       </select>
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Credit Limit ($ USD)</label>
                       <input
                         type="number"
@@ -856,7 +856,7 @@ export default function CustomersPage() {
                       />
                     </div>
 
-                    <div className="sm:col-span-2 space-y-1">
+                    <div className="sm:col-span-2 flex flex-col gap-1">
                       <label className="block text-slate-300 font-medium">Internal Notes & Remarks</label>
                       <textarea
                         rows={2}

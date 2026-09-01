@@ -313,7 +313,7 @@ export default function ProductsPage() {
     sellingPrice > 0 ? (((sellingPrice - purchasePrice) / sellingPrice) * 100).toFixed(1) : '0';
 
   return (
-    <div className="space-y-6 animate-fade-in pb-16">
+    <div className="flex flex-col gap-6 animate-fade-in pb-16">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>

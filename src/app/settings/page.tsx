@@ -109,7 +109,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in pb-16 max-w-4xl mx-auto">
+    <div className="flex flex-col gap-6 animate-fade-in pb-16 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -132,9 +132,9 @@ export default function SettingsPage() {
         )}
       </div>
 
-      <form onSubmit={handleSave} className="space-y-6">
+      <form onSubmit={handleSave} className="flex flex-col gap-6">
         {/* Cloudinary Integration Status Card */}
-        <div className="p-5 rounded-2xl border border-cyan-500/40 bg-cyan-500/10 shadow-glow space-y-2">
+        <div className="p-5 rounded-2xl border border-cyan-500/40 bg-cyan-500/10 shadow-glow flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Cloud className="h-5 w-5 text-cyan-400" />
@@ -150,7 +150,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Company Profile */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+        <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col gap-4">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
             <Building2 className="h-4 w-4 text-brand-400" />
             <span>Company Legal Entity Information</span>
@@ -209,7 +209,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Banking Instructions (PDF Generation) */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+        <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col gap-4">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
             <CreditCard className="h-4 w-4 text-emerald-400" />
             <span>Bank & Wire Transfer Instructions (Rendered on Invoices)</span>
@@ -279,7 +279,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Email Configuration */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+        <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col gap-4">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
             <Mail className="h-4 w-4 text-brand-400" />
             <span>Email Configuration (SMTP)</span>
@@ -350,7 +350,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Invoice Numbering Prefix */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+        <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col gap-4">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
             <FileText className="h-4 w-4 text-brand-400" />
             <span>Automatic Numbering Sequences</span>

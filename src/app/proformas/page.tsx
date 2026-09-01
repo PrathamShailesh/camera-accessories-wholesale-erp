@@ -101,7 +101,7 @@ export default function ProformasPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
+    <div className="flex flex-col gap-6 animate-fade-in pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

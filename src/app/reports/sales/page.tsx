@@ -42,7 +42,7 @@ export default function SalesReportsPage() {
   const totalTax = filteredInvoices.reduce((sum, i) => sum + i.taxAmount, 0);
 
   return (
-    <div className="space-y-6 animate-fade-in pb-16">
+    <div className="flex flex-col gap-6 animate-fade-in pb-16">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

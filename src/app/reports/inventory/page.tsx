@@ -31,7 +31,7 @@ export default function InventoryReportsPage() {
   const deadStock = products.filter((p) => (p.totalStock || 0) > 20 && p.brand === 'Nikon');
 
   return (
-    <div className="space-y-6 animate-fade-in pb-16">
+    <div className="flex flex-col gap-6 animate-fade-in pb-16">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">
