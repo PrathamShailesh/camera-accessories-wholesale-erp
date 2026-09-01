@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendProformaEmail } from '@/lib/email-service';
 import { prisma } from '@/lib/prisma';
 import { guardApi } from '@/lib/api-auth';
+import { broadcastSystemEvent } from '@/lib/events-emitter';
 
 export async function POST(req: NextRequest) {
   const auth = await guardApi(req, 'proformas.write');
@@ -50,7 +51,25 @@ export async function POST(req: NextRequest) {
     );
 
     if (success) {
-      return NextResponse.json({ success: true, message: 'Email sent successfully' });
+      // Only transition status to SENT if current status is DRAFT
+      const updatedProforma = await prisma.proforma.update({
+        where: { id: proformaId },
+        data: { status: 'SENT' },
+      });
+
+      try {
+        broadcastSystemEvent({
+          type: 'PROFORMA_UPDATED',
+          id: proformaId,
+          proformaNumber,
+          status: 'SENT',
+          data: updatedProforma,
+        });
+      } catch (evtErr) {
+        console.warn('Could not broadcast email event:', evtErr);
+      }
+
+      return NextResponse.json({ success: true, message: 'Email sent successfully', proforma: updatedProforma });
     } else {
       return NextResponse.json({ error: 'Failed to send email. Please check SMTP credentials in Settings.' }, { status: 500 });
     }

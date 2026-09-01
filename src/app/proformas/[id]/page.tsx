@@ -37,6 +37,7 @@ export default function ProformaDetailPage() {
   const [depots, setDepots] = useState<Depot[]>([]);
   const [selectedDepotId, setSelectedDepotId] = useState<string>('');
   const [isConverting, setIsConverting] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -215,7 +216,9 @@ export default function ProformaDetailPage() {
   };
 
   const handleSendEmail = async () => {
+    if (!proforma) return;
     try {
+      setIsSendingEmail(true);
       setErrorMessage('');
       const res = await fetch('/api/emails/send-proforma', {
         method: 'POST',
@@ -231,8 +234,12 @@ export default function ProformaDetailPage() {
       });
 
       if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.proforma) {
+          setProforma((prev) => (prev ? { ...prev, status: 'SENT' } : prev));
+        }
+        await loadData(true);
         setEmailSentSuccess(true);
-        handleStatusChange('SENT');
         setTimeout(() => {
           setEmailSentSuccess(false);
           setIsEmailModalOpen(false);
@@ -244,6 +251,8 @@ export default function ProformaDetailPage() {
     } catch (error: any) {
       console.error('Error sending email:', error);
       setErrorMessage(error?.message || 'Failed to send email. Please check email configuration in Settings.');
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -383,6 +392,7 @@ export default function ProformaDetailPage() {
       {/* Deal Pipeline Stepper */}
       <div className="glass-panel p-4 rounded-2xl border border-slate-800">
         <div className="grid grid-cols-4 gap-2 text-center text-xs font-medium">
+          {/* Step 1: Draft Created — always completed once proforma exists */}
           <div
             className={`p-2.5 rounded-xl border transition-all ${
               ['DRAFT', 'SENT', 'CONFIRMED', 'CONVERTED'].includes(proforma.status)
@@ -394,6 +404,7 @@ export default function ProformaDetailPage() {
             <div className="text-[10px] text-slate-400 mt-0.5">{formatDate(proforma.issueDate)}</div>
           </div>
 
+          {/* Step 2: Sent to Client — only completed after email is successfully sent */}
           <div
             className={`p-2.5 rounded-xl border transition-all ${
               ['SENT', 'CONFIRMED', 'CONVERTED'].includes(proforma.status)
@@ -401,12 +412,21 @@ export default function ProformaDetailPage() {
                 : 'bg-slate-900 border-slate-800 text-slate-500'
             }`}
           >
-            <div className="font-bold">2. Sent to Client</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">
-              {proforma.status === 'DRAFT' ? 'Pending Send' : 'Email Delivered'}
+            <div className="font-bold">
+              {['SENT', 'CONFIRMED', 'CONVERTED'].includes(proforma.status)
+                ? '2. Sent to Client'
+                : '2. Ready to Send'}
+            </div>
+            <div className="text-[10px] mt-0.5">
+              {['SENT', 'CONFIRMED', 'CONVERTED'].includes(proforma.status) ? (
+                <span className="text-emerald-400">Email Sent</span>
+              ) : (
+                <span className="text-slate-500">Awaiting Email</span>
+              )}
             </div>
           </div>
 
+          {/* Step 3: Deal Confirmed */}
           <div
             className={`p-2.5 rounded-xl border transition-all ${
               ['CONFIRMED', 'CONVERTED'].includes(proforma.status)
@@ -422,6 +442,7 @@ export default function ProformaDetailPage() {
             </div>
           </div>
 
+          {/* Step 4: Tax Invoice */}
           <div
             className={`p-2.5 rounded-xl border transition-all ${
               proforma.status === 'CONVERTED'
@@ -646,7 +667,7 @@ export default function ProformaDetailPage() {
       {/* Email Customer Modal */}
       {isEmailModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-6 space-y-4">
+          <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Mail className="h-5 w-5 text-brand-400" />
@@ -666,11 +687,11 @@ export default function ProformaDetailPage() {
                 <span>Quotation email sent successfully with interactive confirmation link!</span>
               </div>
             ) : (
-              <div className="space-y-3 text-xs">
+              <div className="flex flex-col gap-3 text-xs">
                 <p className="text-slate-300">
                   An official quotation notification will be delivered to:
                 </p>
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex flex-col gap-1">
                   <div className="text-white font-semibold">{proforma.customerCompany}</div>
                   <div className="text-brand-400 font-mono">{proforma.customerEmail}</div>
                   <div className="text-slate-400 font-mono">Amount: {formatUSD(proforma.grandTotal)}</div>
@@ -686,20 +707,34 @@ export default function ProformaDetailPage() {
                 )}
 
                 <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    onClick={() => setIsEmailModalOpen(false)}
-                    className="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSendEmail}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold shadow-glow"
-                  >
-                    <Send className="h-4 w-4" />
-                    <span>Send Email Now</span>
-                  </button>
-                </div>
+                    <button
+                      onClick={() => setIsEmailModalOpen(false)}
+                      disabled={isSendingEmail}
+                      className="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSendEmail}
+                      disabled={isSendingEmail}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold shadow-glow disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {isSendingEmail ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          <span>Sending...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4" />
+                          <span>Send Email Now</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
               </div>
             )}
           </div>
@@ -709,7 +744,7 @@ export default function ProformaDetailPage() {
       {/* Convert Confirmation Modal */}
       {isConvertModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-6 space-y-4">
+          <div className="relative w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-emerald-400" />

@@ -138,7 +138,7 @@ export default function CloudinaryUploadModal({
           </button>
         </div>
 
-        <form onSubmit={handleUpload} className="p-6 space-y-4">
+        <form onSubmit={handleUpload} className="p-6 flex flex-col gap-4">
           {/* File Dropzone / Camera selector */}
           {!fileData ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

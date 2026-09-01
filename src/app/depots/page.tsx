@@ -145,7 +145,7 @@ export default function DepotsPage() {
                   Address: {d.address}
                 </span>
                 <Link
-                  href="/depot-mobile"
+                  href="/depot"
                   className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
                 >
                   <span>Launch Depot Hub App</span>

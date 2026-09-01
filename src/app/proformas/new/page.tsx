@@ -141,13 +141,17 @@ function ProformaBuilder() {
   });
 
   const handleAddItem = () => {
+    if (products.length === 0) {
+      setErrorMessage('No products available in catalog. Please add products first.');
+      return;
+    }
     const firstProd = products[0];
     setItems([
       ...items,
       {
-        productId: firstProd?.id || '',
+        productId: firstProd.id,
         quantity: 1,
-        unitPrice: firstProd?.sellingPrice || 1000,
+        unitPrice: firstProd.sellingPrice,
         discountPercent: 0,
         selectedDepotId: depots[0]?.id || 'dep-dxb',
       },
@@ -155,7 +159,7 @@ function ProformaBuilder() {
   };
 
   const handleRemoveItem = (index: number) => {
-    if (items.length === 1) return;
+    if (items.length <= 1) return;
     setItems(items.filter((_, i) => i !== index));
   };
 
@@ -221,7 +225,9 @@ function ProformaBuilder() {
   let totalTax = 0;
 
   items.forEach((item) => {
+    if (!item.productId) return;
     const p = products.find((prod) => prod.id === item.productId);
+    if (!p) return;
     const itemSub = item.quantity * item.unitPrice * (1 - (item.discountPercent || 0) / 100);
     const taxRate = p ? p.taxRate : 5;
     const itemTax = itemSub * (taxRate / 100);
@@ -232,7 +238,7 @@ function ProformaBuilder() {
   const overallDiscountAmt = subtotal * (discountPercent / 100);
   const grandTotal = subtotal - overallDiscountAmt + totalTax + Number(shippingCost || 0);
 
-  const handleSubmit = async (statusToSet: 'DRAFT' | 'SENT') => {
+  const handleSubmit = async () => {
     if (!selectedCustomerId) {
       setErrorMessage('Please select a wholesale customer');
       return;
@@ -267,15 +273,6 @@ function ProformaBuilder() {
       }
 
       const newPf = await res.json();
-
-      if (statusToSet === 'SENT') {
-        await fetch(`/api/proformas/${newPf.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'SENT' }),
-        });
-      }
-
       router.push(`/proformas/${newPf.id}`);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to create proforma');
@@ -303,21 +300,20 @@ function ProformaBuilder() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Link
+            href="/proformas"
+            className="px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all"
+          >
+            Cancel
+          </Link>
           <button
             type="button"
-            onClick={() => handleSubmit('DRAFT')}
+            onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all disabled:opacity-50"
+            className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow transition-all disabled:opacity-50 flex items-center gap-1.5"
           >
-            Save Draft
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSubmit('SENT')}
-            disabled={isSubmitting}
-            className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow transition-all disabled:opacity-50"
-          >
-            Generate & Send Proforma
+            <FileCheck2 className="h-4 w-4" />
+            <span>{isSubmitting ? 'Creating Proforma...' : 'Create Proforma Quotation'}</span>
           </button>
         </div>
       </div>
@@ -345,105 +341,124 @@ function ProformaBuilder() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Searchable Customer Combobox */}
-          <div className="relative z-40" ref={customerDropdownRef}>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">
-              Search & Select Customer
-            </label>
-
-            {/* Selected Trigger Button */}
+        {customers.length === 0 ? (
+          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="h-5 w-5 text-amber-400 shrink-0" />
+              <div>
+                <div className="text-xs font-bold text-white">No Wholesale Customers Registered</div>
+                <div className="text-[11px] text-amber-300">You must register at least one client account before drafting quotes.</div>
+              </div>
+            </div>
             <button
               type="button"
-              onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
-              className="w-full flex items-center justify-between rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-left text-white hover:border-brand-500/60 focus:outline-none"
+              onClick={() => setIsQuickAddOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shrink-0 shadow-sm"
             >
-              <div className="truncate">
-                {selectedCustomer ? (
-                  <span>
-                    <strong className="text-white">{selectedCustomer.companyName}</strong>{' '}
-                    <span className="text-slate-400">({selectedCustomer.customerCode})</span>
-                  </span>
-                ) : (
-                  <span className="text-slate-500">Choose wholesale customer...</span>
-                )}
-              </div>
-              <ChevronDown className="h-4 w-4 text-slate-400 shrink-0 ml-2" />
+              + Quick Add Customer Now
             </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Searchable Customer Combobox */}
+            <div className="relative z-40" ref={customerDropdownRef}>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Search & Select Customer
+              </label>
 
-            {/* Search Dropdown Popover */}
-            {isCustomerDropdownOpen && (
-              <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-slate-700 bg-slate-900 shadow-2xl p-2 animate-fade-in">
-                {/* Search input */}
-                <div className="relative mb-2">
-                  <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
-                  <input
-                    type="text"
-                    autoFocus
-                    value={customerSearch}
-                    onChange={(e) => setCustomerSearch(e.target.value)}
-                    placeholder="Type name, company, code..."
-                    className="w-full rounded-lg border border-slate-800 bg-slate-950 pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                  />
-                </div>
-
-                {/* List */}
-                <div className="max-h-52 overflow-y-auto space-y-1">
-                  {filteredCustomers.length === 0 ? (
-                    <div className="p-3 text-center text-xs text-slate-500">
-                      No customer matching &quot;{customerSearch}&quot;
-                    </div>
+              {/* Selected Trigger Button */}
+              <button
+                type="button"
+                onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
+                className="w-full flex items-center justify-between rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-left text-white hover:border-brand-500/60 focus:outline-none"
+              >
+                <div className="truncate">
+                  {selectedCustomer ? (
+                    <span>
+                      <strong className="text-white">{selectedCustomer.companyName}</strong>{' '}
+                      <span className="text-slate-400">({selectedCustomer.customerCode})</span>
+                    </span>
                   ) : (
-                    filteredCustomers.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedCustomerId(c.id);
-                          setIsCustomerDropdownOpen(false);
-                          setCustomerSearch('');
-                        }}
-                        className={`w-full p-2 rounded-lg text-left text-xs transition-colors flex items-center justify-between ${
-                          selectedCustomerId === c.id
-                            ? 'bg-brand-600/20 text-brand-300 border border-brand-500/30'
-                            : 'hover:bg-slate-800 text-slate-300'
-                        }`}
-                      >
-                        <div>
-                          <div className="font-bold text-white line-clamp-1">{c.companyName}</div>
-                          <div className="text-[10px] text-slate-400">
-                            {c.contactPerson} • {c.country}
-                          </div>
-                        </div>
-                        <span className="font-mono text-[10px] font-bold text-brand-400 px-1.5 py-0.5 rounded bg-slate-800">
-                          {c.customerCode}
-                        </span>
-                      </button>
-                    ))
+                    <span className="text-slate-500">Choose wholesale customer...</span>
                   )}
                 </div>
+                <ChevronDown className="h-4 w-4 text-slate-400 shrink-0 ml-2" />
+              </button>
+
+              {/* Search Dropdown Popover */}
+              {isCustomerDropdownOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-slate-700 bg-slate-900 shadow-2xl p-2 animate-fade-in">
+                  {/* Search input */}
+                  <div className="relative mb-2">
+                    <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
+                    <input
+                      type="text"
+                      autoFocus
+                      value={customerSearch}
+                      onChange={(e) => setCustomerSearch(e.target.value)}
+                      placeholder="Type name, company, code..."
+                      className="w-full rounded-lg border border-slate-800 bg-slate-950 pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
+                    />
+                  </div>
+
+                  {/* List */}
+                  <div className="max-h-52 overflow-y-auto space-y-1">
+                    {filteredCustomers.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-slate-500">
+                        No customer matching &quot;{customerSearch}&quot;
+                      </div>
+                    ) : (
+                      filteredCustomers.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCustomerId(c.id);
+                            setIsCustomerDropdownOpen(false);
+                            setCustomerSearch('');
+                          }}
+                          className={`w-full p-2 rounded-lg text-left text-xs transition-colors flex items-center justify-between ${
+                            selectedCustomerId === c.id
+                              ? 'bg-brand-600/20 text-brand-300 border border-brand-500/30'
+                              : 'hover:bg-slate-800 text-slate-300'
+                          }`}
+                        >
+                          <div>
+                            <div className="font-bold text-white line-clamp-1">{c.companyName}</div>
+                            <div className="text-[10px] text-slate-400">
+                              {c.contactPerson} • {c.country}
+                            </div>
+                          </div>
+                          <span className="font-mono text-[10px] font-bold text-brand-400 px-1.5 py-0.5 rounded bg-slate-800">
+                            {c.customerCode}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Billing Address
+              </label>
+              <div className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-xs text-slate-300 min-h-[42px] line-clamp-2">
+                {selectedCustomer?.billingAddress || '—'}
               </div>
-            )}
-          </div>
+            </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">
-              Billing Address
-            </label>
-            <div className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-xs text-slate-300 min-h-[42px] line-clamp-2">
-              {selectedCustomer?.billingAddress || '—'}
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Shipping / Receiving Hub
+              </label>
+              <div className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-xs text-slate-300 min-h-[42px] line-clamp-2">
+                {selectedCustomer?.shippingAddress || '—'}
+              </div>
             </div>
           </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">
-              Shipping / Receiving Hub
-            </label>
-            <div className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-xs text-slate-300 min-h-[42px] line-clamp-2">
-              {selectedCustomer?.shippingAddress || '—'}
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Line Items & Depot Stock Availability */}
@@ -455,14 +470,33 @@ function ProformaBuilder() {
           <button
             type="button"
             onClick={handleAddItem}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600/20 text-brand-300 border border-brand-500/30 text-xs font-semibold hover:bg-brand-600/30"
+            disabled={products.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600/20 text-brand-300 border border-brand-500/30 text-xs font-semibold hover:bg-brand-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>Add Item</span>
           </button>
         </div>
 
-        <div className="space-y-3">
+        {products.length === 0 ? (
+          <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 text-center space-y-3">
+            <Package className="h-10 w-10 text-slate-500 mx-auto" />
+            <div>
+              <h3 className="text-sm font-bold text-white">Product Catalog is Empty</h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                No cameras, cinema lenses, or accessories have been registered yet. Add products to the catalog first.
+              </p>
+            </div>
+            <Link
+              href="/products"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-glow"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Go to Product Catalog & Add Hardware</span>
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
           {items.map((item, idx) => {
             const product = products.find((p) => p.id === item.productId);
             
@@ -601,7 +635,8 @@ function ProformaBuilder() {
               </div>
             );
           })}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Commercial Terms & Pricing Breakdown */}
@@ -724,21 +759,20 @@ function ProformaBuilder() {
           </div>
 
           <div className="pt-4 border-t border-slate-800/80 flex items-center justify-end gap-3">
+            <Link
+              href="/proformas"
+              className="px-4 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all"
+            >
+              Cancel
+            </Link>
             <button
               type="button"
-              onClick={() => handleSubmit('DRAFT')}
+              onClick={handleSubmit}
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all disabled:opacity-50"
+              className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow transition-all disabled:opacity-50 flex items-center gap-1.5"
             >
-              Save as Draft
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSubmit('SENT')}
-              disabled={isSubmitting}
-              className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow transition-all disabled:opacity-50"
-            >
-              Generate & Send Proforma
+              <FileCheck2 className="h-4 w-4" />
+              <span>{isSubmitting ? 'Creating Proforma...' : 'Create Proforma Quotation'}</span>
             </button>
           </div>
         </div>
@@ -747,7 +781,7 @@ function ProformaBuilder() {
       {/* Quick Add Customer Modal */}
       {isQuickAddOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 space-y-4">
+          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-brand-400" />
@@ -761,7 +795,7 @@ function ProformaBuilder() {
               </button>
             </div>
 
-            <form onSubmit={handleQuickAddCustomer} className="space-y-3 text-xs text-slate-300">
+            <form onSubmit={handleQuickAddCustomer} className="flex flex-col gap-3 text-xs text-slate-300">
               <div>
                 <label className="block text-slate-400 mb-1">Company Legal Name *</label>
                 <input

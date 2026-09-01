@@ -256,6 +256,8 @@ export async function POST(req: NextRequest) {
         minStockLevel: product.minStockLevel,
         status: 'ACTIVE',
         depotBreakdown,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
     } catch {}
 

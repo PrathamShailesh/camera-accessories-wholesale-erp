@@ -95,7 +95,7 @@ export default function LoginPage() {
 
       setTimeout(() => {
         if (data.user.role === 'DEPOT_USER') {
-          router.push('/depot-mobile');
+          router.push('/depot');
         } else {
           router.push('/dashboard');
         }

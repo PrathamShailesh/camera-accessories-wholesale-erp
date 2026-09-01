@@ -15,6 +15,8 @@ import {
   Calendar,
   CheckCircle,
   AlertCircle,
+  FileText,
+  Plus,
 } from 'lucide-react';
 import dataStore from '@/lib/data-store';
 import { formatUSD, formatDate, getStatusBadgeClasses } from '@/lib/utils';
@@ -191,8 +193,23 @@ export default function ProformasPage() {
             <tbody className="divide-y divide-slate-800/60">
               {filteredProformas.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-slate-400 text-xs">
-                    No proformas found matching your criteria.
+                  <td colSpan={7} className="text-center py-12">
+                    <div className="flex flex-col items-center justify-center gap-2.5 max-w-sm mx-auto">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-800/80 text-brand-400 flex items-center justify-center">
+                        <FileText className="h-6 w-6" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white">No Proforma Quotations Found</h4>
+                      <p className="text-xs text-slate-400">
+                        Draft commercial wholesale quotes with multi-depot stock reservation and email them to clients.
+                      </p>
+                      <Link
+                        href="/proformas/new"
+                        className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Create New Proforma</span>
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ) : (

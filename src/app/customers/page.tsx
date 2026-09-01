@@ -443,7 +443,7 @@ export default function CustomersPage() {
             </div>
 
             {/* Scrollable Modal Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-5 text-xs">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 flex flex-col gap-4 text-xs">
               {errorMessage && (
                 <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
                   <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
@@ -458,8 +458,8 @@ export default function CustomersPage() {
                 </div>
               )}
 
-              <form id="create-customer-form" onSubmit={handleCreateCustomer} className="space-y-5">
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+              <form id="create-customer-form" onSubmit={handleCreateCustomer} className="flex flex-col gap-4">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
                   <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
                     1. Company & Primary Contact
                   </div>
@@ -688,7 +688,7 @@ export default function CustomersPage() {
             </div>
 
             {/* Scrollable Modal Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-5 text-xs">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 flex flex-col gap-4 text-xs">
               {errorMessage && (
                 <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
                   <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
@@ -703,8 +703,8 @@ export default function CustomersPage() {
                 </div>
               )}
 
-              <form id="edit-customer-form" onSubmit={handleUpdateCustomer} className="space-y-5">
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+              <form id="edit-customer-form" onSubmit={handleUpdateCustomer} className="flex flex-col gap-4">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
                   <div className="flex items-center justify-between">
                     <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
                       1. Company Profile & Status

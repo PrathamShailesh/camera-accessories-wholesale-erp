@@ -264,6 +264,8 @@ export async function POST(req: NextRequest) {
             minStockLevel: createdProduct.minStockLevel,
             status: 'ACTIVE',
             depotBreakdown: item.depotBreakdown,
+            createdAt: createdProduct.createdAt instanceof Date ? createdProduct.createdAt.toISOString() : String(createdProduct.createdAt || new Date().toISOString()),
+            updatedAt: createdProduct.updatedAt instanceof Date ? createdProduct.updatedAt.toISOString() : String(createdProduct.updatedAt || new Date().toISOString()),
           });
         } catch {}
 

@@ -16,6 +16,10 @@ import {
   RefreshCw,
   Eye,
   FileText,
+  ToggleLeft,
+  ToggleRight,
+  PackagePlus,
+  PackageCheck,
 } from 'lucide-react';
 import { formatUSD } from '@/lib/utils';
 
@@ -24,6 +28,8 @@ interface BulkImportModalProps {
   onClose: () => void;
   onSuccess: () => void;
 }
+
+type ImportMode = 'CREATE' | 'UPDATE_STOCK';
 
 interface ParsedRow {
   rowNum: number;
@@ -55,6 +61,7 @@ export default function BulkProductImportModal({
   onSuccess,
 }: BulkImportModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importMode, setImportMode] = useState<ImportMode>('CREATE');
   const [file, setFile] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [isParsing, setIsParsing] = useState(false);
@@ -69,117 +76,116 @@ export default function BulkProductImportModal({
 
   if (!isOpen) return null;
 
+  // Switch mode resets everything
+  const handleModeSwitch = (mode: ImportMode) => {
+    setImportMode(mode);
+    setParsedRows([]);
+    setFile(null);
+    setImportSummary(null);
+  };
+
   // 1. Template Downloader
   const handleDownloadTemplate = (format: 'csv' | 'xlsx') => {
-    const headers = [
-      'sku',
-      'name',
-      'brand',
-      'model',
-      'category',
-      'description',
-      'barcode',
-      'purchasePrice',
-      'wholesalePrice',
-      'sellingPrice',
-      'taxRate',
-      'minStockLevel',
-      'trackSerial',
-      'imageUrl',
-      'blrStock',
-      'dxbStock',
-      'bomStock',
-      'sinStock',
-    ];
+    const headers =
+      importMode === 'UPDATE_STOCK'
+        ? ['sku', 'blrStock', 'dxbStock', 'bomStock', 'sinStock']
+        : [
+            'sku',
+            'name',
+            'brand',
+            'model',
+            'category',
+            'description',
+            'barcode',
+            'purchasePrice',
+            'wholesalePrice',
+            'sellingPrice',
+            'taxRate',
+            'minStockLevel',
+            'trackSerial',
+            'imageUrl',
+            'blrStock',
+            'dxbStock',
+            'bomStock',
+            'sinStock',
+          ];
 
-    const sampleRows = [
-      {
-        sku: 'SONY-A7M4',
-        name: 'Sony Alpha 7 IV Full-Frame Camera Body',
-        brand: 'Sony',
-        model: 'ILCE-7M4',
-        category: 'Camera Bodies',
-        description: '33MP Full-Frame Exmor R CMOS Sensor with 4K 60p 10-Bit Recording',
-        barcode: '4548736133730',
-        purchasePrice: 1800,
-        wholesalePrice: 2150,
-        sellingPrice: 2498,
-        taxRate: 5,
-        minStockLevel: 10,
-        trackSerial: 'TRUE',
-        imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
-        blrStock: 15,
-        dxbStock: 25,
-        bomStock: 10,
-        sinStock: 8,
-      },
-      {
-        sku: 'CANON-RF-50-12',
-        name: 'Canon RF 50mm f/1.2 L USM Prime Lens',
-        brand: 'Canon',
-        model: 'RF5012L',
-        category: 'Cinema Lenses',
-        description: 'Ultra-fast prime lens with ring-type USM and weather-sealed build',
-        barcode: '4549292115598',
-        purchasePrice: 1650,
-        wholesalePrice: 1950,
-        sellingPrice: 2299,
-        taxRate: 5,
-        minStockLevel: 5,
-        trackSerial: 'TRUE',
-        imageUrl: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=800',
-        blrStock: 10,
-        dxbStock: 12,
-        bomStock: 6,
-        sinStock: 4,
-      },
-      {
-        sku: 'APUT-300D2',
-        name: 'Aputure Light Storm C300d Mark II LED Light',
-        brand: 'Aputure',
-        model: 'LS-C300DII',
-        category: 'Professional Lighting & Flashes',
-        description: '5500K daylight-balanced point source LED fixture with 2.4G remote',
-        barcode: '6952968302213',
-        purchasePrice: 650,
-        wholesalePrice: 790,
-        sellingPrice: 949,
-        taxRate: 5,
-        minStockLevel: 8,
-        trackSerial: 'FALSE',
-        imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800',
-        blrStock: 8,
-        dxbStock: 14,
-        bomStock: 5,
-        sinStock: 5,
-      },
-    ];
+    const sampleRows =
+      importMode === 'UPDATE_STOCK'
+        ? [
+            { sku: 'SONY-A7M4', blrStock: 15, dxbStock: 25, bomStock: 10, sinStock: 8 },
+            { sku: 'CANON-RF-50-12', blrStock: 10, dxbStock: 12, bomStock: 6, sinStock: 4 },
+          ]
+        : [
+            {
+              sku: 'SONY-A7M4',
+              name: 'Sony Alpha 7 IV Full-Frame Camera Body',
+              brand: 'Sony',
+              model: 'ILCE-7M4',
+              category: 'Camera Bodies',
+              description: '33MP Full-Frame Exmor R CMOS Sensor with 4K 60p 10-Bit Recording',
+              barcode: '4548736133730',
+              purchasePrice: 1800,
+              wholesalePrice: 2150,
+              sellingPrice: 2498,
+              taxRate: 5,
+              minStockLevel: 10,
+              trackSerial: 'TRUE',
+              imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+              blrStock: 15,
+              dxbStock: 25,
+              bomStock: 10,
+              sinStock: 8,
+            },
+            {
+              sku: 'CANON-RF-50-12',
+              name: 'Canon RF 50mm f/1.2 L USM Prime Lens',
+              brand: 'Canon',
+              model: 'RF5012L',
+              category: 'Cinema Lenses',
+              description: 'Ultra-fast prime lens with ring-type USM and weather-sealed build',
+              barcode: '4549292115598',
+              purchasePrice: 1650,
+              wholesalePrice: 1950,
+              sellingPrice: 2299,
+              taxRate: 5,
+              minStockLevel: 5,
+              trackSerial: 'TRUE',
+              imageUrl: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=800',
+              blrStock: 10,
+              dxbStock: 12,
+              bomStock: 6,
+              sinStock: 4,
+            },
+          ];
 
     const worksheet = XLSX.utils.json_to_sheet(sampleRows, { header: headers });
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Product_Import_Template');
+    const sheetName = importMode === 'UPDATE_STOCK' ? 'Stock_Update_Template' : 'Product_Import_Template';
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+    const fileName =
+      importMode === 'UPDATE_STOCK'
+        ? `lenscore_stock_update_template.${format}`
+        : `lenscore_product_import_template.${format}`;
 
     if (format === 'xlsx') {
-      XLSX.writeFile(workbook, 'lenscore_product_import_template.xlsx');
+      XLSX.writeFile(workbook, fileName);
     } else {
-      XLSX.writeFile(workbook, 'lenscore_product_import_template.csv', { bookType: 'csv' });
+      XLSX.writeFile(workbook, fileName, { bookType: 'csv' });
     }
   };
 
   // 2. Process Uploaded File
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      processFile(selectedFile);
-    }
+    if (selectedFile) processFile(selectedFile);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const droppedFile = e.dataTransfer.files?.[0];
-    if (droppedFile) {
-      processFile(droppedFile);
-    }
+    if (droppedFile) processFile(droppedFile);
   };
 
   const processFile = (fileToProcess: File) => {
@@ -202,13 +208,11 @@ export default function BulkProductImportModal({
           return;
         }
 
-        // Validate each row
         const seenSkus = new Set<string>();
         const parsed: ParsedRow[] = rawJson.map((row, idx) => {
-          const rowNum = idx + 2; // header is row 1
+          const rowNum = idx + 2;
           const errors: string[] = [];
 
-          // Case-insensitive key lookup helper
           const getVal = (key: string) => {
             const matchKey = Object.keys(row).find(
               (k) => k.trim().toLowerCase() === key.toLowerCase()
@@ -217,9 +221,31 @@ export default function BulkProductImportModal({
           };
 
           const sku = getVal('sku').toUpperCase();
-          const name = getVal('name');
-          const brand = getVal('brand');
-          const category = getVal('category') || getVal('categoryName') || 'General Optics';
+          const blrStock = parseInt(getVal('blrStock')) || 0;
+          const dxbStock = parseInt(getVal('dxbStock')) || 0;
+          const bomStock = parseInt(getVal('bomStock')) || 0;
+          const sinStock = parseInt(getVal('sinStock')) || 0;
+
+          // Validation for both modes
+          if (!sku) errors.push('Missing SKU');
+          if (seenSkus.has(sku)) {
+            errors.push(`Duplicate SKU "${sku}" in spreadsheet`);
+          } else if (sku) {
+            seenSkus.add(sku);
+          }
+
+          if (importMode === 'UPDATE_STOCK') {
+            const totalQty = blrStock + dxbStock + bomStock + sinStock;
+            if (totalQty === 0) errors.push('All depot quantities are 0 — nothing to update');
+          }
+
+          // Create-mode specific fields
+          const name = importMode === 'CREATE' ? getVal('name') : sku;
+          const brand = importMode === 'CREATE' ? getVal('brand') : '—';
+          const category =
+            importMode === 'CREATE'
+              ? getVal('category') || getVal('categoryName') || 'General Optics'
+              : '—';
           const model = getVal('model');
           const description = getVal('description');
           const barcode = getVal('barcode');
@@ -231,11 +257,6 @@ export default function BulkProductImportModal({
           const taxRate = parseFloat(getVal('taxRate')) || 5;
           const minStockLevel = parseInt(getVal('minStockLevel')) || 10;
 
-          const blrStock = parseInt(getVal('blrStock')) || 0;
-          const dxbStock = parseInt(getVal('dxbStock')) || 0;
-          const bomStock = parseInt(getVal('bomStock')) || 0;
-          const sinStock = parseInt(getVal('sinStock')) || 0;
-
           const trackSerialRaw = getVal('trackSerial').toLowerCase();
           const trackSerial =
             trackSerialRaw === 'true' ||
@@ -243,20 +264,14 @@ export default function BulkProductImportModal({
             trackSerialRaw === '1' ||
             trackSerialRaw === '';
 
-          // Validation Rules
-          if (!sku) errors.push('Missing SKU');
-          if (!name) errors.push('Missing Product Name');
-          if (!brand) errors.push('Missing Brand');
-          if (purchasePrice <= 0) errors.push('Purchase Price must be > 0');
-          if (wholesalePrice <= 0) errors.push('Wholesale Price must be > 0');
-          if (sellingPrice <= 0) errors.push('Selling Price must be > 0');
-          if (wholesalePrice < purchasePrice)
-            errors.push('Wholesale price cannot be lower than purchase cost');
-
-          if (seenSkus.has(sku)) {
-            errors.push(`Duplicate SKU "${sku}" inside spreadsheet`);
-          } else if (sku) {
-            seenSkus.add(sku);
+          if (importMode === 'CREATE') {
+            if (!name) errors.push('Missing Product Name');
+            if (!brand) errors.push('Missing Brand');
+            if (purchasePrice <= 0) errors.push('Purchase Price must be > 0');
+            if (wholesalePrice <= 0) errors.push('Wholesale Price must be > 0');
+            if (sellingPrice <= 0) errors.push('Selling Price must be > 0');
+            if (wholesalePrice < purchasePrice)
+              errors.push('Wholesale price cannot be lower than purchase cost');
           }
 
           return {
@@ -294,7 +309,7 @@ export default function BulkProductImportModal({
     reader.readAsArrayBuffer(fileToProcess);
   };
 
-  // 3. Confirm and Execute Bulk Import
+  // 3a. Confirm and Execute Bulk CREATE
   const handleConfirmImport = async () => {
     const validRows = parsedRows.filter((r) => r.isValid);
     if (validRows.length === 0) return;
@@ -331,9 +346,7 @@ export default function BulkProductImportModal({
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Import request failed');
-      }
+      if (!res.ok) throw new Error(data.error || 'Import request failed');
 
       setImportSummary({
         total: parsedRows.length,
@@ -350,6 +363,53 @@ export default function BulkProductImportModal({
     }
   };
 
+  // 3b. Confirm and Execute Bulk STOCK UPDATE
+  const handleConfirmStockUpdate = async () => {
+    const validRows = parsedRows.filter((r) => r.isValid);
+    if (validRows.length === 0) return;
+
+    setIsImporting(true);
+    try {
+      const payload = validRows.map((r) => ({
+        sku: r.sku,
+        depotBreakdown: {
+          'dep-blr': r.blrStock,
+          'dep-dxb': r.dxbStock,
+          'dep-bom': r.bomStock,
+          'dep-sin': r.sinStock,
+        },
+      }));
+
+      const res = await fetch('/api/products/bulk-update-stock', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products: payload }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Stock update failed');
+
+      const skippedErrors = (data.skipped || []).map((s: any, i: number) => ({
+        row: i + 2,
+        sku: s.sku,
+        error: s.reason,
+      }));
+
+      setImportSummary({
+        total: parsedRows.length,
+        imported: data.updatedCount,
+        failed: data.skippedCount + (parsedRows.length - validRows.length),
+        errors: skippedErrors,
+      });
+
+      onSuccess();
+    } catch (err: any) {
+      alert(`Stock Update Error: ${err.message}`);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const validCount = parsedRows.filter((r) => r.isValid).length;
   const invalidCount = parsedRows.filter((r) => !r.isValid).length;
 
@@ -359,24 +419,34 @@ export default function BulkProductImportModal({
     return true;
   });
 
+  const isUpdateMode = importMode === 'UPDATE_STOCK';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in">
       <div className="relative w-full max-w-5xl h-full max-h-[90vh] rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-brand-500/10 text-brand-400 border border-brand-500/20">
+            <div
+              className={`p-2.5 rounded-2xl border ${
+                isUpdateMode
+                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                  : 'bg-brand-500/10 text-brand-400 border-brand-500/20'
+              }`}
+            >
               <FileSpreadsheet className="h-6 w-6" />
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                <span>Bulk Product Import</span>
+                <span>{isUpdateMode ? 'Bulk Stock Update' : 'Bulk Product Import'}</span>
                 <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                   Excel / CSV
                 </span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Batch on-board camera optics, SKUs, wholesale margins & initial depot stock with automatic validation.
+                {isUpdateMode
+                  ? 'Update per-depot stock quantities for existing SKUs without creating duplicates.'
+                  : 'Batch on-board camera optics, SKUs, wholesale margins & initial depot stock with automatic validation.'}
               </p>
             </div>
           </div>
@@ -410,15 +480,52 @@ export default function BulkProductImportModal({
           </div>
         </div>
 
+        {/* Import Mode Toggle */}
+        <div className="shrink-0 flex items-center gap-2 px-5 py-3 border-b border-slate-800 bg-slate-950/50">
+          <span className="text-[11px] text-slate-400 font-mono font-semibold uppercase tracking-wider mr-1">
+            Import Mode:
+          </span>
+          <button
+            onClick={() => handleModeSwitch('CREATE')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              importMode === 'CREATE'
+                ? 'bg-brand-600 text-white shadow-glow'
+                : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700'
+            }`}
+          >
+            <PackagePlus className="h-3.5 w-3.5" />
+            <span>Create New Products</span>
+          </button>
+          <button
+            onClick={() => handleModeSwitch('UPDATE_STOCK')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              importMode === 'UPDATE_STOCK'
+                ? 'bg-amber-500/80 text-white shadow-sm'
+                : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700'
+            }`}
+          >
+            <PackageCheck className="h-3.5 w-3.5" />
+            <span>Update Stock for Existing SKUs</span>
+          </button>
+
+          {isUpdateMode && (
+            <span className="ml-auto text-[11px] font-mono text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
+              Only SKU + depot stock columns required
+            </span>
+          )}
+        </div>
+
         {/* Modal Scrollable Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 flex flex-col gap-4">
           {/* Import Summary Results Modal Banner */}
           {importSummary && (
-            <div className="p-4 rounded-2xl bg-slate-950 border border-brand-500/30 space-y-3 animate-fade-in">
+            <div className="p-4 rounded-2xl bg-slate-950 border border-brand-500/30 flex flex-col gap-3 animate-fade-in">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                  <span className="text-sm font-bold text-white">Import Process Completed</span>
+                  <span className="text-sm font-bold text-white">
+                    {isUpdateMode ? 'Stock Update Completed' : 'Import Process Completed'}
+                  </span>
                 </div>
                 <span className="text-xs font-mono text-slate-400">
                   Total Processed: {importSummary.total}
@@ -428,7 +535,7 @@ export default function BulkProductImportModal({
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
                   <div className="font-bold text-lg font-mono">{importSummary.imported}</div>
-                  <div>Products Successfully Created in Database</div>
+                  <div>{isUpdateMode ? 'Products Successfully Updated' : 'Products Successfully Created in Database'}</div>
                 </div>
                 <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300">
                   <div className="font-bold text-lg font-mono">{importSummary.failed}</div>
@@ -457,7 +564,11 @@ export default function BulkProductImportModal({
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-700 hover:border-brand-500 rounded-3xl p-8 sm:p-12 text-center cursor-pointer bg-slate-950/50 hover:bg-slate-950 transition-all group"
+              className={`border-2 border-dashed rounded-3xl p-8 sm:p-12 text-center cursor-pointer transition-all group ${
+                isUpdateMode
+                  ? 'border-amber-700/50 hover:border-amber-500 bg-amber-950/20 hover:bg-amber-950/40'
+                  : 'border-slate-700 hover:border-brand-500 bg-slate-950/50 hover:bg-slate-950'
+              }`}
             >
               <input
                 ref={fileInputRef}
@@ -466,16 +577,32 @@ export default function BulkProductImportModal({
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <div className="mx-auto w-14 h-14 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <div
+                className={`mx-auto w-14 h-14 rounded-2xl border flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ${
+                  isUpdateMode
+                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                    : 'bg-brand-500/10 border-brand-500/20 text-brand-400'
+                }`}
+              >
                 <Upload className="h-7 w-7" />
               </div>
               <h3 className="text-sm font-bold text-white">
-                Drag & drop your product spreadsheet here
+                {isUpdateMode
+                  ? 'Drop your stock update spreadsheet here'
+                  : 'Drag & drop your product spreadsheet here'}
               </h3>
               <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                Supports Excel (.xlsx, .xls) and CSV files. Automatic column mapping for SKU, prices, tax rate, and multi-depot stock.
+                {isUpdateMode
+                  ? 'Needs SKU column + at least one depot stock column (blrStock, dxbStock, bomStock, sinStock). Existing products will have their stock updated.'
+                  : 'Supports Excel (.xlsx, .xls) and CSV files. Automatic column mapping for SKU, prices, tax rate, and multi-depot stock.'}
               </p>
-              <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 text-xs font-semibold text-slate-200 border border-slate-700 group-hover:bg-brand-600 group-hover:text-white transition-colors">
+              <div
+                className={`mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border transition-colors ${
+                  isUpdateMode
+                    ? 'bg-slate-800 text-slate-200 border-slate-700 group-hover:bg-amber-600 group-hover:text-white group-hover:border-amber-600'
+                    : 'bg-slate-800 text-slate-200 border-slate-700 group-hover:bg-brand-600 group-hover:text-white'
+                }`}
+              >
                 <span>Browse Files</span>
               </div>
             </div>
@@ -544,13 +671,19 @@ export default function BulkProductImportModal({
                       <tr>
                         <th className="p-3 text-center w-12">Status</th>
                         <th className="p-3">SKU / Code</th>
-                        <th className="p-3">Product Name</th>
-                        <th className="p-3">Brand & Category</th>
-                        <th className="p-3 text-right">Wholesale ($)</th>
-                        <th className="p-3 text-right">MSRP ($)</th>
-                        <th className="p-3 text-center">Initial Stock (BLR/DXB/BOM/SIN)</th>
-                        <th className="p-3 text-center">Serial Track</th>
-                        <th className="p-3">Validation Message</th>
+                        {!isUpdateMode && (
+                          <>
+                            <th className="p-3">Product Name</th>
+                            <th className="p-3">Brand & Category</th>
+                            <th className="p-3 text-right">Wholesale ($)</th>
+                            <th className="p-3 text-right">MSRP ($)</th>
+                          </>
+                        )}
+                        <th className="p-3 text-center">Stock (BLR/DXB/BOM/SIN)</th>
+                        {!isUpdateMode && (
+                          <th className="p-3 text-center">Serial Track</th>
+                        )}
+                        <th className="p-3">Validation</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60 font-medium">
@@ -573,42 +706,48 @@ export default function BulkProductImportModal({
                           <td className="p-3 font-mono font-bold text-white whitespace-nowrap">
                             {row.sku || <span className="text-rose-400 italic">Missing</span>}
                           </td>
-                          <td className="p-3 max-w-xs truncate text-slate-200">
-                            {row.name || <span className="text-rose-400 italic">Missing</span>}
-                          </td>
-                          <td className="p-3 whitespace-nowrap">
-                            <span className="text-white font-semibold">{row.brand}</span>
-                            <span className="text-slate-500 text-[10px] block font-mono">
-                              {row.category}
-                            </span>
-                          </td>
-                          <td className="p-3 text-right font-mono font-bold text-white whitespace-nowrap">
-                            {formatUSD(row.wholesalePrice)}
-                          </td>
-                          <td className="p-3 text-right font-mono text-slate-300 whitespace-nowrap">
-                            {formatUSD(row.sellingPrice)}
-                          </td>
+                          {!isUpdateMode && (
+                            <>
+                              <td className="p-3 max-w-xs truncate text-slate-200">
+                                {row.name || <span className="text-rose-400 italic">Missing</span>}
+                              </td>
+                              <td className="p-3 whitespace-nowrap">
+                                <span className="text-white font-semibold">{row.brand}</span>
+                                <span className="text-slate-500 text-[10px] block font-mono">
+                                  {row.category}
+                                </span>
+                              </td>
+                              <td className="p-3 text-right font-mono font-bold text-white whitespace-nowrap">
+                                {formatUSD(row.wholesalePrice)}
+                              </td>
+                              <td className="p-3 text-right font-mono text-slate-300 whitespace-nowrap">
+                                {formatUSD(row.sellingPrice)}
+                              </td>
+                            </>
+                          )}
                           <td className="p-3 text-center font-mono text-[11px] whitespace-nowrap">
-                            <span className="text-slate-300">
+                            <span className={`${isUpdateMode ? 'text-amber-300' : 'text-slate-300'}`}>
                               {row.blrStock} / {row.dxbStock} / {row.bomStock} / {row.sinStock}
                             </span>
                             <span className="text-slate-500 text-[9px] block">
                               Total: {row.blrStock + row.dxbStock + row.bomStock + row.sinStock}
                             </span>
                           </td>
-                          <td className="p-3 text-center whitespace-nowrap">
-                            {row.trackSerial ? (
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-brand-500/20 text-brand-300 border border-brand-500/40">
-                                Tracked
-                              </span>
-                            ) : (
-                              <span className="text-slate-500 text-[10px] font-mono">No</span>
-                            )}
-                          </td>
+                          {!isUpdateMode && (
+                            <td className="p-3 text-center whitespace-nowrap">
+                              {row.trackSerial ? (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-brand-500/20 text-brand-300 border border-brand-500/40">
+                                  Tracked
+                                </span>
+                              ) : (
+                                <span className="text-slate-500 text-[10px] font-mono">No</span>
+                              )}
+                            </td>
+                          )}
                           <td className="p-3 text-[11px] max-w-xs">
                             {row.isValid ? (
                               <span className="text-emerald-400 font-mono text-[10px]">
-                                Ready for database import
+                                {isUpdateMode ? 'Ready to update stock' : 'Ready for database import'}
                               </span>
                             ) : (
                               <span className="text-rose-400 font-mono text-[10px] line-clamp-2">
@@ -631,7 +770,8 @@ export default function BulkProductImportModal({
           <div className="text-xs text-slate-400">
             {parsedRows.length > 0 && (
               <span>
-                <strong className="text-white font-mono">{validCount}</strong> valid products ready to import
+                <strong className="text-white font-mono">{validCount}</strong>{' '}
+                {isUpdateMode ? 'products ready to update' : 'valid products ready to import'}
                 {invalidCount > 0 && (
                   <span className="text-rose-400 ml-2">
                     ({invalidCount} invalid rows will be skipped)
@@ -652,18 +792,26 @@ export default function BulkProductImportModal({
 
             {parsedRows.length > 0 && !importSummary && (
               <button
-                onClick={handleConfirmImport}
+                onClick={isUpdateMode ? handleConfirmStockUpdate : handleConfirmImport}
                 disabled={validCount === 0 || isImporting}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-glow transition-all disabled:opacity-40"
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-xs font-bold shadow-glow transition-all disabled:opacity-40 ${
+                  isUpdateMode
+                    ? 'bg-amber-600 hover:bg-amber-500'
+                    : 'bg-brand-600 hover:bg-brand-500'
+                }`}
               >
                 {isImporting ? (
                   <>
                     <RefreshCw className="h-4 w-4 animate-spin" />
-                    <span>Writing to Database...</span>
+                    <span>{isUpdateMode ? 'Updating Stocks...' : 'Writing to Database...'}</span>
                   </>
                 ) : (
                   <>
-                    <span>Import {validCount} Products to Database</span>
+                    <span>
+                      {isUpdateMode
+                        ? `Update Stock for ${validCount} SKUs`
+                        : `Import ${validCount} Products to Database`}
+                    </span>
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}

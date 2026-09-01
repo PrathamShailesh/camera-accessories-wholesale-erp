@@ -10,7 +10,7 @@ export async function POST(
   if (!auth.ok) return auth.response;
 
   try {
-    const updated = dataStore.updateProformaStatus(params.id, 'CONFIRMED');
+    const updated = dataStore.updateProforma(params.id, { status: 'CONFIRMED' });
     if (!updated) {
       return NextResponse.json({ error: 'Proforma not found' }, { status: 404 });
     }

@@ -224,7 +224,7 @@ export default function Header() {
 
           {/* Depot Mobile View Quick Link */}
           <Link
-            href="/depot-mobile"
+            href="/depot"
             title="Open Mobile-First Depot Fulfilment UI"
             className="flex items-center gap-1.5 rounded-lg border border-[#e6e6e2] bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-[#d6d6d0] hover:text-slate-900 transition-colors"
           >
@@ -384,7 +384,7 @@ export default function Header() {
       {/* Change Password Modal */}
       {isChangePasswordOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-md rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl p-6 space-y-4">
+          <div className="relative w-full max-w-md rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <KeyRound className="h-5 w-5 text-cyan-400" />
@@ -412,7 +412,7 @@ export default function Header() {
               </div>
             )}
 
-            <form onSubmit={handleChangePassword} className="space-y-3 text-xs">
+            <form onSubmit={handleChangePassword} className="flex flex-col gap-3 text-xs">
               <div>
                 <label className="block text-slate-400 mb-1">Current Password</label>
                 <div className="relative">

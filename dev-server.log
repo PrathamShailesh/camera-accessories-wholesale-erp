@@ -1928,3 +1928,104 @@ prisma:query SELECT "public"."TaxInvoice"."id", "public"."TaxInvoice"."invoiceNu
 prisma:query SELECT "public"."Customer"."id", "public"."Customer"."customerCode", "public"."Customer"."companyName", "public"."Customer"."contactPerson", "public"."Customer"."email", "public"."Customer"."phone", "public"."Customer"."billingAddress", "public"."Customer"."shippingAddress", "public"."Customer"."country", "public"."Customer"."taxNumber", "public"."Customer"."paymentTerms"::text, "public"."Customer"."creditLimit", "public"."Customer"."currentBalance", "public"."Customer"."notes", "public"."Customer"."status"::text, "public"."Customer"."totalOrders", "public"."Customer"."totalSpent", "public"."Customer"."createdAt", "public"."Customer"."updatedAt" FROM "public"."Customer" WHERE "public"."Customer"."id" IN ($1,$2,$3,$4) OFFSET $5
 prisma:query SELECT "public"."Depot"."id", "public"."Depot"."code", "public"."Depot"."name", "public"."Depot"."address", "public"."Depot"."city", "public"."Depot"."country", "public"."Depot"."contactPerson", "public"."Depot"."phone", "public"."Depot"."email", "public"."Depot"."isCentralHub", "public"."Depot"."activeOrdersCount", "public"."Depot"."totalStockUnits", "public"."Depot"."totalStockValue", "public"."Depot"."createdAt", "public"."Depot"."updatedAt" FROM "public"."Depot" WHERE "public"."Depot"."id" IN ($1,$2) OFFSET $3
  GET /api/shipments 200 in 97ms
+ ✓ Compiled in 12.4s (713 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: RangeError: Array buffer allocation failed
+ ✓ Compiled in 2.2s (385 modules)
+ ✓ Compiled in 4.6s (713 modules)
+ ✓ Compiled in 2.1s (699 modules)
+ ✓ Compiled in 2.3s (713 modules)
+ ✓ Compiled in 2s (699 modules)
+ ✓ Compiled in 1621ms (699 modules)
+ ✓ Compiled in 670ms (699 modules)
+ ✓ Compiled in 4.1s (699 modules)
+ ✓ Compiled in 2.2s (699 modules)
+ ✓ Compiled in 2.4s (699 modules)
+ ✓ Compiled in 2.8s (699 modules)
+ ✓ Compiled in 2.3s (699 modules)
+ ✓ Compiled in 2.1s (699 modules)
+ ✓ Compiled in 2s (699 modules)
+ ✓ Compiled in 1906ms (699 modules)
+ ✓ Compiled in 1931ms (699 modules)
+ ✓ Compiled in 1928ms (699 modules)
+ ✓ Compiled in 1906ms (699 modules)
+ ✓ Compiled in 2.2s (699 modules)
+ ✓ Compiled in 2.8s (699 modules)
+ ✓ Compiled in 3.2s (699 modules)
+ ✓ Compiled in 1805ms (699 modules)
+ ✓ Compiled in 8.2s (713 modules)
+ ✓ Compiled in 5.6s (699 modules)
+ ✓ Compiled in 3s (699 modules)
+ ✓ Compiled in 1973ms (699 modules)
+ ✓ Compiled in 2.5s (699 modules)
+ ✓ Compiled in 1125ms (699 modules)
+ ✓ Compiled in 1016ms (699 modules)
+ ✓ Compiled in 938ms (699 modules)
+ ✓ Compiled in 3.8s (699 modules)
+ ✓ Compiled in 610ms (699 modules)
+ ✓ Compiled in 564ms (699 modules)
+ ✓ Compiled in 1043ms (699 modules)
+ ✓ Compiled in 627ms (699 modules)
+ ✓ Compiled in 592ms (699 modules)
+ ✓ Compiled in 573ms (699 modules)
+ ✓ Compiled in 594ms (699 modules)
+ ✓ Compiled in 1764ms (699 modules)
+ ✓ Compiled in 1572ms (699 modules)
+ ✓ Compiled in 2.4s (699 modules)
+ ✓ Compiled in 2.5s (699 modules)
+ ✓ Compiled in 908ms (699 modules)
+ ✓ Compiled in 1838ms (699 modules)
+ ✓ Compiled in 2.6s (699 modules)
+ ✓ Compiled in 3.7s (713 modules)
+ ⨯ ./src/lib/data-store.ts
+Error: 
+  [31mx[0m Expected ';', '}' or <eof>
+      ,-[[36;1;4mC:\Users\prath\OneDrive\Desktop\CAMERA and ACCESSORIES WHOLESALE ERP\src\lib\data-store.ts[0m:1097:1]
+ [2m1097[0m |               title: `Low Stock Alert: ${p.name}`,
+ [2m1098[0m |               message: `Only ${totalStock} units remaining (Minimum: ${minStockLevel})`,
+ [2m1099[0m |             });
+ [2m1100[0m | [31;1m,[0m[31;1m-[0m[31;1m>[0m           entityType: 'PRODUCT',
+ [2m1101[0m | [31;1m|[0m[31;1m-[0m[31;1m>[0m           actionable: true,
+      : [31;1m`[0m[31;1m---[0m[33;1m                    ^[0m
+      : [31;1m`[0m[31;1m---[0m[31;1m-[0m [31;1mThis is the expression part of an expression statement[0m
+ [2m1102[0m |               createdAt: new Date().toISOString(),
+ [2m1103[0m |             });
+ [2m1103[0m |           }
+      `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/data-store.ts
+./src/components/layout/DepotAppShell.tsx
+ ✓ Compiled in 2.1s (699 modules)
+ ✓ Compiled in 6.1s (699 modules)
+ ✓ Compiled in 695ms (699 modules)
+ ✓ Compiled in 1323ms (699 modules)
+ ✓ Compiled in 644ms (699 modules)
+ ✓ Compiled in 644ms (699 modules)
+ ✓ Compiled in 1725ms (385 modules)
+ ✓ Compiled in 1252ms (385 modules)
+ ✓ Compiled in 552ms (385 modules)
+ ✓ Compiled in 2.9s (699 modules)
+ ✓ Compiled in 5.1s (385 modules)
+ ✓ Compiled in 1159ms (385 modules)
+ ✓ Compiled in 5.3s (787 modules)
+ ✓ Compiled in 2.4s (385 modules)
+ ✓ Compiled in 5.1s (385 modules)
+ ✓ Compiled in 793ms (385 modules)
+ ✓ Compiled in 6.4s (385 modules)
+ ✓ Compiled in 2.9s (385 modules)
+ ✓ Compiled in 923ms (385 modules)
+ ✓ Compiled in 808ms (385 modules)
+ ✓ Compiled in 816ms (385 modules)
+ ✓ Compiled in 990ms (385 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 2.3s (336 modules)
+ GET / 307 in 2911ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 941ms (345 modules)
+ GET /dashboard 200 in 1258ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1412ms (733 modules)
+ GET /_next/static/chunks/app/dashboard/page.js 404 in 1672ms

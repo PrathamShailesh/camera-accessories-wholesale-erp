@@ -308,6 +308,13 @@ export interface TaxInvoice {
   internalRemarks?: string;
   shipmentId?: string;
   pdfUrl?: string;
+  packingDetails?: PackingDetails;
+  shippingDetails?: {
+    courier?: string;
+    airwayBillNumber?: string;
+    trackingUrl?: string;
+    dispatchedAt?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }

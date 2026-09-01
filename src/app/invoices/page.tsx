@@ -173,9 +173,20 @@ export default function InvoicesPage() {
               {filteredInvoices.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center py-12">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Receipt className="h-8 w-8 text-slate-500" />
-                      <span className="text-slate-400 text-xs">No invoices found</span>
+                    <div className="flex flex-col items-center justify-center gap-2.5 max-w-sm mx-auto">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-800/80 text-emerald-400 flex items-center justify-center">
+                        <Receipt className="h-6 w-6" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white">No Tax Invoices Found</h4>
+                      <p className="text-xs text-slate-400">
+                        Convert approved proforma quotations to generate commercial tax invoices and trigger depot packing workflows.
+                      </p>
+                      <Link
+                        href="/proformas/new"
+                        className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow"
+                      >
+                        <span>Create New Proforma</span>
+                      </Link>
                     </div>
                   </td>
                 </tr>

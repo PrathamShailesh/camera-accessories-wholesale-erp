@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
 import { User, UserRole, Depot } from '@/types/erp';
+import ImageUploadField from '@/components/ui/ImageUploadField';
 
 export default function UsersManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -50,6 +51,7 @@ export default function UsersManagementPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editAvatar, setEditAvatar] = useState('');
   const [editRole, setEditRole] = useState<UserRole>('DEPOT_USER');
   const [editDepotId, setEditDepotId] = useState('');
   const [editPhone, setEditPhone] = useState('');
@@ -165,6 +167,7 @@ export default function UsersManagementPage() {
     setEditingUser(u);
     setEditName(u.name);
     setEditEmail(u.email);
+    setEditAvatar(u.avatar || '');
     setEditRole(u.role);
     setEditDepotId(u.assignedDepotId || (depots[0]?.id || 'dep-dxb'));
     setEditPhone(u.phone || '');
@@ -182,6 +185,7 @@ export default function UsersManagementPage() {
       body: JSON.stringify({
         name: editName,
         email: editEmail,
+        avatar: editAvatar,
         role: editRole,
         assignedDepotId: editRole === 'DEPOT_USER' ? editDepotId : undefined,
         assignedDepotName: editRole === 'DEPOT_USER' && depot ? depot.name : undefined,
@@ -456,7 +460,7 @@ export default function UsersManagementPage() {
       {/* Create User Modal */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 space-y-4">
+          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-brand-400" />
@@ -477,7 +481,7 @@ export default function UsersManagementPage() {
               </div>
             )}
 
-            <form onSubmit={handleCreateUser} className="space-y-3 text-xs text-slate-300">
+            <form onSubmit={handleCreateUser} className="flex flex-col gap-3 text-xs text-slate-300">
               <div>
                 <label className="block text-slate-400 mb-1">Full Name *</label>
                 <input
@@ -506,7 +510,7 @@ export default function UsersManagementPage() {
                   <label className="block text-slate-400 mb-1">Phone Number</label>
                   <input
                     type="text"
-                    placeholder="+1 555 204 9911"
+                    placeholder="+971 50 123 4567"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white"
@@ -514,9 +518,9 @@ export default function UsersManagementPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 mb-1">Assigned Role *</label>
+                  <label className="block text-slate-400 mb-1">Role *</label>
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value as UserRole)}
@@ -538,7 +542,7 @@ export default function UsersManagementPage() {
                     >
                       {depots.map((d) => (
                         <option key={d.id} value={d.id}>
-                          {d.name}
+                          {d.name} ({d.code})
                         </option>
                       ))}
                     </select>
@@ -553,29 +557,24 @@ export default function UsersManagementPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Initial Password *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. User@Growth2026!"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Avatar Image URL</label>
-                  <input
-                    type="text"
-                    placeholder="https://images.unsplash.com/photo-..."
-                    value={avatar}
-                    onChange={(e) => setAvatar(e.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white"
-                  />
-                </div>
+              <div>
+                <label className="block text-slate-400 mb-1">Account Password *</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Min 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white"
+                />
               </div>
+
+              <ImageUploadField
+                value={avatar}
+                onChange={(url) => setAvatar(url)}
+                label="Profile Picture / Avatar"
+                placeholder="Paste avatar URL or upload local image"
+              />
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
                 <button
@@ -600,7 +599,7 @@ export default function UsersManagementPage() {
       {/* Edit User Modal */}
       {editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 space-y-4">
+          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Edit2 className="h-5 w-5 text-brand-400" />
@@ -614,7 +613,7 @@ export default function UsersManagementPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveEdit} className="space-y-3 text-xs text-slate-300">
+            <form onSubmit={handleSaveEdit} className="flex flex-col gap-3 text-xs text-slate-300">
               <div>
                 <label className="block text-slate-400 mb-1">Full Name</label>
                 <input
@@ -692,6 +691,13 @@ export default function UsersManagementPage() {
                 </div>
               )}
 
+              <ImageUploadField
+                value={editAvatar}
+                onChange={(url) => setEditAvatar(url)}
+                label="Profile Picture / Avatar"
+                placeholder="Paste avatar URL or upload local image"
+              />
+
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
                 <button
                   type="button"
@@ -714,7 +720,7 @@ export default function UsersManagementPage() {
       {/* Reset Password Modal (Admin) */}
       {resetTargetUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-md rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl p-6 space-y-4">
+          <div className="relative w-full max-w-md rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <KeyRound className="h-5 w-5 text-cyan-400" />
@@ -746,7 +752,7 @@ export default function UsersManagementPage() {
               </div>
             )}
 
-            <form onSubmit={handleResetPasswordSubmit} className="space-y-3 text-xs">
+            <form onSubmit={handleResetPasswordSubmit} className="flex flex-col gap-3 text-xs">
               <div>
                 <label className="block text-slate-400 mb-1">New Temporary Password *</label>
                 <input
@@ -783,7 +789,7 @@ export default function UsersManagementPage() {
       {/* Delete Confirmation Modal */}
       {deleteTargetUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-6 space-y-4">
+          <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Trash2 className="h-5 w-5 text-rose-400" />

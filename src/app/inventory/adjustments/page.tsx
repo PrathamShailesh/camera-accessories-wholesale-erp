@@ -45,18 +45,28 @@ export default function StockAdjustmentsPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const loadData = () => {
-    setAdjustments(dataStore.getAdjustments());
-    const allProds = dataStore.getProducts();
-    const allDeps = dataStore.getDepots();
-    setProducts(allProds);
-    setDepots(allDeps);
-
-    if (!depotId && allDeps.length > 0) {
-      setDepotId(allDeps[0].id);
-    }
-    if (!productId && allProds.length > 0) {
-      setProductId(allProds[0].id);
+  const loadData = async () => {
+    try {
+      const [adjRes, prodRes, depRes] = await Promise.all([
+        fetch('/api/inventory/adjustments'),
+        fetch('/api/products'),
+        fetch('/api/depots'),
+      ]);
+      if (adjRes.ok) setAdjustments(await adjRes.json());
+      if (prodRes.ok) {
+        const prods = await prodRes.json();
+        setProducts(prods);
+        if (!productId && prods.length > 0) setProductId(prods[0].id);
+      }
+      if (depRes.ok) {
+        const deps = await depRes.json();
+        setDepots(deps);
+        if (!depotId && deps.length > 0) setDepotId(deps[0].id);
+      }
+    } catch {
+      setAdjustments(dataStore.getAdjustments());
+      setProducts(dataStore.getProducts());
+      setDepots(dataStore.getDepots());
     }
   };
 
@@ -73,7 +83,7 @@ export default function StockAdjustmentsPage() {
   const deltaQty = adjustmentType === 'ADD' ? Math.abs(quantity) : -Math.abs(quantity);
   const projectedNewQty = Math.max(0, currentDepotStock + deltaQty);
 
-  const handleCreateAdjustment = (e: React.FormEvent) => {
+  const handleCreateAdjustment = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
@@ -90,7 +100,17 @@ export default function StockAdjustmentsPage() {
 
     setIsSubmitting(true);
     try {
-      dataStore.adjustStock(productId, depotId, deltaQty, reason, notes);
+      const res = await fetch('/api/inventory/adjustments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, depotId, deltaQty, reason, notes }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Stock adjustment failed.');
+      }
+
       setSuccessMessage(`Stock adjusted successfully for ${selectedProduct?.sku || 'product'}.`);
       loadData();
       setTimeout(() => {
@@ -297,8 +317,21 @@ export default function StockAdjustmentsPage() {
             <tbody className="divide-y divide-slate-800/60 font-medium">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-slate-500">
-                    No stock adjustments found matching criteria.
+                  <td colSpan={8} className="p-12 text-center">
+                    <div className="mx-auto w-12 h-12 rounded-2xl bg-slate-800/80 text-brand-400 flex items-center justify-center mb-3">
+                      <SlidersHorizontal className="h-6 w-6" />
+                    </div>
+                    <h4 className="text-sm font-bold text-white">No Stock Adjustments Recorded</h4>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      Record manual stock reconciliations, cycle count variances, found surplus, and damaged write-offs.
+                    </p>
+                    <button
+                      onClick={() => setIsModalOpen(true)}
+                      className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Record Stock Adjustment</span>
+                    </button>
                   </td>
                 </tr>
               ) : (
@@ -355,7 +388,7 @@ export default function StockAdjustmentsPage() {
       {/* Record Stock Adjustment Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl p-6 space-y-5">
+          <div className="relative w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="h-5 w-5 text-brand-400" />
@@ -383,7 +416,7 @@ export default function StockAdjustmentsPage() {
               </div>
             )}
 
-            <form onSubmit={handleCreateAdjustment} className="space-y-4 text-xs">
+            <form onSubmit={handleCreateAdjustment} className="flex flex-col gap-3.5 text-xs">
               {/* Depot Selection */}
               <div className="space-y-1">
                 <label className="block text-slate-300 font-medium">Select Depot Warehouse</label>

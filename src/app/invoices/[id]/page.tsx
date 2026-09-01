@@ -141,8 +141,8 @@ export default function InvoiceDetailPage() {
       console.warn('Pick status update error:', e);
     }
     try {
-      const picks = invoice.items?.map((i) => ({ itemId: i.id, serials: i.allocatedSerials || [] })) || [];
-      dataStore.pickInvoiceItems(invoice.id, picks);
+      const itemIds = invoice.items?.map((i) => i.id) || [];
+      dataStore.pickInvoiceItems(invoice.id, itemIds);
     } catch {}
     setIsPicking(false);
     loadData();
@@ -174,13 +174,7 @@ export default function InvoiceDetailPage() {
       console.warn('Pack status update error:', e);
     }
     try {
-      dataStore.packInvoice(invoice.id, {
-        packedBy,
-        packageCount: Number(boxCount),
-        totalWeightKg: Number(totalWeight),
-        dimensionsCm: { length: lengthCm, width: widthCm, height: heightCm },
-        packagePhotoUrl: packagePhotoUrl || 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&auto=format&fit=crop&q=80',
-      });
+      dataStore.packInvoice(invoice.id);
     } catch {}
     setIsPacking(false);
     setIsPackingModalOpen(false);
@@ -213,17 +207,7 @@ export default function InvoiceDetailPage() {
       console.warn('Ship status update error:', e);
     }
     try {
-      dataStore.dispatchShipment(invoice.id, {
-        courier,
-        airwayBillNumber: awbNumber,
-        trackingUrl: trackingUrl || `https://www.dhl.com/en/express/tracking.html?AWB=${awbNumber.replace(/[^0-9]/g, '')}`,
-        shippingCost: Number(shippingCost),
-        weightKg: Number(totalWeight),
-        packageCount: Number(boxCount),
-        dimensionsCm: { length: lengthCm, width: widthCm, height: heightCm },
-        airwayBillDocUrl: awbDocUrl || 'https://res.cloudinary.com/camera-erp-dev2/image/upload/v1724500000/documents/sample_awb_dhl.png',
-        packagePhotoUrl,
-      });
+      dataStore.dispatchShipment(invoice.id);
     } catch {}
     setIsShipping(false);
     setIsShippingModalOpen(false);
@@ -604,7 +588,7 @@ export default function InvoiceDetailPage() {
       {/* Packing Modal */}
       {isPackingModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 space-y-4">
+          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-amber-400" />
@@ -618,7 +602,7 @@ export default function InvoiceDetailPage() {
               </button>
             </div>
 
-            <form onSubmit={handlePackSubmit} className="space-y-3 text-xs text-slate-300">
+            <form onSubmit={handlePackSubmit} className="flex flex-col gap-3 text-xs text-slate-300">
               <div>
                 <label className="block text-slate-400 mb-1">Packed By Operator</label>
                 <input
@@ -715,7 +699,7 @@ export default function InvoiceDetailPage() {
       {/* Shipping / AWB Modal */}
       {isShippingModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 space-y-4">
+          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Truck className="h-5 w-5 text-cyan-400" />
@@ -729,7 +713,7 @@ export default function InvoiceDetailPage() {
               </button>
             </div>
 
-            <form onSubmit={handleShipSubmit} className="space-y-3 text-xs text-slate-300">
+            <form onSubmit={handleShipSubmit} className="flex flex-col gap-3 text-xs text-slate-300">
               <div>
                 <label className="block text-slate-400 mb-1">Carrier / Courier Service</label>
                 <select

@@ -107,60 +107,81 @@ export default function TransfersPage() {
 
       {/* Transfers List */}
       <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden shadow-lg">
-        <div className="overflow-x-auto">
-          <table className="erp-table">
-            <thead>
-              <tr>
-                <th>Transfer #</th>
-                <th>Source Depot</th>
-                <th>Destination Depot</th>
-                <th>Transferred Items</th>
-                <th>Created By</th>
-                <th>Date</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
-              {transfers.map((tr) => (
-                <tr key={tr.id}>
-                  <td className="font-bold text-white font-mono">{tr.transferNumber}</td>
-                  <td className="font-sans text-rose-300">
-                    <div className="flex items-center gap-1">
-                      <Building2 className="h-3.5 w-3.5 text-rose-400" />
-                      <span>{tr.sourceDepotName}</span>
-                    </div>
-                  </td>
-                  <td className="font-sans text-emerald-300">
-                    <div className="flex items-center gap-1">
-                      <Building2 className="h-3.5 w-3.5 text-emerald-400" />
-                      <span>{tr.destinationDepotName}</span>
-                    </div>
-                  </td>
-                  <td className="font-sans text-slate-200">
-                    {tr.items.map((i, idx) => (
-                      <div key={idx}>
-                        {i.quantity}× {i.productName} ({i.productSku})
-                      </div>
-                    ))}
-                  </td>
-                  <td className="font-sans text-slate-400">{tr.createdBy}</td>
-                  <td className="text-slate-400">{formatDate(tr.createdAt)}</td>
-                  <td>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                      {tr.status}
-                    </span>
-                  </td>
+        {transfers.length === 0 ? (
+          <div className="p-12 text-center space-y-3">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-slate-800/80 text-brand-400 flex items-center justify-center">
+              <ArrowLeftRight className="h-6 w-6" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-white">No Stock Transfers Recorded</h4>
+              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                Stock transfers allow you to rebalance camera inventory between regional depots with automated ledger debit and credit.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create First Transfer</span>
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="erp-table">
+              <thead>
+                <tr>
+                  <th>Transfer #</th>
+                  <th>Source Depot</th>
+                  <th>Destination Depot</th>
+                  <th>Transferred Items</th>
+                  <th>Created By</th>
+                  <th>Date</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
+                {transfers.map((tr) => (
+                  <tr key={tr.id}>
+                    <td className="font-bold text-white font-mono">{tr.transferNumber}</td>
+                    <td className="font-sans text-rose-300">
+                      <div className="flex items-center gap-1">
+                        <Building2 className="h-3.5 w-3.5 text-rose-400" />
+                        <span>{tr.sourceDepotName}</span>
+                      </div>
+                    </td>
+                    <td className="font-sans text-emerald-300">
+                      <div className="flex items-center gap-1">
+                        <Building2 className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>{tr.destinationDepotName}</span>
+                      </div>
+                    </td>
+                    <td className="font-sans text-slate-200">
+                      {tr.items.map((i, idx) => (
+                        <div key={idx}>
+                          {i.quantity}× {i.productName} ({i.productSku})
+                        </div>
+                      ))}
+                    </td>
+                    <td className="font-sans text-slate-400">{tr.createdBy}</td>
+                    <td className="text-slate-400">{formatDate(tr.createdAt)}</td>
+                    <td>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        {tr.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Transfer Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 space-y-4">
+          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <ArrowLeftRight className="h-5 w-5 text-brand-400" />
@@ -181,7 +202,7 @@ export default function TransfersPage() {
               </div>
             )}
 
-            <form onSubmit={handleCreateTransfer} className="space-y-3 text-xs text-slate-300">
+            <form onSubmit={handleCreateTransfer} className="flex flex-col gap-3 text-xs text-slate-300">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-400 mb-1">Source Depot (Deduct)</label>

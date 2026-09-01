@@ -192,7 +192,7 @@ export default function DashboardPage() {
             </>
           ) : (
             <Link
-              href="/depot-mobile"
+              href="/depot"
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-glow-emerald transition-all"
             >
               <Boxes className="h-4 w-4" />
@@ -369,80 +369,101 @@ export default function DashboardPage() {
           </div>
 
           <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden shadow-lg">
-            <div className="overflow-x-auto">
-              <table className="erp-table">
-                <thead>
-                  <tr>
-                    <th>Invoice #</th>
-                    <th>Customer</th>
-                    <th>Depot</th>
-                    <th>Total (USD)</th>
-                    <th>Status</th>
-                    <th className="text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {invoices.map((inv) => {
-                    const badge = getStatusBadgeClasses(inv.fulfilmentStatus);
-                    return (
-                      <tr key={inv.id}>
-                        <td>
-                          <Link
-                            href={`/invoices/${inv.id}`}
-                            className="font-mono font-bold text-brand-400 hover:underline text-xs"
-                          >
-                            {inv.invoiceNumber}
-                          </Link>
-                          {inv.proformaNumber && (
-                            <div className="text-[10px] text-slate-500 font-mono">
-                              From: {inv.proformaNumber}
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          <div className="font-semibold text-white text-xs">{inv.customerCompany}</div>
-                          <div className="text-[10px] text-slate-400">{inv.customerName}</div>
-                        </td>
-                        <td>
-                          <span className="inline-flex items-center gap-1 text-xs text-slate-300 font-medium">
-                            <Building2 className="h-3.5 w-3.5 text-slate-500" />
-                            {inv.depotName.replace(' Depot', '').replace(' Hub', '')}
-                          </span>
-                        </td>
-                        <td className="font-mono font-bold text-xs text-white">
-                          {!isDepotUser ? formatUSD(inv.grandTotal) : '—'}
-                        </td>
-                        <td>
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}
-                          >
-                            <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} />
-                            {inv.fulfilmentStatus.replace(/_/g, ' ')}
-                          </span>
-                        </td>
-                        <td className="text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => setSelectedDoc({ type: 'TAX_INVOICE', data: inv })}
-                              title="Print / PDF"
-                              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                            </button>
+            {invoices.length === 0 ? (
+              <div className="p-10 text-center space-y-3">
+                <div className="mx-auto w-12 h-12 rounded-2xl bg-slate-800/80 text-slate-400 flex items-center justify-center">
+                  <Receipt className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white">No Tax Invoices Yet</h4>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    Tax invoices will appear here once converted from approved proforma quotations.
+                  </p>
+                </div>
+                <Link
+                  href="/proformas/new"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  <span>Create First Proforma</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="erp-table">
+                  <thead>
+                    <tr>
+                      <th>Invoice #</th>
+                      <th>Customer</th>
+                      <th>Depot</th>
+                      <th>Total (USD)</th>
+                      <th>Status</th>
+                      <th className="text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {invoices.map((inv) => {
+                      const badge = getStatusBadgeClasses(inv.fulfilmentStatus);
+                      return (
+                        <tr key={inv.id}>
+                          <td>
                             <Link
                               href={`/invoices/${inv.id}`}
-                              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-medium text-slate-200"
+                              className="font-mono font-bold text-brand-400 hover:underline text-xs"
                             >
-                              Open
+                              {inv.invoiceNumber}
                             </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            {inv.proformaNumber && (
+                              <div className="text-[10px] text-slate-500 font-mono">
+                                From: {inv.proformaNumber}
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            <div className="font-semibold text-white text-xs">{inv.customerCompany}</div>
+                            <div className="text-[10px] text-slate-400">{inv.customerName}</div>
+                          </td>
+                          <td>
+                            <span className="inline-flex items-center gap-1 text-xs text-slate-300 font-medium">
+                              <Building2 className="h-3.5 w-3.5 text-slate-500" />
+                              {inv.depotName.replace(' Depot', '').replace(' Hub', '')}
+                            </span>
+                          </td>
+                          <td className="font-mono font-bold text-xs text-white">
+                            {!isDepotUser ? formatUSD(inv.grandTotal) : '—'}
+                          </td>
+                          <td>
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} />
+                              {inv.fulfilmentStatus.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td className="text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => setSelectedDoc({ type: 'TAX_INVOICE', data: inv })}
+                                title="Print / PDF"
+                                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                              >
+                                <Printer className="h-3.5 w-3.5" />
+                              </button>
+                              <Link
+                                href={`/invoices/${inv.id}`}
+                                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-medium text-slate-200"
+                              >
+                                Open
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
 
@@ -463,59 +484,80 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-3">
-            {shipments.map((shp) => (
-              <div
-                key={shp.id}
-                className="glass-panel p-4 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all space-y-3"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[10px] font-mono uppercase font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
-                      {shp.courier.replace('_', ' ')}
-                    </span>
-                    <h4 className="text-xs font-bold text-white mt-1.5">{shp.customerCompany}</h4>
-                    <p className="text-[11px] font-mono text-slate-400">AWB: {shp.airwayBillNumber}</p>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                    {shp.status}
-                  </span>
+            {shipments.length === 0 ? (
+              <div className="glass-panel p-6 rounded-2xl border border-slate-800 text-center space-y-2.5">
+                <div className="mx-auto w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
+                  <Truck className="h-5 w-5" />
                 </div>
-
-                <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-                  <div className="flex justify-between">
-                    <span>Origin Depot:</span>
-                    <span className="text-slate-200 font-medium">{shp.depotName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Weight & Boxes:</span>
-                    <span className="text-slate-200 font-mono">{shp.weightKg} kg ({shp.packageCount} box)</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Dispatched By:</span>
-                    <span className="text-slate-200">{shp.dispatchedBy || 'Depot Operator'}</span>
-                  </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">No Active Dispatches</h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    No packages are currently in transit. Dispatched orders will appear here with live courier tracking.
+                  </p>
                 </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <a
-                    href={shp.trackingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] font-semibold text-sky-400 hover:text-sky-300 flex items-center gap-1"
-                  >
-                    <span>Live Tracking</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-
-                  <Link
-                    href={`/shipments/${shp.id}`}
-                    className="text-[11px] font-medium text-slate-300 hover:text-white px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700"
-                  >
-                    Details
-                  </Link>
-                </div>
+                <Link
+                  href="/shipments"
+                  className="inline-flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 font-semibold pt-1"
+                >
+                  <span>View Shipments Archive</span>
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
               </div>
-            ))}
+            ) : (
+              shipments.map((shp) => (
+                <div
+                  key={shp.id}
+                  className="glass-panel p-4 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all space-y-3"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="text-[10px] font-mono uppercase font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
+                        {shp.courier.replace('_', ' ')}
+                      </span>
+                      <h4 className="text-xs font-bold text-white mt-1.5">{shp.customerCompany}</h4>
+                      <p className="text-[11px] font-mono text-slate-400">AWB: {shp.airwayBillNumber}</p>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                      {shp.status}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Origin Depot:</span>
+                      <span className="text-slate-200 font-medium">{shp.depotName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Weight & Boxes:</span>
+                      <span className="text-slate-200 font-mono">{shp.weightKg} kg ({shp.packageCount} box)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Dispatched By:</span>
+                      <span className="text-slate-200">{shp.dispatchedBy || 'Depot Operator'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <a
+                      href={shp.trackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-semibold text-sky-400 hover:text-sky-300 flex items-center gap-1"
+                    >
+                      <span>Live Tracking</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+
+                    <Link
+                      href={`/shipments/${shp.id}`}
+                      className="text-[11px] font-medium text-slate-300 hover:text-white px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700"
+                    >
+                      Details
+                    </Link>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

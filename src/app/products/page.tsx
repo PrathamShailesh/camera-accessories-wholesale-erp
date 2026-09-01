@@ -20,10 +20,13 @@ import {
   DollarSign,
   ShieldCheck,
   RefreshCw,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { formatUSD } from '@/lib/utils';
 import { Product, Depot } from '@/types/erp';
 import BulkProductImportModal from '@/components/products/BulkProductImportModal';
+import ImageUploadField from '@/components/ui/ImageUploadField';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -38,6 +41,32 @@ export default function ProductsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Edit product state
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editErrorMessage, setEditErrorMessage] = useState('');
+  const [editSuccessMessage, setEditSuccessMessage] = useState('');
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  // Edit form fields
+  const [editName, setEditName] = useState('');
+  const [editBrand, setEditBrand] = useState('');
+  const [editModel, setEditModel] = useState('');
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [editPurchasePrice, setEditPurchasePrice] = useState<number>(0);
+  const [editWholesalePrice, setEditWholesalePrice] = useState<number>(0);
+  const [editSellingPrice, setEditSellingPrice] = useState<number>(0);
+  const [editTaxRate, setEditTaxRate] = useState<number>(5);
+  const [editMinStockLevel, setEditMinStockLevel] = useState<number>(10);
+  const [editTrackSerial, setEditTrackSerial] = useState<boolean>(true);
+  const [editDepotBreakdown, setEditDepotBreakdown] = useState<Record<string, number>>({
+    'dep-blr': 0, 'dep-dxb': 0, 'dep-bom': 0, 'dep-sin': 0,
+  });
+
+  // Delete product state
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [isDeleteSubmitting, setIsDeleteSubmitting] = useState(false);
 
   // Form fields for Create Product Modal
   const [name, setName] = useState('');
@@ -160,6 +189,100 @@ export default function ProductsPage() {
       setErrorMessage(err.message || 'Failed to create product in database');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // ── Open edit modal and pre-fill all fields ──────────────────────────────
+  const openEditModal = (p: Product) => {
+    setEditingProduct(p);
+    setEditName(p.name);
+    setEditBrand(p.brand);
+    setEditModel(p.model || '');
+    setEditCategoryName(p.categoryName || 'Camera Bodies');
+    setEditDescription(p.description || '');
+    setEditImageUrl(p.imageUrl || '');
+    setEditPurchasePrice(p.purchasePrice);
+    setEditWholesalePrice(p.wholesalePrice);
+    setEditSellingPrice(p.sellingPrice);
+    setEditTaxRate(p.taxRate ?? 5);
+    setEditMinStockLevel(p.minStockLevel ?? 10);
+    setEditTrackSerial(p.trackSerial ?? true);
+    setEditDepotBreakdown({
+      'dep-blr': p.depotBreakdown?.['dep-blr'] ?? 0,
+      'dep-dxb': p.depotBreakdown?.['dep-dxb'] ?? 0,
+      'dep-bom': p.depotBreakdown?.['dep-bom'] ?? 0,
+      'dep-sin': p.depotBreakdown?.['dep-sin'] ?? 0,
+    });
+    setEditErrorMessage('');
+    setEditSuccessMessage('');
+  };
+
+  // ── Save edited product ────────────────────────────────────────────────────
+  const handleEditProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    setEditErrorMessage('');
+    setEditSuccessMessage('');
+
+    if (!editName.trim() || !editBrand.trim()) {
+      setEditErrorMessage('Product Name and Brand are required.');
+      return;
+    }
+    if (editPurchasePrice < 0 || editWholesalePrice < 0 || editSellingPrice < 0) {
+      setEditErrorMessage('Pricing fields cannot be negative.');
+      return;
+    }
+
+    setIsEditSubmitting(true);
+    try {
+      const res = await fetch(`/api/products/${editingProduct.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editName.trim(),
+          brand: editBrand.trim(),
+          model: editModel.trim(),
+          categoryName: editCategoryName.trim(),
+          description: editDescription.trim(),
+          imageUrl: editImageUrl.trim(),
+          purchasePrice: editPurchasePrice,
+          wholesalePrice: editWholesalePrice,
+          sellingPrice: editSellingPrice,
+          taxRate: editTaxRate,
+          minStockLevel: editMinStockLevel,
+          trackSerial: editTrackSerial,
+          depotBreakdown: editDepotBreakdown,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update product');
+
+      setEditSuccessMessage(`${editName.trim()} updated successfully.`);
+      await loadData();
+      setTimeout(() => setEditingProduct(null), 800);
+    } catch (err: any) {
+      setEditErrorMessage(err.message || 'Failed to update product');
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
+
+  // ── Delete product ─────────────────────────────────────────────────────────
+  const handleDeleteProduct = async () => {
+    if (!deletingProduct) return;
+    setIsDeleteSubmitting(true);
+    try {
+      const res = await fetch(`/api/products/${deletingProduct.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to delete product');
+      }
+      setDeletingProduct(null);
+      await loadData();
+    } catch (err: any) {
+      alert(`Delete failed: ${err.message}`);
+    } finally {
+      setIsDeleteSubmitting(false);
     }
   };
 
@@ -390,6 +513,24 @@ export default function ProductsPage() {
                       )}
                     </div>
 
+                    {/* Edit / Delete action buttons */}
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openEditModal(p); }}
+                        className="p-1.5 rounded-lg bg-slate-950/90 backdrop-blur-md border border-slate-700 text-slate-300 hover:text-brand-400 hover:border-brand-500/50 transition-colors"
+                        title="Edit product"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setDeletingProduct(p); }}
+                        className="p-1.5 rounded-lg bg-slate-950/90 backdrop-blur-md border border-slate-700 text-slate-300 hover:text-rose-400 hover:border-rose-500/50 transition-colors"
+                        title="Delete product"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
                     <div className="absolute bottom-2.5 right-2.5">
                       <span
                         className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold font-mono shadow-sm ${
@@ -464,21 +605,38 @@ export default function ProductsPage() {
                 </div>
 
                 {/* Price & Margins Footer */}
-                <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
-                  <div>
-                    <div className="text-[10px] text-slate-500 font-mono">Wholesale Price</div>
-                    <div className="text-sm font-bold text-white font-mono">
-                      {formatUSD(p.wholesalePrice)}
+                <div className="mt-4 pt-3 border-t border-slate-800">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <div className="text-[10px] text-slate-500 font-mono">Wholesale Price</div>
+                      <div className="text-sm font-bold text-white font-mono">
+                        {formatUSD(p.wholesalePrice)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] text-emerald-400 font-mono font-semibold">
+                        +{margin}% Margin
+                      </div>
+                      <div className="text-xs text-slate-400 font-mono">
+                        MSRP {formatUSD(p.sellingPrice)}
+                      </div>
                     </div>
                   </div>
-
-                  <div className="text-right">
-                    <div className="text-[10px] text-emerald-400 font-mono font-semibold">
-                      +{margin}% Margin
-                    </div>
-                    <div className="text-xs text-slate-400 font-mono">
-                      MSRP {formatUSD(p.sellingPrice)}
-                    </div>
+                  {/* Always-visible Edit + Delete buttons at card bottom */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEditModal(p)}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-brand-600 hover:border-brand-600 text-slate-300 hover:text-white text-[11px] font-semibold transition-all"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => setDeletingProduct(p)}
+                      className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-rose-600/80 hover:border-rose-600 text-slate-300 hover:text-white text-[11px] font-semibold transition-all"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -515,7 +673,7 @@ export default function ProductsPage() {
             </div>
 
             {/* Scrollable Modal Content Area */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-6">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 flex flex-col gap-4">
               {errorMessage && (
                 <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5 animate-shake">
                   <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
@@ -530,9 +688,9 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              <form id="create-product-form" onSubmit={handleCreateProduct} className="space-y-6 text-xs">
+              <form id="create-product-form" onSubmit={handleCreateProduct} className="flex flex-col gap-4 text-xs">
                 {/* SECTION 1: Basic & Brand Information */}
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
                   <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider font-mono">
                     <Package className="h-4 w-4 text-brand-400" />
                     <span>1. Core Hardware Details</span>
@@ -616,7 +774,7 @@ export default function ProductsPage() {
                 </div>
 
                 {/* SECTION 2: Pricing, Margins & Taxation */}
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider font-mono">
                       <DollarSign className="h-4 w-4 text-emerald-400" />
@@ -689,7 +847,7 @@ export default function ProductsPage() {
                 </div>
 
                 {/* SECTION 3: Initial Depot Inventory Distribution */}
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider font-mono">
                       <Building2 className="h-4 w-4 text-cyan-400" />
@@ -799,23 +957,19 @@ export default function ProductsPage() {
                 </div>
 
                 {/* SECTION 4: Media & Description */}
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
                   <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider font-mono">
                     <ImageIcon className="h-4 w-4 text-purple-400" />
                     <span>4. Product Media & Specifications</span>
                   </div>
 
                   <div className="space-y-3">
-                    <div className="space-y-1">
-                      <label className="block text-slate-300 font-medium">High-Resolution Image URL</label>
-                      <input
-                        type="url"
-                        value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                        placeholder="https://images.unsplash.com/... or Cloudinary URL"
-                      />
-                    </div>
+                    <ImageUploadField
+                      value={imageUrl}
+                      onChange={(url) => setImageUrl(url)}
+                      label="Product Hardware Image"
+                      placeholder="Paste image URL or browse local photo"
+                    />
 
                     <div className="space-y-1">
                       <label className="block text-slate-300 font-medium">Technical Description / Notes</label>
@@ -872,6 +1026,233 @@ export default function ProductsPage() {
           loadData();
         }}
       />
+
+      {/* ====================================================================== */}
+      {/* EDIT PRODUCT MODAL                                                      */}
+      {/* ====================================================================== */}
+      {editingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-4xl h-full max-h-[90vh] rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="shrink-0 flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                  <Pencil className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Edit Product</h3>
+                  <p className="text-xs text-slate-400 font-mono">{editingProduct.sku} — {editingProduct.name}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingProduct(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 flex flex-col gap-4">
+              {editErrorMessage && (
+                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                  <span>{editErrorMessage}</span>
+                </div>
+              )}
+              {editSuccessMessage && (
+                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                  <span>{editSuccessMessage}</span>
+                </div>
+              )}
+
+              <form id="edit-product-form" onSubmit={handleEditProduct} className="flex flex-col gap-4 text-xs">
+                {/* SECTION 1: Core Details */}
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    <Package className="h-4 w-4 text-brand-400" />
+                    <span>1. Core Hardware Details</span>
+                    <span className="ml-auto text-[10px] font-mono text-slate-500 normal-case">SKU: {editingProduct.sku} (immutable)</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="sm:col-span-2 space-y-1">
+                      <label className="block text-slate-300 font-medium">Product Name <span className="text-rose-400">*</span></label>
+                      <input type="text" required value={editName} onChange={(e) => setEditName(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-slate-300 font-medium">Brand <span className="text-rose-400">*</span></label>
+                      <input type="text" required value={editBrand} onChange={(e) => setEditBrand(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-slate-300 font-medium">Model / Series</label>
+                      <input type="text" value={editModel} onChange={(e) => setEditModel(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-slate-300 font-medium">Category</label>
+                      <input type="text" value={editCategoryName} onChange={(e) => setEditCategoryName(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 2: Pricing */}
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider font-mono">
+                      <DollarSign className="h-4 w-4 text-emerald-400" />
+                      <span>2. Pricing & Margin Structure</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <span>Margin:</span>
+                      <strong>+{editSellingPrice > 0 ? (((editSellingPrice - editPurchasePrice) / editSellingPrice) * 100).toFixed(1) : '0'}%</strong>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-slate-300 font-medium">Purchase Cost ($)</label>
+                      <input type="number" min={0} step={0.01} value={editPurchasePrice || ''}
+                        onChange={(e) => setEditPurchasePrice(parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-slate-300 font-medium">Wholesale Price ($)</label>
+                      <input type="number" min={0} step={0.01} value={editWholesalePrice || ''}
+                        onChange={(e) => setEditWholesalePrice(parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-slate-300 font-medium">MSRP / Selling ($)</label>
+                      <input type="number" min={0} step={0.01} value={editSellingPrice || ''}
+                        onChange={(e) => setEditSellingPrice(parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-slate-300 font-medium">Tax Rate (%)</label>
+                      <input type="number" min={0} max={100} step={0.1} value={editTaxRate}
+                        onChange={(e) => setEditTaxRate(parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 3: Depot Stock */}
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider font-mono">
+                      <Building2 className="h-4 w-4 text-cyan-400" />
+                      <span>3. Depot Stock Levels</span>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                      <input type="checkbox" checked={editTrackSerial} onChange={(e) => setEditTrackSerial(e.target.checked)}
+                        className="h-4 w-4 rounded border-slate-700 bg-slate-800 text-brand-500 focus:ring-0" />
+                      <span className="font-semibold text-xs">Serial Tracked</span>
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[{ id: 'dep-blr', label: 'Bangalore (BLR)' }, { id: 'dep-dxb', label: 'Dubai (DXB)' }, { id: 'dep-bom', label: 'Mumbai (BOM)' }, { id: 'dep-sin', label: 'Singapore (SIN)' }].map(({ id, label }) => (
+                      <div key={id} className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                        <label className="block text-[11px] text-slate-400 font-mono">{label}</label>
+                        <input type="number" min={0} value={editDepotBreakdown[id]}
+                          onChange={(e) => setEditDepotBreakdown({ ...editDepotBreakdown, [id]: Math.max(0, parseInt(e.target.value) || 0) })}
+                          className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-slate-300 font-medium">Minimum Stock Reorder Threshold</label>
+                    <input type="number" min={1} value={editMinStockLevel}
+                      onChange={(e) => setEditMinStockLevel(Math.max(1, parseInt(e.target.value) || 10))}
+                      className="w-full sm:w-48 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none" />
+                  </div>
+                </div>
+
+                {/* SECTION 4: Media */}
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    <ImageIcon className="h-4 w-4 text-purple-400" />
+                    <span>4. Product Media & Specifications</span>
+                  </div>
+                  <div className="space-y-3">
+                    <ImageUploadField
+                      value={editImageUrl}
+                      onChange={(url) => setEditImageUrl(url)}
+                      label="Product Hardware Image"
+                      placeholder="Paste image URL or browse local photo"
+                    />
+                    <div className="space-y-1">
+                      <label className="block text-slate-300 font-medium">Technical Description / Notes</label>
+                      <textarea rows={2} value={editDescription} onChange={(e) => setEditDescription(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none" />
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Footer */}
+            <div className="shrink-0 flex items-center justify-end gap-3 p-4 px-6 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md">
+              <button type="button" onClick={() => setEditingProduct(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors">
+                Cancel
+              </button>
+              <button type="submit" form="edit-product-form" disabled={isEditSubmitting}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-glow transition-all disabled:opacity-50">
+                {isEditSubmitting ? (
+                  <><RefreshCw className="h-4 w-4 animate-spin" /><span>Saving...</span></>
+                ) : (
+                  <><CheckCircle2 className="h-4 w-4" /><span>Save Changes</span></>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================== */}
+      {/* DELETE CONFIRM MODAL                                                    */}
+      {/* ====================================================================== */}
+      {deletingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl p-6 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Delete Product?</h3>
+                <p className="text-xs text-slate-400 mt-0.5">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+              <div className="font-mono text-xs text-brand-400 font-bold">{deletingProduct.sku}</div>
+              <div className="text-sm font-semibold text-white mt-0.5 line-clamp-2">{deletingProduct.name}</div>
+              <div className="mt-2 text-[11px] text-slate-400 font-mono">
+                {deletingProduct.totalStock ?? 0} units across all depots will be removed.
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <button onClick={() => setDeletingProduct(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleDeleteProduct} disabled={isDeleteSubmitting}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all disabled:opacity-50">
+                {isDeleteSubmitting ? (
+                  <><RefreshCw className="h-4 w-4 animate-spin" /><span>Deleting...</span></>
+                ) : (
+                  <><Trash2 className="h-4 w-4" /><span>Yes, Delete Product</span></>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

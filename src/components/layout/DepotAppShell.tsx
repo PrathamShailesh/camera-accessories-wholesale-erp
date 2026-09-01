@@ -86,13 +86,25 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
                 <ShieldAlert className="h-4 w-4 text-amber-400" />
-                <span className="text-xs text-amber-300 font-medium">
-                  Depot Scope Active
+                <span className="text-xs text-amber-300 font-medium font-mono">
+                  {currentUser.assignedDepotName || 'Depot Scope'}
                 </span>
               </div>
+
+              {/* Link back to Main ERP for Super Admin and Manager users */}
+              {['SUPER_ADMIN', 'MANAGER', 'ERP_USER'].includes(currentUser.role) && (
+                <Link
+                  href="/dashboard"
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors border border-slate-700"
+                  title="Switch to Management ERP Dashboard"
+                >
+                  <span>Main ERP</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              )}
 
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -103,7 +115,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
 
               <button
                 onClick={handleLogout}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium"
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition-colors"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
@@ -119,7 +131,10 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
           <div className="pt-20 px-4 space-y-2">
             {depotNavItems.map((item) => {
               const Icon = getIcon(item.icon);
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              const isActive =
+                item.href === '/depot'
+                  ? pathname === '/depot'
+                  : pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link
                   key={item.href}
@@ -164,7 +179,10 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
           <nav className="flex-1 px-3 space-y-1">
             {depotNavItems.map((item) => {
               const Icon = getIcon(item.icon);
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              const isActive =
+                item.href === '/depot'
+                  ? pathname === '/depot'
+                  : pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link
                   key={item.href}

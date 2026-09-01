@@ -12,6 +12,7 @@ import {
   Save,
   Mail,
 } from 'lucide-react';
+import ImageUploadField from '@/components/ui/ImageUploadField';
 
 interface CompanySettings {
   id: string;
@@ -196,13 +197,12 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-slate-400 mb-1">VAT / GST ID</label>
-              <input
-                type="text"
-                value={settings.vatGstNumber}
-                onChange={(e) => setSettings({ ...settings, vatGstNumber: e.target.value })}
-                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-white text-xs font-mono focus:border-brand-500 focus:outline-none"
+            <div className="md:col-span-2 pt-2">
+              <ImageUploadField
+                value={settings.logoUrl}
+                onChange={(url) => setSettings({ ...settings, logoUrl: url })}
+                label="Official App & Document Header Logo"
+                placeholder="Paste logo URL or upload PNG/SVG image"
               />
             </div>
           </div>

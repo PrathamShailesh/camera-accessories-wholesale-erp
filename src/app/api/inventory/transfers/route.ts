@@ -84,6 +84,20 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // Update serial numbers depot assignment if specified
+      if (item.serialNumbers && Array.isArray(item.serialNumbers) && item.serialNumbers.length > 0) {
+        await prisma.serialNumber.updateMany({
+          where: {
+            productId: item.productId,
+            serialNumber: { in: item.serialNumbers },
+          },
+          data: {
+            depotId: destinationDepotId,
+            depotName: destDepot.name,
+          },
+        });
+      }
+
       const inventory = await prisma.depotInventory.findUnique({ where: { productId_depotId: { productId: item.productId, depotId: sourceDepotId } } });
       if (!inventory || inventory.availableQuantity < item.quantity) throw new Error(`Insufficient stock for ${product.sku}`);
 
