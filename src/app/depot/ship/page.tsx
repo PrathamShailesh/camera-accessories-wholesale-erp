@@ -316,19 +316,19 @@ export default function DepotShipPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Courier Carrier:</span>
                       <span className="font-bold text-white font-mono">
-                        {invoice.shippingDetails?.courier || 'DHL Express'}
+                        {(invoice.shippingDetails?.courier || (invoice as any).shipment?.courier || 'DHL_EXPRESS').replace(/_/g, ' ')}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Airway Bill (AWB) #:</span>
                       <span className="font-bold text-cyan-400 font-mono text-sm">
-                        {invoice.shippingDetails?.airwayBillNumber || 'N/A'}
+                        {invoice.shippingDetails?.airwayBillNumber || (invoice as any).shipment?.airwayBillNumber || 'N/A'}
                       </span>
                     </div>
-                    {invoice.shippingDetails?.trackingUrl && (
+                    {(invoice.shippingDetails?.trackingUrl || (invoice as any).shipment?.trackingUrl) && (
                       <div className="pt-2 border-t border-slate-800/80 flex justify-end">
                         <a
-                          href={invoice.shippingDetails.trackingUrl}
+                          href={invoice.shippingDetails?.trackingUrl || (invoice as any).shipment?.trackingUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 font-semibold underline font-mono"

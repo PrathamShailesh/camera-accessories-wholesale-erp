@@ -38,7 +38,22 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const depotDenied = assertDepotAccess(auth.user, invoice.depotId);
     if (depotDenied) return depotDenied;
 
-    return NextResponse.json(invoice);
+    const mapped = {
+      ...invoice,
+      shippingDetails: invoice.shipment
+        ? {
+            courier: invoice.shipment.courier,
+            airwayBillNumber: invoice.shipment.airwayBillNumber,
+            trackingUrl: invoice.shipment.trackingUrl,
+            shippingCost: invoice.shippingCost,
+            weightKg: invoice.shipment.totalWeightKg,
+            packageCount: invoice.shipment.packageCount,
+            awbDocumentUrl: invoice.shipment.awbDocumentUrl,
+          }
+        : undefined,
+    };
+
+    return NextResponse.json(mapped);
   } catch (error) {
     console.error('Error fetching invoice:', error);
     return NextResponse.json({ error: 'Failed to fetch invoice' }, { status: 500 });

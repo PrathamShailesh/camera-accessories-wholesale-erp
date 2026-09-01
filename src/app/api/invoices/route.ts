@@ -15,10 +15,28 @@ export async function GET(req: NextRequest) {
         customer: true,
         depot: true,
         items: true,
+        packingDetails: true,
+        shipment: true,
       },
       orderBy: { createdAt: 'desc' },
     });
-    return NextResponse.json(invoices);
+
+    const mappedInvoices = invoices.map((inv) => ({
+      ...inv,
+      shippingDetails: inv.shipment
+        ? {
+            courier: inv.shipment.courier,
+            airwayBillNumber: inv.shipment.airwayBillNumber,
+            trackingUrl: inv.shipment.trackingUrl,
+            shippingCost: inv.shippingCost,
+            weightKg: inv.shipment.totalWeightKg,
+            packageCount: inv.shipment.packageCount,
+            awbDocumentUrl: inv.shipment.awbDocumentUrl,
+          }
+        : undefined,
+    }));
+
+    return NextResponse.json(mappedInvoices);
   } catch (error) {
     console.error('Error fetching invoices:', error);
     return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 });
