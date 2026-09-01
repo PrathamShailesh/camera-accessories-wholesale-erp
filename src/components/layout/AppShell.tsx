@@ -12,14 +12,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   if (isPublicPortal || isDepotApplication) {
     return (
-      <div className="min-h-screen w-full bg-[#f7f7f5] text-slate-900 flex flex-col selection:bg-brand-500/20 selection:text-slate-900">
+      <div className="min-h-screen w-full bg-workspace text-ink flex flex-col selection:bg-primary-soft selection:text-ink">
         {children}
       </div>
     );
   }
 
   return (
-    <div className="h-screen h-[100dvh] flex flex-col bg-[#f7f7f5] text-slate-900 selection:bg-brand-500/20 selection:text-slate-900 overflow-hidden">
+    <div className="h-screen h-[100dvh] flex flex-col bg-workspace text-ink selection:bg-primary-soft selection:text-ink overflow-hidden">
       <Header />
       <div className="flex flex-1 min-h-0 overflow-hidden relative">
         <Sidebar />

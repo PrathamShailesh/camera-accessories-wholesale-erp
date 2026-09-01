@@ -20,6 +20,9 @@ import {
   Globe2,
   Server,
   Fingerprint,
+  Zap,
+  UserCheck,
+  Building,
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -59,17 +62,16 @@ export default function LoginPage() {
     }
   };
 
-  const handleLogin = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const executeLogin = async (loginEmail: string, loginPass: string) => {
     setErrorMessage('');
     setSuccessMessage('');
 
-    const cleanEmail = email.trim();
+    const cleanEmail = loginEmail.trim();
     if (!cleanEmail) {
       setErrorMessage('Please enter your corporate email address.');
       return;
     }
-    if (!password) {
+    if (!loginPass) {
       setErrorMessage('Please enter your password.');
       return;
     }
@@ -80,7 +82,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, password }),
+        body: JSON.stringify({ email: cleanEmail, password: loginPass }),
       });
 
       const data = await res.json();
@@ -89,7 +91,7 @@ export default function LoginPage() {
         throw new Error(data.error || 'Authentication failed. Please check your credentials.');
       }
 
-      setSuccessMessage(`Authenticated successfully. Welcome, ${data.user.name}!`);
+      setSuccessMessage(`Authenticated as ${data.user.name} (${data.user.role}). Redirecting...`);
 
       // Store in localStorage for client state persistence
       if (typeof window !== 'undefined') {
@@ -114,6 +116,65 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    await executeLogin(email, password);
+  };
+
+  const handleQuickAccess = async (quickEmail: string, quickPass: string) => {
+    setEmail(quickEmail);
+    setPassword(quickPass);
+    await executeLogin(quickEmail, quickPass);
+  };
+
+  const demoAccounts = [
+    {
+      name: 'Sarah Jenkins',
+      role: 'SUPER_ADMIN',
+      badge: 'Super Admin',
+      email: 'sarah.admin@lenscore.com',
+      pass: 'Admin@Growth2026!',
+      color: 'from-purple-500/20 to-indigo-500/20 border-purple-500/30 text-purple-300 hover:border-purple-400',
+      badgeBg: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+    },
+    {
+      name: 'Marcus Vance',
+      role: 'MANAGER',
+      badge: 'Manager',
+      email: 'marcus.vance@lenscore.com',
+      pass: 'Manager@Growth2026!',
+      color: 'from-cyan-500/20 to-blue-500/20 border-cyan-500/30 text-cyan-300 hover:border-cyan-400',
+      badgeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+    },
+    {
+      name: 'Priya Menon',
+      role: 'ERP_USER',
+      badge: 'ERP User',
+      email: 'priya.erp@lenscore.com',
+      pass: 'ErpUser@Growth2026!',
+      color: 'from-emerald-500/20 to-teal-500/20 border-emerald-500/30 text-emerald-300 hover:border-emerald-400',
+      badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    },
+    {
+      name: 'Tariq Al-Mansoor',
+      role: 'DEPOT_USER',
+      badge: 'Depot DXB',
+      email: 'tariq.dxb@lenscore.com',
+      pass: 'Depot@Dubai2026!',
+      color: 'from-amber-500/20 to-orange-500/20 border-amber-500/30 text-amber-300 hover:border-amber-400',
+      badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    },
+    {
+      name: 'Arun Kumar',
+      role: 'DEPOT_USER',
+      badge: 'Depot BLR',
+      email: 'arun.blr@lenscore.com',
+      pass: 'Depot@Bangalore2026!',
+      color: 'from-rose-500/20 to-pink-500/20 border-rose-500/30 text-rose-300 hover:border-rose-400',
+      badgeBg: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+    },
+  ];
 
   const brandName = settings?.tradingName || settings?.companyName || 'GROWTH BRIDGE';
   const logoUrl = settings?.logoUrl;
@@ -300,8 +361,50 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Quick Access Demo Logins */}
+          <div className="pt-4 border-t border-slate-800/80 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
+                <Zap className="h-3.5 w-3.5 text-amber-400 fill-amber-400/20" />
+                <span>Quick Access Demo Accounts</span>
+              </div>
+              <span className="text-[10px] text-slate-500 font-mono">1-Click Sign In</span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-1.5">
+              {demoAccounts.map((acc) => (
+                <button
+                  key={acc.email}
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => handleQuickAccess(acc.email, acc.pass)}
+                  className={`w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-950/70 border ${acc.color} transition-all duration-200 group text-left hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="h-7 w-7 rounded-lg bg-slate-900 border border-slate-700/80 flex items-center justify-center text-slate-300 shrink-0 group-hover:border-slate-500 transition-colors">
+                      <UserCheck className="h-3.5 w-3.5 text-slate-300 group-hover:text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-white truncate">{acc.name}</span>
+                        <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded border ${acc.badgeBg} shrink-0`}>
+                          {acc.badge}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono truncate block">{acc.email}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 group-hover:text-white shrink-0 pl-2">
+                    <span>Login</span>
+                    <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Security & Infrastructure Footer Badge */}
-          <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-500">
+          <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-500">
             <div className="flex items-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 text-brand-400" />
               <span>Multi-Depot Authorization</span>

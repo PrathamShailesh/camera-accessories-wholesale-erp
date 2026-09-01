@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import AppShell from '@/components/layout/AppShell';
+import { ToastProvider } from '@/components/ui/Toast';
 
 export const metadata: Metadata = {
   title: 'LensCore | Camera & Accessories Wholesale ERP',
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#090d16',
+  themeColor: '#f6f7fb',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -30,11 +31,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-slate-950 text-slate-100 min-h-screen antialiased">
-        <AppShell>
-          {children}
-        </AppShell>
+    <html lang="en">
+      <body className="bg-workspace text-ink min-h-screen antialiased">
+        <ToastProvider>
+          <AppShell>
+            {children}
+          </AppShell>
+        </ToastProvider>
       </body>
     </html>
   );

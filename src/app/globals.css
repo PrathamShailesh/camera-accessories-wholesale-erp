@@ -365,6 +365,27 @@ input:focus, select:focus, textarea:focus {
   --muted: #737b8d;
   --primary: #5d6ee8;
   --primary-soft: #eef0ff;
+
+  /* Design-system tokens (additive — new components only, see design-system.md pattern below).
+     Distinct names from the legacy tokens above on purpose: those are consumed directly by the
+     `!important` repaint rules in this file for pages not yet migrated onto src/components/ui/*,
+     and must keep their exact hex format. Do not merge the two token sets. */
+  --line-soft: #edf0f5;
+  --primary-hover: #4c5dd6;
+  --primary-ring: rgba(93, 110, 232, 0.35);
+  --success: #059669;
+  --success-soft: #ecfdf5;
+  --success-border: #a7f3d0;
+  --warning: #d97706;
+  --warning-soft: #fffbeb;
+  --warning-border: #fde68a;
+  --danger: #e11d48;
+  --danger-hover: #c11440;
+  --danger-soft: #fff1f2;
+  --danger-border: #fecdd3;
+  --info: #0284c7;
+  --info-soft: #f0f9ff;
+  --info-border: #bae6fd;
 }
 
 .workspace-hero {

@@ -12,6 +12,41 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        // Design-system tokens used by src/components/ui/* only — see globals.css :root comment.
+        workspace: "var(--workspace)",
+        surface: "var(--surface)",
+        "surface-muted": "var(--surface-muted)",
+        line: "var(--line)",
+        "line-soft": "var(--line-soft)",
+        ink: "var(--ink)",
+        muted: "var(--muted)",
+        primary: {
+          DEFAULT: "var(--primary)",
+          hover: "var(--primary-hover)",
+          soft: "var(--primary-soft)",
+          ring: "var(--primary-ring)",
+        },
+        success: {
+          DEFAULT: "var(--success)",
+          soft: "var(--success-soft)",
+          border: "var(--success-border)",
+        },
+        warning: {
+          DEFAULT: "var(--warning)",
+          soft: "var(--warning-soft)",
+          border: "var(--warning-border)",
+        },
+        danger: {
+          DEFAULT: "var(--danger)",
+          hover: "var(--danger-hover)",
+          soft: "var(--danger-soft)",
+          border: "var(--danger-border)",
+        },
+        info: {
+          DEFAULT: "var(--info)",
+          soft: "var(--info-soft)",
+          border: "var(--info-border)",
+        },
         brand: {
           50: "#f0f7ff",
           100: "#e0effe",
@@ -40,6 +75,9 @@ const config: Config = {
         'glow': '0 0 25px -5px rgba(12, 138, 233, 0.3)',
         'glow-emerald': '0 0 25px -5px rgba(16, 185, 129, 0.3)',
         'glow-amber': '0 0 25px -5px rgba(245, 158, 11, 0.3)',
+        'card': '0 1px 2px 0 rgba(16, 24, 40, 0.04), 0 1px 1px 0 rgba(16, 24, 40, 0.02)',
+        'card-hover': '0 4px 10px -2px rgba(16, 24, 40, 0.08), 0 2px 4px -2px rgba(16, 24, 40, 0.04)',
+        'popover': '0 12px 32px -8px rgba(16, 24, 40, 0.18), 0 4px 12px -4px rgba(16, 24, 40, 0.08)',
       },
       animation: {
         'pulse-subtle': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
