@@ -4,13 +4,13 @@ import AppShell from '@/components/layout/AppShell';
 import { ToastProvider } from '@/components/ui/Toast';
 
 export const metadata: Metadata = {
-  title: 'LensCore | Camera & Accessories Wholesale ERP',
+  title: 'ARIB GLOBAL | Camera & Cine Wholesale ERP',
   description: 'Enterprise Cloud-Based Wholesale ERP for Cameras, Cinema Optics & Accessories. Multi-Depot, Proforma-to-Invoice Automation, Serial Tracking & Cloud Documents.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'LensCore ERP',
+    title: 'ARIB GLOBAL',
   },
   other: {
     'mobile-web-app-capable': 'yes',

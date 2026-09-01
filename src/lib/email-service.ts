@@ -59,7 +59,7 @@ export async function sendProformaEmail(
   const proformaUrl = `${baseUrl}/quote/${proformaId}`;
 
   // Attempt to fetch company settings for branding
-  let companyName = 'GROWTH BRIDGE Camera Wholesale';
+  let companyName = 'ARIB GLOBAL Camera & Cine Wholesale';
   let companyPhone = '+1 (800) 555-CAM';
   let companyEmail = 'sales@growthbridge.com';
 

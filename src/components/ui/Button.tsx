@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
+export type ButtonVariant = 'primary' | 'orange' | 'secondary' | 'outline' | 'ghost' | 'destructive';
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary: 'bg-primary text-white hover:bg-primary-hover shadow-card disabled:hover:bg-primary',
+  orange: 'bg-orange text-white hover:bg-orange-hover shadow-card disabled:hover:bg-orange',
   secondary: 'bg-surface-muted text-ink hover:bg-line-soft border border-line',
   outline: 'bg-surface text-ink border border-line hover:bg-surface-muted',
   ghost: 'bg-transparent text-muted hover:bg-surface-muted hover:text-ink',

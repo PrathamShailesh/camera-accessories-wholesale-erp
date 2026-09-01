@@ -113,18 +113,29 @@ export default function PrintableDocumentModal({
             className="print-page mx-auto bg-white text-black p-8 sm:p-12 rounded-xl shadow-lg max-w-3xl text-xs font-sans leading-normal border border-slate-200"
             style={{ minHeight: '1000px' }}
           >
-            {/* Header: Company Name & Contact (Left) vs Document Info (Right) */}
+            {/* Header: Company Logo, Name & Contact (Left) vs Document Info (Right) */}
             <div className="flex justify-between items-start mb-6">
-              {/* Top Left */}
-              <div>
-                <h1 className="text-2xl font-black text-black tracking-tight uppercase">
-                  {settings.companyName || 'GROWTH BRIDGE'}
-                </h1>
-                <div className="text-xs font-semibold text-black mt-0.5">
-                  {settings.tradingName || 'Growth Bridge'}
-                </div>
-                <div className="text-xs text-black mt-0.5 font-medium">
-                  Contact: {settings.phone || '+91 62827 59863'}
+              {/* Top Left: Logo & Company Name */}
+              <div className="flex items-center gap-3.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/pdflogo.png"
+                  alt="Company Logo"
+                  className="h-14 w-auto object-contain shrink-0 max-h-16"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+                <div>
+                  <h1 className="text-xl font-black text-black tracking-tight uppercase">
+                    {settings.companyName || 'ARIB GLOBAL'}
+                  </h1>
+                  <div className="text-xs font-semibold text-black mt-0.5">
+                    {settings.tradingName || 'ARIB GLOBAL'}
+                  </div>
+                  <div className="text-xs text-black mt-0.5 font-medium">
+                    Contact: {settings.phone || '+91 62827 59863'}
+                  </div>
                 </div>
               </div>
 
@@ -315,14 +326,14 @@ export default function PrintableDocumentModal({
             {/* Payments To Be Made To Reminder */}
             <div className="text-xs text-black mt-4 mb-6">
               <div className="font-bold">Payments to be made to:</div>
-              <div className="font-semibold uppercase">{settings.companyName || 'GROWTH BRIDGE'}</div>
+              <div className="font-semibold uppercase">{settings.companyName || 'ARIB GLOBAL'}</div>
               <div>Contact: {settings.phone || '+91 62827 59863'}</div>
             </div>
 
             {/* Sign-off & Computer Generated Notice */}
             <div className="flex justify-between items-end text-xs text-black pt-4">
               <div>
-                <div className="font-bold uppercase">For {settings.companyName || 'GROWTH BRIDGE'}</div>
+                <div className="font-bold uppercase">For {settings.companyName || 'ARIB GLOBAL'}</div>
                 <div className="mt-0.5">Contact: {settings.phone || '+91 62827 59863'}</div>
               </div>
               <div className="text-right text-[9px] italic text-slate-700 font-sans tracking-wide">

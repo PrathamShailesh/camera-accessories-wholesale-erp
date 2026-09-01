@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 
 export function Table({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn('overflow-x-auto rounded-xl border border-line', className)}>
+    <div className={cn('overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm', className)}>
       <table className="w-full border-collapse text-sm">{children}</table>
     </div>
   );
@@ -12,14 +12,14 @@ export function Table({ className, children }: { className?: string; children: R
 
 export function TableHeader({ children, sticky }: { children: React.ReactNode; sticky?: boolean }) {
   return (
-    <thead className={cn('bg-surface-muted', sticky && 'sticky top-0 z-10')}>
+    <thead className={cn('bg-slate-50 border-b border-slate-200', sticky && 'sticky top-0 z-10')}>
       <tr>{children}</tr>
     </thead>
   );
 }
 
 export function TableBody({ children }: { children: React.ReactNode }) {
-  return <tbody className="divide-y divide-line-soft">{children}</tbody>;
+  return <tbody className="divide-y divide-slate-100 bg-white">{children}</tbody>;
 }
 
 export function TableRow({
@@ -34,7 +34,12 @@ export function TableRow({
   return (
     <tr
       onClick={onClick}
-      className={cn('bg-surface transition-colors', onClick && 'cursor-pointer', 'hover:bg-surface-muted', className)}
+      className={cn(
+        'bg-white transition-colors',
+        onClick && 'cursor-pointer hover:bg-slate-50/90',
+        !onClick && 'hover:bg-slate-50/60',
+        className
+      )}
     >
       {children}
     </tr>
@@ -56,24 +61,24 @@ export function TableHead({ children, align = 'left', sortable, sortDirection, o
   const alignClass = align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left';
   if (!sortable) {
     return (
-      <th className={cn('px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted', alignClass, className)}>
+      <th className={cn('px-3.5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500', alignClass, className)}>
         {children}
       </th>
     );
   }
   const Icon = sortDirection === 'asc' ? ArrowUp : sortDirection === 'desc' ? ArrowDown : ChevronsUpDown;
   return (
-    <th className={cn('px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted', alignClass, className)}>
+    <th className={cn('px-3.5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500', alignClass, className)}>
       <button
         type="button"
         onClick={onSort}
         className={cn(
-          'inline-flex items-center gap-1 hover:text-ink transition-colors',
+          'inline-flex items-center gap-1 hover:text-slate-900 transition-colors',
           align === 'right' && 'flex-row-reverse'
         )}
       >
         {children}
-        <Icon className="h-3 w-3" />
+        <Icon className="h-3 w-3 text-slate-400" />
       </button>
     </th>
   );
@@ -82,14 +87,16 @@ export function TableHead({ children, align = 'left', sortable, sortDirection, o
 export function TableCell({
   children,
   align = 'left',
+  colSpan,
   className,
 }: {
   children: React.ReactNode;
   align?: 'left' | 'right' | 'center';
+  colSpan?: number;
   className?: string;
 }) {
   const alignClass = align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left';
-  return <td className={cn('px-4 py-3 text-ink align-middle', alignClass, className)}>{children}</td>;
+  return <td colSpan={colSpan} className={cn('px-3.5 py-3.5 text-slate-800 align-middle text-sm', alignClass, className)}>{children}</td>;
 }
 
 export function TableEmptyRow({ colSpan, children }: { colSpan: number; children: React.ReactNode }) {

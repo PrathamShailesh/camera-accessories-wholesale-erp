@@ -650,8 +650,8 @@ async function main() {
     update: {},
     create: {
       id: 'global-settings',
-      companyName: 'GROWTH BRIDGE',
-      tradingName: 'Growth Bridge',
+      companyName: 'ARIB GLOBAL',
+      tradingName: 'ARIB GLOBAL',
       logoUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200',
       taxRegistrationNumber: 'VAT-99201-US-GLOBAL',
       vatGstNumber: 'TRN-100889218200001',

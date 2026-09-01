@@ -354,8 +354,8 @@ export class DbService {
       settings = await prisma.companySettings.create({
         data: {
           id: 'global-settings',
-          companyName: 'GROWTH BRIDGE',
-          tradingName: 'Growth Bridge',
+          companyName: 'ARIB GLOBAL',
+          tradingName: 'ARIB GLOBAL',
           bankName: 'Commercial Bank of Dubai, Sheikh Zayed Road Branch, Dubai, U.A.E.',
           accountName: 'Arib Global General Trading LLC',
           iban: 'AE91 0230 0000 0100 2416 343',

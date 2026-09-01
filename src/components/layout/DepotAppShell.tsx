@@ -67,7 +67,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
     }
   };
 
-  const brandName = settings?.tradingName || settings?.companyName || 'GROWTH BRIDGE';
+  const brandName = settings?.tradingName || settings?.companyName || 'ARIB GLOBAL';
   const logoUrl = settings?.logoUrl;
 
   return (

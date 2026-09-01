@@ -10,7 +10,7 @@ function hashSeedPassword(password: string): string {
 }
 
 async function main() {
-  console.log('🌱 Starting clean database seed for client handover...');
+  console.log('🌱 Starting clean database seed for ARIB GLOBAL ERP...');
 
   // Clear existing data
   console.log('🧹 Clearing existing data...');
@@ -43,18 +43,23 @@ async function main() {
   console.log('⚙️ Creating company settings...');
   await prisma.companySettings.upsert({
     where: { id: 'global-settings' },
-    update: {},
+    update: {
+      companyName: 'ARIB GLOBAL',
+      tradingName: 'ARIB GLOBAL',
+      email: 'contact@aribglobal.com',
+      website: 'https://aribglobal.com',
+    },
     create: {
       id: 'global-settings',
-      companyName: 'GROWTH BRIDGE',
-      tradingName: 'Growth Bridge',
-      logoUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200',
+      companyName: 'ARIB GLOBAL',
+      tradingName: 'ARIB GLOBAL',
+      logoUrl: '/pdflogo.png',
       taxRegistrationNumber: 'VAT-99201-US-GLOBAL',
       vatGstNumber: 'TRN-100889218200001',
       companyAddress: 'Office 402, Business Bay, Dubai, UAE',
-      phone: '+91 62827 59863',
-      email: 'contact@growthbridge.com',
-      website: 'https://growthbridge.com',
+      phone: '+971 4 800 0100',
+      email: 'contact@aribglobal.com',
+      website: 'https://aribglobal.com',
       currency: 'USD',
       currencySymbol: '$',
       bankName: 'Commercial Bank of Dubai, Sheikh Zayed Road Branch, Dubai, U.A.E.',
@@ -71,156 +76,61 @@ async function main() {
   });
   console.log('✅ Company settings created');
 
-  // Create Depots (required for product imports with stock)
-  console.log('🏭 Creating depots...');
-  const depots = await Promise.all([
-    prisma.depot.create({
-      data: {
-        id: 'dep-blr',
-        code: 'DEP-BLR',
-        name: 'Bangalore Central Depot',
-        address: 'Whitefield Main Road, Bangalore, Karnataka 560066',
-        city: 'Bangalore',
-        country: 'India',
-        contactPerson: 'Arun Kumar',
-        phone: '+91 80 2839 1100',
-        email: 'bangalore@lenscore.com',
-        isCentralHub: true,
-        activeOrdersCount: 0,
-        totalStockUnits: 0,
-        totalStockValue: 0,
-      },
-    }),
-    prisma.depot.create({
-      data: {
-        id: 'dep-dxb',
-        code: 'DEP-DXB',
-        name: 'Dubai Logistics Hub',
-        address: 'Jebel Ali Free Zone, Dubai, UAE',
-        city: 'Dubai',
-        country: 'United Arab Emirates',
-        contactPerson: 'Tariq Al-Mansoor',
-        phone: '+971 4 881 2299',
-        email: 'dubai@lenscore.com',
-        isCentralHub: false,
-        activeOrdersCount: 0,
-        totalStockUnits: 0,
-        totalStockValue: 0,
-      },
-    }),
-    prisma.depot.create({
-      data: {
-        id: 'dep-bom',
-        code: 'DEP-BOM',
-        name: 'Mumbai Marine Depot',
-        address: 'Andheri East, Mumbai, Maharashtra 400069',
-        city: 'Mumbai',
-        country: 'India',
-        contactPerson: 'Vikram Singh',
-        phone: '+91 22 2839 2200',
-        email: 'mumbai@lenscore.com',
-        isCentralHub: false,
-        activeOrdersCount: 0,
-        totalStockUnits: 0,
-        totalStockValue: 0,
-      },
-    }),
-    prisma.depot.create({
-      data: {
-        id: 'dep-sin',
-        code: 'DEP-SIN',
-        name: 'Singapore Gateway Depot',
-        address: 'Changi Cargo Complex, Singapore 486612',
-        city: 'Singapore',
-        country: 'Singapore',
-        contactPerson: 'Lee Wei Ming',
-        phone: '+65 6543 2100',
-        email: 'singapore@lenscore.com',
-        isCentralHub: false,
-        activeOrdersCount: 0,
-        totalStockUnits: 0,
-        totalStockValue: 0,
-      },
-    }),
-  ]);
-  console.log(`✅ Created ${depots.length} depots`);
+  // Create Single Depot (Current Depot)
+  console.log('🏭 Creating single central depot...');
+  const centralDepot = await prisma.depot.create({
+    data: {
+      id: 'dep-central',
+      code: 'DEP-CENTRAL',
+      name: 'Central Depot',
+      address: 'Central Logistics Hub, Warehouse 1',
+      city: 'Dubai',
+      country: 'United Arab Emirates',
+      contactPerson: 'Depot Manager',
+      phone: '+971 4 800 0100',
+      email: 'depot@aribglobal.com',
+      isCentralHub: true,
+      activeOrdersCount: 0,
+      totalStockUnits: 0,
+      totalStockValue: 0,
+    },
+  });
+  console.log(`✅ Created central depot: ${centralDepot.name}`);
 
-  // Create Users with production-ready salted hashes
-  console.log('👤 Creating users...');
+  // Create Initial Users with salted password hashes
+  console.log('👤 Creating initial system users...');
   const users = await Promise.all([
     prisma.user.create({
       data: {
         id: 'usr-admin',
-        name: 'Sarah Jenkins',
-        email: 'sarah.admin@lenscore.com',
+        name: 'System Administrator',
+        email: 'admin@aribglobal.com',
         role: 'SUPER_ADMIN',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-        phone: '+1 415 890 1200',
+        avatar: '',
+        phone: '+971 4 800 0100',
         status: 'ACTIVE',
-        passwordHash: hashSeedPassword('Admin@Growth2026!'),
+        passwordHash: hashSeedPassword('Admin@Arib2026!'),
       },
     }),
     prisma.user.create({
       data: {
-        id: 'usr-mgr',
-        name: 'Marcus Vance',
-        email: 'marcus.vance@lenscore.com',
-        role: 'MANAGER',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        phone: '+1 415 890 1205',
-        status: 'ACTIVE',
-        passwordHash: hashSeedPassword('Manager@Growth2026!'),
-      },
-    }),
-    prisma.user.create({
-      data: {
-        id: 'usr-erp',
-        name: 'Priya Menon',
-        email: 'priya.erp@lenscore.com',
-        role: 'ERP_USER',
-        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80',
-        phone: '+971 4 555 0190',
-        status: 'ACTIVE',
-        passwordHash: hashSeedPassword('ErpUser@Growth2026!'),
-      },
-    }),
-    prisma.user.create({
-      data: {
-        id: 'usr-dep-dxb',
-        name: 'Tariq Al-Mansoor',
-        email: 'tariq.dxb@lenscore.com',
+        id: 'usr-depot',
+        name: 'Depot Manager',
+        email: 'depot@aribglobal.com',
         role: 'DEPOT_USER',
-        assignedDepotId: 'dep-dxb',
-        assignedDepotName: 'Dubai Logistics Hub',
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        phone: '+971 4 881 2299',
+        assignedDepotId: 'dep-central',
+        assignedDepotName: 'Central Depot',
+        avatar: '',
+        phone: '+971 4 800 0100',
         status: 'ACTIVE',
-        passwordHash: hashSeedPassword('Depot@Dubai2026!'),
-      },
-    }),
-    prisma.user.create({
-      data: {
-        id: 'usr-dep-blr',
-        name: 'Arun Kumar',
-        email: 'arun.blr@lenscore.com',
-        role: 'DEPOT_USER',
-        assignedDepotId: 'dep-blr',
-        assignedDepotName: 'Bangalore Central Depot',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
-        phone: '+91 80 2839 1100',
-        status: 'ACTIVE',
-        passwordHash: hashSeedPassword('Depot@Bangalore2026!'),
+        passwordHash: hashSeedPassword('Depot@Arib2026!'),
       },
     }),
   ]);
   console.log(`✅ Created ${users.length} users`);
 
   console.log('🎉 Clean database seed completed successfully!');
-  console.log('📝 Database is now ready for client handover with:');
-  console.log('   - 5 test users with different roles');
-  console.log('   - 4 basic depots (BLR, DXB, BOM, SIN)');
-  console.log('   - Default company settings');
-  console.log('   - No demo data (products, customers, inventory, etc.)');
+  console.log('📝 ARIB GLOBAL ERP Database initialized.');
 }
 
 main()

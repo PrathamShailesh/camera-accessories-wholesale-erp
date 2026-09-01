@@ -50,6 +50,7 @@ const iconMap: Record<string, any> = {
   ScrollText,
   Settings,
   Smartphone,
+  ShieldAlert,
 };
 
 const COLLAPSE_KEY = 'erp_sidebar_collapsed';
@@ -125,57 +126,87 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        'shrink-0 border-r border-line bg-surface flex-col justify-between hidden md:flex h-full min-h-0 overflow-hidden select-none transition-[width] duration-150',
-        collapsed ? 'w-16' : 'w-60'
+        'shrink-0 border-r border-slate-200 bg-white flex flex-col justify-between hidden md:flex h-full min-h-0 overflow-hidden select-none transition-[width] duration-150',
+        collapsed ? 'w-16' : 'w-64'
       )}
     >
+      {/* Brand Header */}
+      {!collapsed && (
+        <div className="px-4 py-3.5 border-b border-slate-100 flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/pdflogo.png"
+              alt="Logo"
+              className="h-8 w-auto object-contain shrink-0 max-h-9"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+            <div className="flex flex-col min-w-0">
+              <span className="font-extrabold text-sm text-slate-900 tracking-tight truncate">ARIB GLOBAL</span>
+              <span className="text-[11px] text-slate-400 font-medium truncate">Camera & Cine OS</span>
+            </div>
+          </div>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 uppercase shrink-0">
+            ERP
+          </span>
+        </div>
+      )}
+
       {isDepotUser && !collapsed && (
-        <div className="shrink-0 m-3 p-2.5 rounded-lg border border-warning-border bg-warning-soft text-warning text-xs">
-          <div className="flex items-center gap-1.5 font-semibold">
-            <ShieldAlert className="h-3.5 w-3.5" />
+        <div className="shrink-0 m-3 p-3 rounded-lg border border-amber-200 bg-amber-50/70 text-amber-800 text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-xs">
+            <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0" />
             <span>Sandboxed View</span>
           </div>
-          <p className="text-[11px] mt-1 opacity-80">
-            Scoped strictly to {currentUser.assignedDepotName}. Sensitive margins & financial settings are restricted.
+          <p className="text-[11px] mt-1 text-amber-700 leading-normal">
+            Scoped strictly to {currentUser.assignedDepotName}.
           </p>
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-y-auto py-4 px-2.5 space-y-5">
+      {/* Nav List */}
+      <div className="flex-1 min-h-0 overflow-y-auto py-3 px-2.5 space-y-4">
         {navSections.map((section, idx) => (
           <div key={idx}>
             {!collapsed && (
-              <div className="px-3 text-[10px] font-semibold text-muted uppercase tracking-wider mb-1.5">
+              <div className="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                 {section.title}
               </div>
             )}
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {section.items.map((item) => {
                 const isActive = isItemActive(item.href);
                 const Icon = item.icon;
 
                 return (
                   <Link
-                    key={item.href}
+                    key={`${item.href}-${item.name}`}
                     href={item.href}
                     title={collapsed ? item.name : undefined}
                     className={cn(
-                      'group flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                      collapsed && 'justify-center px-0',
+                      'group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative',
+                      collapsed && 'justify-center px-0 py-3',
                       isActive
-                        ? 'bg-primary-soft text-primary font-semibold'
+                        ? 'bg-primary/10 text-primary font-semibold border-r-2 border-primary'
                         : item.highlight
-                          ? 'text-success hover:bg-success-soft'
-                          : 'text-muted hover:text-ink hover:bg-surface-muted'
+                          ? 'text-emerald-700 hover:bg-emerald-50'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     )}
                   >
-                    <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-primary' : item.highlight ? 'text-success' : 'text-muted group-hover:text-ink')} />
+                    <Icon
+                      className={cn(
+                        'h-4.5 w-4.5 shrink-0',
+                        isActive ? 'text-primary' : item.highlight ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-700'
+                      )}
+                    />
                     {!collapsed && (
                       <>
                         <span className="truncate">{item.name}</span>
                         {item.highlight && (
-                          <span className="ml-auto rounded bg-success-soft px-1.5 py-0.5 text-[9px] font-semibold text-success uppercase shrink-0">
-                            Mobile
+                          <span className="ml-auto rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 border border-emerald-100 uppercase shrink-0">
+                            Depot UI
                           </span>
                         )}
                       </>
@@ -188,16 +219,17 @@ export default function Sidebar() {
         ))}
       </div>
 
-      <div className="shrink-0 p-2 border-t border-line">
+      {/* Footer Collapse Button */}
+      <div className="shrink-0 p-2.5 border-t border-slate-100 bg-white">
         <button
           onClick={toggleCollapsed}
           className={cn(
-            'flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-xs font-medium text-muted hover:text-ink hover:bg-surface-muted transition-colors',
-            collapsed && 'justify-center'
+            'flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors',
+            collapsed && 'justify-center px-0'
           )}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          {collapsed ? <PanelLeftOpen className="h-4.5 w-4.5" /> : <PanelLeftClose className="h-4.5 w-4.5" />}
           {!collapsed && <span>Collapse</span>}
         </button>
       </div>

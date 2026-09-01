@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Search,
   Bell,
@@ -16,6 +16,7 @@ import {
   KeyRound,
   Eye,
   EyeOff,
+  ChevronRight,
 } from 'lucide-react';
 import { User, Notification } from '@/types/erp';
 import { formatDateTime } from '@/lib/utils';
@@ -38,8 +39,36 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { EmptyState } from '@/components/ui/EmptyState';
 
+// Helper to determine breadcrumb section label from current path
+function getSectionFromPath(pathname: string) {
+  if (pathname === '/dashboard') return { section: 'Sales & Orders', page: 'Dashboard' };
+  if (pathname.startsWith('/proformas')) return { section: 'Sales & Orders', page: 'Proformas' };
+  if (pathname.startsWith('/invoices')) return { section: 'Sales & Orders', page: 'Tax Invoices' };
+  if (pathname.startsWith('/orders')) return { section: 'Sales & Orders', page: 'Order Pipeline' };
+  if (pathname.startsWith('/customers')) return { section: 'Sales & Orders', page: 'Customers' };
+  if (pathname.startsWith('/products')) return { section: 'Inventory', page: 'Product Catalog' };
+  if (pathname.startsWith('/inventory/serials')) return { section: 'Inventory', page: 'Serial Numbers' };
+  if (pathname.startsWith('/inventory/transfers')) return { section: 'Inventory', page: 'Stock Transfers' };
+  if (pathname.startsWith('/inventory/adjustments')) return { section: 'Inventory', page: 'Stock Adjustments' };
+  if (pathname.startsWith('/inventory')) return { section: 'Inventory', page: 'Inventory' };
+  if (pathname.startsWith('/depot-mobile')) return { section: 'Depot & Fulfilment', page: 'Depot Operations' };
+  if (pathname.startsWith('/depot')) return { section: 'Depot & Fulfilment', page: 'Depot Operations' };
+  if (pathname.startsWith('/depots')) return { section: 'Depot & Fulfilment', page: 'Depots' };
+  if (pathname.startsWith('/shipments')) return { section: 'Depot & Fulfilment', page: 'Shipments & AWBs' };
+  if (pathname.startsWith('/documents')) return { section: 'Documents', page: 'Documents' };
+  if (pathname.startsWith('/reports/profit')) return { section: 'Analytics', page: 'Profitability' };
+  if (pathname.startsWith('/reports/sales')) return { section: 'Analytics', page: 'Sales Reports' };
+  if (pathname.startsWith('/reports/inventory')) return { section: 'Analytics', page: 'Inventory Reports' };
+  if (pathname.startsWith('/reports')) return { section: 'Analytics', page: 'Reports' };
+  if (pathname.startsWith('/audit-logs')) return { section: 'Analytics', page: 'Audit Logs' };
+  if (pathname.startsWith('/users')) return { section: 'Administration', page: 'Users & Permissions' };
+  if (pathname.startsWith('/settings')) return { section: 'Administration', page: 'Settings' };
+  return { section: 'ERP System', page: 'Overview' };
+}
+
 export default function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User>(dataStore.getCurrentUser());
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -139,68 +168,54 @@ export default function Header() {
     reloadData();
   };
 
-  const brandName = settings?.tradingName || settings?.companyName || 'GROWTH BRIDGE';
-  const logoUrl = settings?.logoUrl;
+  const breadcrumb = getSectionFromPath(pathname);
 
   return (
     <>
-      <header className="shrink-0 z-30 flex h-14 w-full items-center justify-between border-b border-line bg-surface px-4 sm:px-5">
-        <div className="flex items-center gap-4 min-w-0">
-          <Link href="/dashboard" className="flex items-center gap-3 group shrink-0">
-            {logoUrl ? (
-              <div className="h-9 w-9 rounded-lg overflow-hidden shrink-0 border border-line bg-surface-muted flex items-center justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={logoUrl} alt={brandName} className="h-full w-full object-cover" onError={(e) => ((e.target as HTMLElement).style.display = 'none')} />
-              </div>
-            ) : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white shrink-0">
-                <Camera className="h-5 w-5" />
-              </div>
-            )}
-            <div className="hidden sm:block">
-              <div className="flex items-center gap-1.5">
-                <span className="font-semibold tracking-tight text-ink text-sm">{brandName}</span>
-                <Badge tone="primary" className="uppercase">ERP</Badge>
-              </div>
-              <span className="text-[10px] text-muted">Camera & Cine Wholesale OS</span>
-            </div>
-          </Link>
+      <header className="shrink-0 z-30 flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
+        {/* Left: Section Breadcrumb */}
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xs text-slate-500 font-medium hidden sm:inline">{breadcrumb.section}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-slate-300 hidden sm:inline" />
+          <span className="text-sm font-semibold text-slate-900 truncate">{breadcrumb.page}</span>
 
-          {isMounted && currentUser.assignedDepotName ? (
-            <div className="hidden lg:flex items-center gap-1.5 rounded-full border border-warning-border bg-warning-soft px-3 py-1 text-xs font-medium text-warning">
-              <Building2 className="h-3.5 w-3.5" />
-              <span>Depot Sandbox: {currentUser.assignedDepotName}</span>
-            </div>
-          ) : (
-            <div className="hidden xl:flex items-center gap-1.5 rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-medium text-muted">
-              <Globe className="h-3.5 w-3.5 text-primary" />
-              <span>Multi-Depot Operations</span>
-            </div>
+          {isMounted && currentUser.assignedDepotName && (
+            <span className="ml-2 hidden lg:inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 border border-amber-200">
+              <Building2 className="h-3 w-3" />
+              Depot: {currentUser.assignedDepotName}
+            </span>
           )}
         </div>
 
+        {/* Center: Global Search Bar */}
         <div className="flex-1 max-w-md mx-4 hidden md:block">
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="flex w-full items-center justify-between rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-muted hover:border-[#c3c9f7] hover:bg-surface-muted transition-colors"
+            className="flex w-full items-center justify-between rounded-md border border-slate-200 bg-slate-50/50 px-3 py-1.5 text-xs text-slate-500 hover:border-slate-300 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-muted" />
-              <span className="text-xs sm:text-sm">Search invoices, serials, SKUs, AWBs…</span>
+              <Search className="h-3.5 w-3.5 text-slate-400" />
+              <span>Search invoices, proformas, SKUs, serials, AWBs...</span>
             </div>
-            <kbd className="hidden sm:inline-flex items-center gap-1 rounded bg-surface-muted px-1.5 py-0.5 text-[10px] font-mono text-muted border border-line">
+            <kbd className="hidden sm:inline-flex items-center gap-1 rounded bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 border border-slate-200">
               ⌘K
             </kbd>
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <IconButton label="Search" onClick={() => setIsSearchOpen(true)} className="md:hidden">
-            <Search className="h-[18px] w-[18px]" />
+        {/* Right: Quick Actions & Profile */}
+        <div className="flex items-center gap-2">
+          <IconButton label="Search" onClick={() => setIsSearchOpen(true)} className="md:hidden text-slate-600">
+            <Search className="h-4 w-4" />
           </IconButton>
 
           {currentUser.role !== 'DEPOT_USER' && (
-            <Button size="sm" iconLeft={<PlusCircle className="h-3.5 w-3.5" />} className="hidden sm:inline-flex" onClick={() => router.push('/proformas/new')}>
+            <Button
+              size="sm"
+              iconLeft={<PlusCircle className="h-3.5 w-3.5" />}
+              className="hidden sm:inline-flex bg-primary hover:bg-primary-hover text-white border-none shadow-sm text-xs font-semibold"
+              onClick={() => router.push('/proformas/new')}
+            >
               New Proforma
             </Button>
           )}
@@ -208,45 +223,33 @@ export default function Header() {
           <Button
             size="sm"
             variant="outline"
-            iconLeft={<FileText className="h-3.5 w-3.5 text-info" />}
-            className="hidden lg:inline-flex"
+            iconLeft={<FileText className="h-3.5 w-3.5 text-sky-600" />}
+            className="hidden lg:inline-flex text-xs text-slate-700 border-slate-200 hover:bg-slate-50"
             onClick={() => setIsUploadOpen(true)}
             title="Upload document or photo to Cloudinary"
           >
-            Cloud Upload
+            Upload
           </Button>
 
-          <Button
-            size="sm"
-            variant="outline"
-            iconLeft={<Smartphone className="h-3.5 w-3.5 text-success" />}
-            className="hidden lg:inline-flex"
-            onClick={() => router.push('/depot')}
-            title="Open mobile-first depot fulfilment UI"
-          >
-            Depot UI
-          </Button>
-
+          {/* Notifications Popover */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="relative p-2 text-muted hover:text-ink rounded-lg hover:bg-surface-muted transition-colors" aria-label="Notifications">
-                <Bell className="h-[18px] w-[18px]" />
+              <button className="relative p-2 text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-100 transition-colors" aria-label="Notifications">
+                <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white">
-                    {unreadCount}
-                  </span>
+                  <span className="absolute top-1.5 right-1.5 flex h-2 w-2 rounded-full bg-rose-600" />
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-80 sm:w-96 p-0">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-line">
+            <DropdownMenuContent className="w-80 sm:w-96 p-0 bg-white border border-slate-200 shadow-lg">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
                 <div className="flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-ink">Notifications</span>
-                  <span className="rounded bg-surface-muted px-1.5 py-0.5 text-[10px] font-mono text-muted">{notifications.length}</span>
+                  <Bell className="h-4 w-4 text-indigo-600" />
+                  <span className="text-xs font-semibold text-slate-900">Notifications</span>
+                  <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-mono font-medium text-slate-600">{notifications.length}</span>
                 </div>
                 {unreadCount > 0 && (
-                  <button onClick={handleMarkAllRead} className="text-xs text-primary hover:underline">
+                  <button onClick={handleMarkAllRead} className="text-xs text-indigo-600 font-medium hover:underline">
                     Mark all read
                   </button>
                 )}
@@ -263,16 +266,16 @@ export default function Header() {
                         dataStore.markNotificationAsRead(n.id);
                         reloadData();
                       }}
-                      className={`block p-2.5 rounded-lg border transition-colors ${
-                        n.read ? 'border-transparent hover:bg-surface-muted' : 'border-[#d7dbf9] bg-primary-soft'
+                      className={`block p-2.5 rounded-md border transition-colors ${
+                        n.read ? 'border-transparent hover:bg-slate-50' : 'border-indigo-100 bg-indigo-50/50'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <span className="text-xs font-semibold text-ink line-clamp-1">{n.title}</span>
-                        {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1" />}
+                        <span className="text-xs font-semibold text-slate-900 line-clamp-1">{n.title}</span>
+                        {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-indigo-600 shrink-0 mt-1" />}
                       </div>
-                      <p className="text-xs text-muted mt-1 line-clamp-2">{n.message}</p>
-                      <span className="text-[10px] font-mono text-muted mt-1.5 block">{formatDateTime(n.createdAt)}</span>
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">{n.message}</p>
+                      <span className="text-[10px] font-mono text-slate-400 mt-1.5 block">{formatDateTime(n.createdAt)}</span>
                     </Link>
                   ))
                 )}
@@ -280,31 +283,32 @@ export default function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {/* Profile Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 rounded-lg border border-line bg-surface p-1 sm:pl-1.5 sm:pr-2.5 sm:py-1 hover:bg-surface-muted transition-colors">
+              <button className="flex items-center gap-2 rounded-md border border-slate-200 bg-white p-1 sm:pl-1.5 sm:pr-2.5 sm:py-1 hover:bg-slate-50 transition-colors">
                 <Avatar name={currentUser.name} src={currentUser.avatar} size="sm" />
                 <div className="text-left hidden md:block">
-                  <div className="text-xs font-semibold text-ink line-clamp-1">{currentUser.name}</div>
-                  <div className="text-[10px] text-muted leading-tight">{currentUser.role.replace('_', ' ')}</div>
+                  <div className="text-xs font-semibold text-slate-900 line-clamp-1">{currentUser.name}</div>
+                  <div className="text-[10px] text-slate-500 leading-tight">{currentUser.role.replace('_', ' ')}</div>
                 </div>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-64">
-              <div className="px-3 py-2.5 rounded-lg bg-surface-muted mb-1">
-                <div className="font-semibold text-xs text-ink line-clamp-1">{currentUser.name}</div>
-                <div className="text-[11px] text-muted truncate">{currentUser.email}</div>
+            <DropdownMenuContent className="w-60 bg-white border border-slate-200 shadow-lg">
+              <div className="px-3 py-2.5 rounded-md bg-slate-50 mb-1 border border-slate-100">
+                <div className="font-semibold text-xs text-slate-900 line-clamp-1">{currentUser.name}</div>
+                <div className="text-[11px] text-slate-500 truncate">{currentUser.email}</div>
                 <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                   <Badge tone="primary">{currentUser.role.replace('_', ' ')}</Badge>
                   {currentUser.assignedDepotName && <Badge tone="info">{currentUser.assignedDepotName}</Badge>}
                 </div>
               </div>
-              <DropdownMenuItem onSelect={() => setIsChangePasswordOpen(true)}>
-                <KeyRound className="h-3.5 w-3.5 text-info" />
-                Change My Password
+              <DropdownMenuItem onSelect={() => setIsChangePasswordOpen(true)} className="text-xs text-slate-700 hover:bg-slate-50">
+                <KeyRound className="h-3.5 w-3.5 text-slate-500" />
+                Change Password
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem destructive onSelect={handleLogout}>
+              <DropdownMenuItem destructive onSelect={handleLogout} className="text-xs text-rose-600 hover:bg-rose-50">
                 <LogOut className="h-3.5 w-3.5" />
                 Sign Out
               </DropdownMenuItem>
@@ -322,11 +326,11 @@ export default function Header() {
           setIsChangePasswordOpen(false);
           setPasswordError('');
         }}
-        title="Change Your Password"
+        title="Change Password"
       >
         <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
           {passwordError && (
-            <div className="p-2.5 rounded-lg bg-danger-soft border border-danger-border text-danger text-xs">{passwordError}</div>
+            <div className="p-2.5 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs">{passwordError}</div>
           )}
           <div className="relative">
             <Input
@@ -340,7 +344,7 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-[30px] text-muted hover:text-ink"
+              className="absolute right-3 top-[30px] text-slate-400 hover:text-slate-600"
               tabIndex={-1}
             >
               {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -363,7 +367,7 @@ export default function Header() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Re-type new password"
           />
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
             <Button type="button" variant="outline" onClick={() => setIsChangePasswordOpen(false)}>
               Cancel
             </Button>

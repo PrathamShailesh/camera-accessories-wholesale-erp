@@ -1,12 +1,9 @@
 import crypto from 'crypto';
 
-// Default initial passwords per user email
+// Default initial credentials for seed accounts
 export const DEFAULT_USER_CREDENTIALS: Record<string, { role: string; defaultPass: string }> = {
-  'sarah.admin@lenscore.com': { role: 'SUPER_ADMIN', defaultPass: 'Admin@Growth2026!' },
-  'marcus.vance@lenscore.com': { role: 'MANAGER', defaultPass: 'Manager@Growth2026!' },
-  'priya.erp@lenscore.com': { role: 'ERP_USER', defaultPass: 'ErpUser@Growth2026!' },
-  'tariq.dxb@lenscore.com': { role: 'DEPOT_USER', defaultPass: 'Depot@Dubai2026!' },
-  'arun.blr@lenscore.com': { role: 'DEPOT_USER', defaultPass: 'Depot@Bangalore2026!' },
+  'admin@aribglobal.com': { role: 'SUPER_ADMIN', defaultPass: 'Admin@Arib2026!' },
+  'depot@aribglobal.com': { role: 'DEPOT_USER', defaultPass: 'Depot@Arib2026!' },
 };
 
 /**
@@ -19,12 +16,12 @@ export function hashPassword(password: string): string {
 }
 
 /**
- * Verify password against stored hash (or fallback to bootstrap default if account has no hash configured)
+ * Verify password against stored hash
  */
 export function verifyPassword(password: string, storedHash?: string | null, email?: string): boolean {
   if (!password) return false;
 
-  // 1. If stored hash exists in format salt:hash (Authoritative verification)
+  // 1. Authoritative PBKDF2 hash verification (salt:hash)
   if (storedHash && storedHash.includes(':')) {
     const [salt, originalHash] = storedHash.split(':');
     if (!salt || !originalHash) return false;
@@ -32,12 +29,12 @@ export function verifyPassword(password: string, storedHash?: string | null, ema
     return hashToVerify === originalHash;
   }
 
-  // 2. If legacy plain stored password in DB (not empty)
+  // 2. Direct string comparison if stored directly
   if (storedHash && storedHash.trim() !== '') {
     return storedHash === password;
   }
 
-  // 3. Fallback ONLY if the user account has NO stored password hash at all (e.g. uninitialized user)
+  // 3. Fallback for uninitialized seed accounts
   if ((!storedHash || storedHash.trim() === '') && email && DEFAULT_USER_CREDENTIALS[email.toLowerCase()]) {
     return password === DEFAULT_USER_CREDENTIALS[email.toLowerCase()].defaultPass;
   }

@@ -81,10 +81,10 @@ export default function DepotMobilePage() {
         const filtered = allInvoices.filter((inv: any) => !activeDepot || inv.depotId === activeDepot);
         setInvoices(filtered);
       } else {
-        setInvoices(dataStore.getInvoices(activeDepot));
+        setInvoices(dataStore.getInvoices({ depotId: activeDepot }));
       }
     } catch {
-      setInvoices(dataStore.getInvoices(activeDepot));
+      setInvoices(dataStore.getInvoices({ depotId: activeDepot }));
     }
   };
 

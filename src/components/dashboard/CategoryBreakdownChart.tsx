@@ -10,19 +10,19 @@ export interface CategoryDatum {
   units: number;
 }
 
-const BASE_COLOR = '#5d6ee8';
+const BASE_COLOR = '#4f46e5';
 
 function CustomTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload as CategoryDatum;
   return (
-    <div className="rounded-lg border border-line bg-surface px-3 py-2.5 shadow-popover text-xs">
-      <div className="font-semibold text-ink mb-1">{d.name}</div>
-      <div className="text-muted">
-        Revenue: <span className="font-medium text-ink">{formatUSD(d.revenue)}</span>
+    <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-md text-xs">
+      <div className="font-semibold text-slate-900 mb-1">{d.name}</div>
+      <div className="text-slate-500">
+        Revenue: <span className="font-semibold text-slate-900">{formatUSD(d.revenue)}</span>
       </div>
-      <div className="text-muted">
-        Units sold: <span className="font-medium text-ink">{d.units}</span>
+      <div className="text-slate-500">
+        Units sold: <span className="font-semibold text-slate-900">{d.units}</span>
       </div>
     </div>
   );
@@ -35,26 +35,26 @@ export function CategoryBreakdownChart({ data }: { data: CategoryDatum[] }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={sorted} layout="vertical" margin={{ top: 4, right: 44, left: 8, bottom: 4 }}>
-        <CartesianGrid horizontal={false} stroke="#e4e7ef" strokeDasharray="3 3" />
+        <CartesianGrid horizontal={false} stroke="#f1f5f9" strokeDasharray="3 3" />
         <XAxis type="number" hide />
         <YAxis
           type="category"
           dataKey="name"
-          tick={{ fontSize: 12, fill: '#202536' }}
+          tick={{ fontSize: 12, fill: '#1e293b' }}
           axisLine={false}
           tickLine={false}
           width={110}
         />
-        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f3f8' }} />
+        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
         <Bar dataKey="revenue" fill={BASE_COLOR} radius={[0, 4, 4, 0]} maxBarSize={18}>
           {sorted.map((_, i) => (
-            <Cell key={i} fillOpacity={1 - i * 0.07} />
+            <Cell key={i} fillOpacity={1 - i * 0.08} />
           ))}
           <LabelList
             dataKey="revenue"
             position="right"
             formatter={(v: React.ReactNode) => formatUSD(typeof v === 'number' ? v : Number(v) || 0)}
-            style={{ fontSize: 11, fill: '#737b8d', fontWeight: 500 }}
+            style={{ fontSize: 11, fill: '#64748b', fontWeight: 500 }}
           />
         </Bar>
       </BarChart>

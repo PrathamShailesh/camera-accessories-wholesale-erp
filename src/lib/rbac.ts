@@ -1,5 +1,5 @@
 /**
- * Central RBAC matrix for Growth Bridge ERP.
+ * Central RBAC matrix for ARIB GLOBAL ERP.
  * Used by Edge middleware (pages + APIs) and by Node API handlers.
  * Keep this file free of Node-only imports so it can run on the Edge runtime.
  */
@@ -338,10 +338,10 @@ export const NAV_SECTIONS: Array<{
     ],
   },
   {
-    title: 'INVENTORY & HARDWARE',
+    title: 'INVENTORY',
     items: [
       { name: 'Product Catalog', href: '/products', permission: 'products.read', icon: 'Package' },
-      { name: 'Depot Stock Matrix', href: '/inventory', permission: 'inventory.read', icon: 'Boxes' },
+      { name: 'Inventory', href: '/inventory', permission: 'inventory.read', icon: 'Boxes' },
       { name: 'Serial Numbers', href: '/inventory/serials', permission: 'serials.read', icon: 'Barcode' },
       { name: 'Stock Transfers', href: '/inventory/transfers', permission: 'inventory.read', icon: 'ArrowLeftRight' },
       { name: 'Stock Adjustments', href: '/inventory/adjustments', permission: 'inventory.adjust', icon: 'SlidersHorizontal' },
@@ -350,24 +350,31 @@ export const NAV_SECTIONS: Array<{
   {
     title: 'DEPOT & FULFILMENT',
     items: [
-      { name: 'Depot Hubs', href: '/depots', permission: 'depots.directory', icon: 'Building2' },
       { name: 'Depot Operations', href: '/depot', permission: 'depot_mobile.view', highlight: true, icon: 'Smartphone' },
+      { name: 'Depots', href: '/depots', permission: 'depots.directory', icon: 'Building2' },
       { name: 'Shipments & AWBs', href: '/shipments', permission: 'shipments.read', icon: 'Truck' },
     ],
   },
   {
-    title: 'DOCS & CLOUD STORAGE',
-    items: [{ name: 'Documents Hub', href: '/documents', permission: 'documents.read', icon: 'FolderLock' }],
+    title: 'DOCUMENTS',
+    items: [{ name: 'Documents', href: '/documents', permission: 'documents.read', icon: 'FolderLock' }],
   },
   {
-    title: 'ANALYTICS & AUDIT',
+    title: 'ANALYTICS',
     items: [
-      { name: 'Profitability & BI', href: '/reports/profit', permission: 'reports.profit', icon: 'TrendingUp' },
-      { name: 'Sales Reports', href: '/reports/sales', permission: 'reports.sales', icon: 'BarChart3' },
+      { name: 'Reports', href: '/reports', permission: 'reports.sales', icon: 'BarChart3' },
+      { name: 'Profitability', href: '/reports/profit', permission: 'reports.profit', icon: 'TrendingUp' },
       { name: 'Inventory Reports', href: '/reports/inventory', permission: 'reports.inventory', icon: 'Boxes' },
+      { name: 'Sales Reports', href: '/reports/sales', permission: 'reports.sales', icon: 'BarChart3' },
       { name: 'Audit Logs', href: '/audit-logs', permission: 'audit.read', icon: 'ScrollText' },
-      { name: 'User Management', href: '/users', permission: 'users.read', icon: 'Users' },
-      { name: 'ERP Settings', href: '/settings', permission: 'settings.read', icon: 'Settings' },
+    ],
+  },
+  {
+    title: 'ADMINISTRATION',
+    items: [
+      { name: 'Users', href: '/users', permission: 'users.read', icon: 'Users' },
+      { name: 'Roles & Permissions', href: '/users', permission: 'users.read', icon: 'ShieldAlert' },
+      { name: 'Settings', href: '/settings', permission: 'settings.read', icon: 'Settings' },
     ],
   },
 ];

@@ -9,37 +9,47 @@ export interface Breadcrumb {
 }
 
 export interface PageHeaderProps {
-  title: string;
-  description?: string;
+  eyebrow?: string;
+  title: React.ReactNode;
+  description?: React.ReactNode;
   breadcrumbs?: Breadcrumb[];
   actions?: React.ReactNode;
+  divider?: boolean;
   className?: string;
 }
 
-export function PageHeader({ title, description, breadcrumbs, actions, className }: PageHeaderProps) {
+export function PageHeader({ eyebrow, title, description, breadcrumbs, actions, divider = true, className }: PageHeaderProps) {
   return (
-    <div className={cn('flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between', className)}>
-      <div className="min-w-0">
-        {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav className="flex items-center gap-1 text-xs text-muted mb-1.5">
-            {breadcrumbs.map((crumb, i) => (
-              <React.Fragment key={i}>
-                {i > 0 && <ChevronRight className="h-3 w-3 shrink-0" />}
-                {crumb.href ? (
-                  <Link href={crumb.href} className="hover:text-ink transition-colors">
-                    {crumb.label}
-                  </Link>
-                ) : (
-                  <span className="text-ink font-medium">{crumb.label}</span>
-                )}
-              </React.Fragment>
-            ))}
-          </nav>
-        )}
-        <h1 className="text-xl font-semibold tracking-tight text-ink">{title}</h1>
-        {description && <p className="text-sm text-muted mt-1 max-w-2xl">{description}</p>}
+    <div className={cn(className)}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          {breadcrumbs && breadcrumbs.length > 0 && (
+            <nav className="flex items-center gap-1 text-xs text-muted mb-2">
+              {breadcrumbs.map((crumb, i) => (
+                <React.Fragment key={i}>
+                  {i > 0 && <ChevronRight className="h-3 w-3 shrink-0" />}
+                  {crumb.href ? (
+                    <Link href={crumb.href} className="hover:text-ink transition-colors">
+                      {crumb.label}
+                    </Link>
+                  ) : (
+                    <span className="text-ink font-medium">{crumb.label}</span>
+                  )}
+                </React.Fragment>
+              ))}
+            </nav>
+          )}
+          {eyebrow && (
+            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary mb-2">
+              {eyebrow}
+            </div>
+          )}
+          <h1 className="text-[28px] leading-[1.15] sm:text-4xl font-semibold tracking-tight text-ink">{title}</h1>
+          {description && <p className="text-sm sm:text-[15px] text-muted mt-2.5 max-w-2xl leading-relaxed">{description}</p>}
+        </div>
+        {actions && <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div>}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div>}
+      {divider && <div className="mt-6 border-t border-line" />}
     </div>
   );
 }
@@ -58,8 +68,8 @@ export function SectionHeader({
   return (
     <div className={cn('flex items-center justify-between gap-3', className)}>
       <div>
-        <h2 className="text-sm font-semibold text-ink">{title}</h2>
-        {description && <p className="text-xs text-muted mt-0.5">{description}</p>}
+        <h2 className="text-xl font-semibold tracking-tight text-ink">{title}</h2>
+        {description && <p className="text-sm text-muted mt-1">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
     </div>

@@ -61,7 +61,7 @@ export default function ProductsPage() {
   const [editMinStockLevel, setEditMinStockLevel] = useState<number>(10);
   const [editTrackSerial, setEditTrackSerial] = useState<boolean>(true);
   const [editDepotBreakdown, setEditDepotBreakdown] = useState<Record<string, number>>({
-    'dep-blr': 0, 'dep-dxb': 0, 'dep-bom': 0, 'dep-sin': 0,
+    'dep-central': 0,
   });
 
   // Delete product state
@@ -84,10 +84,7 @@ export default function ProductsPage() {
   const [trackSerial, setTrackSerial] = useState<boolean>(true);
   const [minStockLevel, setMinStockLevel] = useState<number>(10);
   const [depotBreakdown, setDepotBreakdown] = useState<Record<string, number>>({
-    'dep-blr': 0,
-    'dep-dxb': 0,
-    'dep-bom': 0,
-    'dep-sin': 0,
+    'dep-central': 0,
   });
 
   const loadData = async () => {

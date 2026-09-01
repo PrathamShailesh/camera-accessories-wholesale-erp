@@ -1,19 +1,19 @@
 {
-  "name": "LensCore Camera ERP - Wholesale Management System",
-  "short_name": "LensCore ERP",
-  "description": "Cloud-Based Camera & Accessories Wholesale ERP & Depot Management System",
+  "name": "ARIB GLOBAL - Camera & Cine Wholesale ERP",
+  "short_name": "ARIB GLOBAL",
+  "description": "Enterprise Cloud-Based Camera & Cine Optical Accessories Wholesale ERP",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#090d16",
-  "theme_color": "#0c8ae9",
+  "background_color": "#ffffff",
+  "theme_color": "#005e82",
   "icons": [
     {
-      "src": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=192&auto=format&fit=crop&q=80",
+      "src": "/pdflogo.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=512&auto=format&fit=crop&q=80",
+      "src": "/pdflogo.png",
       "sizes": "512x512",
       "type": "image/png"
     }

@@ -639,8 +639,8 @@ model Notification {
 
 model CompanySettings {
   id                    String   @id @default("global-settings")
-  companyName           String   @default("GROWTH BRIDGE")
-  tradingName           String   @default("Growth Bridge")
+  companyName           String   @default("ARIB GLOBAL")
+  tradingName           String   @default("ARIB GLOBAL")
   logoUrl               String   @default("https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200")
   taxRegistrationNumber String   @default("VAT-99201-US-GLOBAL")
   vatGstNumber          String   @default("TRN-100889218200001")
@@ -667,7 +667,7 @@ model CompanySettings {
   smtpPort              Int      @default(587)
   smtpUser              String   @default("cumrahware@gmail.com")
   smtpPassword          String   @default("")
-  smtpFromName          String   @default("GROWTH BRIDGE ERP")
+  smtpFromName          String   @default("ARIB GLOBAL ERP")
   smtpFromEmail         String   @default("cumrahware@gmail.com")
   updatedAt             DateTime @updatedAt
 }

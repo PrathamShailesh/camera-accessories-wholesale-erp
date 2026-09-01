@@ -166,8 +166,8 @@ export default function BulkProductImportModal({
 
     const fileName =
       importMode === 'UPDATE_STOCK'
-        ? `lenscore_stock_update_template.${format}`
-        : `lenscore_product_import_template.${format}`;
+        ? `arib_global_stock_update_template.${format}`
+        : `arib_global_product_import_template.${format}`;
 
     if (format === 'xlsx') {
       XLSX.writeFile(workbook, fileName);

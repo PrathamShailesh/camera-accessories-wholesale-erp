@@ -149,7 +149,7 @@ export default function PublicQuotePortalPage() {
             </div>
             <div>
               <div className="text-xs font-bold uppercase tracking-wider text-brand-400">
-                {settings?.tradingName || settings?.companyName || 'GROWTH BRIDGE Wholesale Distribution'}
+                {settings?.tradingName || settings?.companyName || 'ARIB GLOBAL Wholesale Distribution'}
               </div>
               <div className="text-sm font-bold text-white flex items-center gap-2">
                 <span>Proforma Invoice {proforma.proformaNumber}</span>
@@ -267,7 +267,7 @@ export default function PublicQuotePortalPage() {
               <span>Issuing Distributor</span>
             </div>
             <div className="text-xs text-slate-300 space-y-1">
-              <p className="font-bold text-white">{settings?.tradingName || settings?.companyName || 'GROWTH BRIDGE Wholesale Distribution'}</p>
+              <p className="font-bold text-white">{settings?.tradingName || settings?.companyName || 'ARIB GLOBAL Wholesale Distribution'}</p>
               <p className="text-slate-400">{settings?.companyAddress || 'Global Logistics & Camera Distribution Center'}</p>
               <p className="text-slate-400">Email: {settings?.email || settings?.smtpFromEmail || 'sales@growthbridge.com'}</p>
               <p className="text-slate-400">Phone: {settings?.phone || '+1 (800) 555-CAM'}</p>
@@ -414,10 +414,10 @@ export default function PublicQuotePortalPage() {
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
               <div>
                 <div className="text-[10px] text-slate-500 font-sans">Beneficiary Name</div>
-                <div className="font-bold text-slate-200 mt-0.5">{settings?.accountName || 'GROWTH BRIDGE WHOLESALE LLC'}</div>
+                <div className="font-bold text-slate-200 mt-0.5">{settings?.accountName || 'ARIB GLOBAL WHOLESALE LLC'}</div>
               </div>
               <button
-                onClick={() => handleCopy(settings?.accountName || 'GROWTH BRIDGE WHOLESALE LLC', 'beneficiary')}
+                onClick={() => handleCopy(settings?.accountName || 'ARIB GLOBAL WHOLESALE LLC', 'beneficiary')}
                 className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
                 title="Copy"
               >
@@ -486,7 +486,7 @@ export default function PublicQuotePortalPage() {
         {/* Footer Support & Legal */}
         <footer className="pt-8 pb-12 text-center text-xs text-slate-500 space-y-2 border-t border-slate-800/80">
           <p className="font-medium text-slate-400">
-            {settings?.tradingName || settings?.companyName || 'GROWTH BRIDGE Wholesale Distribution LLC'}
+            {settings?.tradingName || settings?.companyName || 'ARIB GLOBAL Wholesale Distribution LLC'}
           </p>
           <p>
             Tax Registration: <span className="font-mono">{settings?.taxRegistrationNumber || 'TRN-94820194'}</span> • VAT/GST: <span className="font-mono">{settings?.vatGstNumber || 'VAT-US-849201'}</span>
@@ -513,7 +513,7 @@ export default function PublicQuotePortalPage() {
 
             <div className="space-y-3 text-xs text-slate-300">
               <p className="leading-relaxed text-slate-300">
-                By confirming this quotation, you authorize <strong>{settings?.tradingName || 'GROWTH BRIDGE'}</strong> to allocate the specified optical inventory from regional warehouses for your order.
+                By confirming this quotation, you authorize <strong>{settings?.tradingName || 'ARIB GLOBAL'}</strong> to allocate the specified optical inventory from regional warehouses for your order.
               </p>
 
               <div>

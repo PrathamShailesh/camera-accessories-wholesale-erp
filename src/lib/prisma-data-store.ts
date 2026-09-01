@@ -28,11 +28,11 @@ class PrismaDataStore {
     // Default user - in production this would come from authentication
     this.currentUser = {
       id: 'usr-admin',
-      name: 'Sarah Jenkins',
-      email: 'sarah.admin@lenscore.com',
+      name: 'System Administrator',
+      email: 'admin@aribglobal.com',
       role: 'SUPER_ADMIN',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      phone: '+1 415 890 1200',
+      avatar: '',
+      phone: '+971 4 800 0100',
       status: 'ACTIVE',
       lastLogin: new Date().toISOString(),
     };
@@ -261,8 +261,8 @@ class PrismaDataStore {
     // Will be fetched via API
     return {
       id: 'global-settings',
-      companyName: 'GROWTH BRIDGE',
-      tradingName: 'Growth Bridge',
+      companyName: 'ARIB GLOBAL',
+      tradingName: 'ARIB GLOBAL',
       logoUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200',
       taxRegistrationNumber: 'VAT-99201-US-GLOBAL',
       vatGstNumber: 'TRN-100889218200001',

@@ -2,55 +2,65 @@
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import {
   FileCheck2,
-  ArrowLeft,
   Plus,
   Trash2,
   AlertCircle,
   Building2,
   DollarSign,
   Package,
-  CheckCircle,
-  Sparkles,
+  CheckCircle2,
   Search,
-  ChevronDown,
+  ChevronRight,
   UserPlus,
   X,
   Users,
+  Send,
+  Check,
+  Building,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { formatUSD } from '@/lib/utils';
 import { Customer, Product, Depot, PaymentTerms } from '@/types/erp';
+import { Button, LinkButton } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Input } from '@/components/ui/Input';
+import { PageHeader } from '@/components/ui/PageHeader';
+
+const STEPS = [
+  { step: 1, name: 'Customer', desc: 'Select or add client' },
+  { step: 2, name: 'Products', desc: 'Add equipment & stock' },
+  { step: 3, name: 'Pricing', desc: 'Line prices & discounts' },
+  { step: 4, name: 'Depot / Fulfilment', desc: 'Assign warehouse hub' },
+  { step: 5, name: 'Review', desc: 'Verify totals & terms' },
+  { step: 6, name: 'Create & Send', desc: 'Issue quotation' },
+];
 
 function ProformaBuilder() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryCustomerId = searchParams.get('customerId');
 
+  const [currentStep, setCurrentStep] = useState(1);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [depots, setDepots] = useState<Depot[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
 
-  // Customer search combobox state
+  // Customer search & modal
   const [customerSearch, setCustomerSearch] = useState('');
-  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
-  const customerDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Quick Add Customer modal
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [newCustCompany, setNewCustCompany] = useState('');
   const [newCustContact, setNewCustContact] = useState('');
   const [newCustEmail, setNewCustEmail] = useState('');
   const [newCustPhone, setNewCustPhone] = useState('');
   const [newCustCountry, setNewCustCountry] = useState('United Arab Emirates');
-  const [newCustBilling, setNewCustBilling] = useState('');
-  const [newCustShipping, setNewCustShipping] = useState('');
-  const [newCustTaxId, setNewCustTaxId] = useState('');
-  const [newCustCredit, setNewCustCredit] = useState(100000);
-  const [newCustTerms, setNewCustTerms] = useState<PaymentTerms>('NET_30');
 
+  // Product Live Search for Step 2
+  const [productQuery, setProductQuery] = useState('');
+
+  // Form line items
   const [items, setItems] = useState<
     {
       productId: string;
@@ -104,27 +114,13 @@ function ProformaBuilder() {
         ]);
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading proforma data:', error);
     }
   };
 
   useEffect(() => {
     loadData();
   }, [queryCustomerId]);
-
-  // Click outside to close customer dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        customerDropdownRef.current &&
-        !customerDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsCustomerDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
 
@@ -135,41 +131,44 @@ function ProformaBuilder() {
       c.companyName.toLowerCase().includes(q) ||
       c.contactPerson.toLowerCase().includes(q) ||
       c.customerCode.toLowerCase().includes(q) ||
-      c.country.toLowerCase().includes(q) ||
-      c.email.toLowerCase().includes(q)
+      c.country.toLowerCase().includes(q)
     );
   });
 
-  const handleAddItem = () => {
-    if (products.length === 0) {
-      setErrorMessage('No products available in catalog. Please add products first.');
-      return;
+  const filteredProducts = products.filter((p) => {
+    if (!productQuery.trim()) return true;
+    const q = productQuery.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(q) ||
+      p.sku.toLowerCase().includes(q) ||
+      p.brand.toLowerCase().includes(q) ||
+      (p.categoryName && p.categoryName.toLowerCase().includes(q))
+    );
+  });
+
+  const addProductToItems = (p: Product) => {
+    const existingIndex = items.findIndex((i) => i.productId === p.id);
+    if (existingIndex >= 0) {
+      const updated = [...items];
+      updated[existingIndex].quantity += 1;
+      setItems(updated);
+    } else {
+      setItems([
+        ...items,
+        {
+          productId: p.id,
+          quantity: 1,
+          unitPrice: p.sellingPrice,
+          discountPercent: 0,
+          selectedDepotId: depots[0]?.id || 'dep-dxb',
+        },
+      ]);
     }
-    const firstProd = products[0];
-    setItems([
-      ...items,
-      {
-        productId: firstProd.id,
-        quantity: 1,
-        unitPrice: firstProd.sellingPrice,
-        discountPercent: 0,
-        selectedDepotId: depots[0]?.id || 'dep-dxb',
-      },
-    ]);
   };
 
   const handleRemoveItem = (index: number) => {
     if (items.length <= 1) return;
     setItems(items.filter((_, i) => i !== index));
-  };
-
-  const handleProductChange = (index: number, prodId: string) => {
-    const p = products.find((prod) => prod.id === prodId);
-    if (!p) return;
-    const updated = [...items];
-    updated[index].productId = prodId;
-    updated[index].unitPrice = p.sellingPrice;
-    setItems(updated);
   };
 
   const handleQuickAddCustomer = async (e: React.FormEvent) => {
@@ -186,11 +185,11 @@ function ProformaBuilder() {
           email: newCustEmail,
           phone: newCustPhone,
           country: newCustCountry,
-          billingAddress: newCustBilling || `${newCustCompany}, ${newCustCountry}`,
-          shippingAddress: newCustShipping || newCustBilling || `${newCustCompany}, ${newCustCountry}`,
-          taxNumber: newCustTaxId || 'TAX-PENDING',
-          paymentTerms: newCustTerms,
-          creditLimit: Number(newCustCredit) || 50000,
+          billingAddress: `${newCustCompany}, ${newCustCountry}`,
+          shippingAddress: `${newCustCompany}, ${newCustCountry}`,
+          taxNumber: 'TAX-PENDING',
+          paymentTerms: 'NET_30',
+          creditLimit: 50000,
         }),
       });
 
@@ -200,21 +199,11 @@ function ProformaBuilder() {
       }
 
       const created = await res.json();
-
       const custsRes = await fetch('/api/customers');
       const updatedCusts = custsRes.ok ? await custsRes.json() : [];
       setCustomers(updatedCusts);
       setSelectedCustomerId(created.id);
       setIsQuickAddOpen(false);
-      setErrorMessage('');
-
-      setNewCustCompany('');
-      setNewCustContact('');
-      setNewCustEmail('');
-      setNewCustPhone('');
-      setNewCustBilling('');
-      setNewCustShipping('');
-      setNewCustTaxId('');
     } catch {
       setErrorMessage('Failed to create customer');
     }
@@ -241,10 +230,12 @@ function ProformaBuilder() {
   const handleSubmit = async () => {
     if (!selectedCustomerId) {
       setErrorMessage('Please select a wholesale customer');
+      setCurrentStep(1);
       return;
     }
     if (items.length === 0) {
       setErrorMessage('Please add at least one line item');
+      setCurrentStep(2);
       return;
     }
 
@@ -281,318 +272,295 @@ function ProformaBuilder() {
   };
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-16 max-w-5xl mx-auto">
-      {/* Top Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/proformas"
-            className="p-2 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-white">Create Proforma Invoice</h1>
-            <p className="text-xs text-slate-400">
-              Draft official wholesale quotation with dynamic multi-depot stock check
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Link
-            href="/proformas"
-            className="px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all"
-          >
-            Cancel
-          </Link>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow transition-all disabled:opacity-50 flex items-center gap-1.5"
-          >
-            <FileCheck2 className="h-4 w-4" />
-            <span>{isSubmitting ? 'Creating Proforma...' : 'Create Proforma Quotation'}</span>
-          </button>
-        </div>
-      </div>
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-16">
+      {/* Top Page Header */}
+      <PageHeader
+        eyebrow="02 / SALES"
+        breadcrumbs={[{ label: 'Proformas', href: '/proformas' }, { label: 'New' }]}
+        title="Create Proforma"
+        description="Multi-step wholesale quotation builder — from customer to send."
+        actions={
+          <>
+            <LinkButton href="/proformas" variant="outline" size="sm">
+              Cancel
+            </LinkButton>
+            {currentStep < 6 ? (
+              <Button
+                size="sm"
+                onClick={() => setCurrentStep(Math.min(6, currentStep + 1))}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs"
+              >
+                Continue to Step {currentStep + 1} →
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                loading={isSubmitting}
+                onClick={handleSubmit}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs"
+              >
+                Issue & Send Proforma
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {errorMessage && (
-        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 shrink-0" />
+        <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
           <span>{errorMessage}</span>
         </div>
       )}
 
-      {/* Customer Selection & Searchable Combobox */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4 relative z-30">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
-            1. Wholesale Customer Selection
-          </h2>
-          <button
-            type="button"
-            onClick={() => setIsQuickAddOpen(true)}
-            className="flex items-center gap-1 text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors"
-          >
-            <UserPlus className="h-3.5 w-3.5" />
-            <span>+ Quick Add New Customer</span>
-          </button>
-        </div>
-
-        {customers.length === 0 ? (
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <AlertCircle className="h-5 w-5 text-amber-400 shrink-0" />
-              <div>
-                <div className="text-xs font-bold text-white">No Wholesale Customers Registered</div>
-                <div className="text-[11px] text-amber-300">You must register at least one client account before drafting quotes.</div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsQuickAddOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shrink-0 shadow-sm"
-            >
-              + Quick Add Customer Now
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Searchable Customer Combobox */}
-            <div className="relative z-40" ref={customerDropdownRef}>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Search & Select Customer
-              </label>
-
-              {/* Selected Trigger Button */}
+      {/* Progress Stepper Bar */}
+      <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          {STEPS.map((s) => {
+            const isCompleted = currentStep > s.step;
+            const isCurrent = currentStep === s.step;
+            return (
               <button
+                key={s.step}
                 type="button"
-                onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
-                className="w-full flex items-center justify-between rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-left text-white hover:border-brand-500/60 focus:outline-none"
+                onClick={() => setCurrentStep(s.step)}
+                className={`flex items-center gap-2.5 p-2 rounded-md border text-left transition-colors ${
+                  isCurrent
+                    ? 'border-indigo-500 bg-indigo-50/70 text-indigo-900 font-semibold'
+                    : isCompleted
+                      ? 'border-slate-200 bg-slate-50 text-slate-700'
+                      : 'border-transparent text-slate-400 hover:bg-slate-50'
+                }`}
               >
-                <div className="truncate">
-                  {selectedCustomer ? (
-                    <span>
-                      <strong className="text-white">{selectedCustomer.companyName}</strong>{' '}
-                      <span className="text-slate-400">({selectedCustomer.customerCode})</span>
-                    </span>
-                  ) : (
-                    <span className="text-slate-500">Choose wholesale customer...</span>
-                  )}
+                <div
+                  className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                    isCurrent
+                      ? 'bg-indigo-600 text-white'
+                      : isCompleted
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-200 text-slate-500'
+                  }`}
+                >
+                  {isCompleted ? <Check className="h-3.5 w-3.5" /> : s.step}
                 </div>
-                <ChevronDown className="h-4 w-4 text-slate-400 shrink-0 ml-2" />
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold leading-none truncate">{s.name}</div>
+                  <div className="text-[10px] text-slate-400 mt-1 truncate hidden sm:block">{s.desc}</div>
+                </div>
               </button>
-
-              {/* Search Dropdown Popover */}
-              {isCustomerDropdownOpen && (
-                <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-slate-700 bg-slate-900 shadow-2xl p-2 animate-fade-in">
-                  {/* Search input */}
-                  <div className="relative mb-2">
-                    <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
-                    <input
-                      type="text"
-                      autoFocus
-                      value={customerSearch}
-                      onChange={(e) => setCustomerSearch(e.target.value)}
-                      placeholder="Type name, company, code..."
-                      className="w-full rounded-lg border border-slate-800 bg-slate-950 pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                    />
-                  </div>
-
-                  {/* List */}
-                  <div className="max-h-52 overflow-y-auto space-y-1">
-                    {filteredCustomers.length === 0 ? (
-                      <div className="p-3 text-center text-xs text-slate-500">
-                        No customer matching &quot;{customerSearch}&quot;
-                      </div>
-                    ) : (
-                      filteredCustomers.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedCustomerId(c.id);
-                            setIsCustomerDropdownOpen(false);
-                            setCustomerSearch('');
-                          }}
-                          className={`w-full p-2 rounded-lg text-left text-xs transition-colors flex items-center justify-between ${
-                            selectedCustomerId === c.id
-                              ? 'bg-brand-600/20 text-brand-300 border border-brand-500/30'
-                              : 'hover:bg-slate-800 text-slate-300'
-                          }`}
-                        >
-                          <div>
-                            <div className="font-bold text-white line-clamp-1">{c.companyName}</div>
-                            <div className="text-[10px] text-slate-400">
-                              {c.contactPerson} • {c.country}
-                            </div>
-                          </div>
-                          <span className="font-mono text-[10px] font-bold text-brand-400 px-1.5 py-0.5 rounded bg-slate-800">
-                            {c.customerCode}
-                          </span>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Billing Address
-              </label>
-              <div className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-xs text-slate-300 min-h-[42px] line-clamp-2">
-                {selectedCustomer?.billingAddress || '—'}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Shipping / Receiving Hub
-              </label>
-              <div className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-xs text-slate-300 min-h-[42px] line-clamp-2">
-                {selectedCustomer?.shippingAddress || '—'}
-              </div>
-            </div>
-          </div>
-        )}
+            );
+          })}
+        </div>
       </div>
 
-      {/* Line Items & Depot Stock Availability */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4 relative z-10">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
-            2. Line Items & Multi-Depot Stock Selection
-          </h2>
-          <button
-            type="button"
-            onClick={handleAddItem}
-            disabled={products.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600/20 text-brand-300 border border-brand-500/30 text-xs font-semibold hover:bg-brand-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span>Add Item</span>
-          </button>
-        </div>
-
-        {products.length === 0 ? (
-          <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 text-center space-y-3">
-            <Package className="h-10 w-10 text-slate-500 mx-auto" />
+      {/* STEP 1: CUSTOMER SELECTION */}
+      {currentStep === 1 && (
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-white">Product Catalog is Empty</h3>
-              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                No cameras, cinema lenses, or accessories have been registered yet. Add products to the catalog first.
-              </p>
+              <h2 className="text-sm font-bold text-slate-900">Step 1: Select Wholesale Customer</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Choose an active client profile or register a new customer account</p>
             </div>
-            <Link
-              href="/products"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-glow"
+            <Button
+              variant="outline"
+              size="sm"
+              iconLeft={<UserPlus className="h-3.5 w-3.5 text-indigo-600" />}
+              onClick={() => setIsQuickAddOpen(true)}
             >
-              <Plus className="h-4 w-4" />
-              <span>Go to Product Catalog & Add Hardware</span>
-            </Link>
+              + Quick Add Customer
+            </Button>
           </div>
-        ) : (
-          <div className="space-y-3">
-          {items.map((item, idx) => {
-            const product = products.find((p) => p.id === item.productId);
-            
-            // Calculate real live stock for the selected depot
-            const selectedDepotQty =
-              product?.depotBreakdown && typeof product.depotBreakdown[item.selectedDepotId] === 'number'
-                ? product.depotBreakdown[item.selectedDepotId]
-                : (product?.totalStock || 0);
 
-            // Find alternative depots that have stock available
-            const alternativeDepots = depots
-              .filter((d) => d.id !== item.selectedDepotId && (product?.depotBreakdown?.[d.id] || 0) > 0)
-              .map((d) => ({
-                depotId: d.id,
-                depotName: d.name,
-                availableQty: product?.depotBreakdown?.[d.id] || 0,
-              }));
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              value={customerSearch}
+              onChange={(e) => setCustomerSearch(e.target.value)}
+              placeholder="Search by company name, contact person, customer code, email, or country..."
+              className="w-full rounded-md border border-slate-200 bg-slate-50/50 pl-9 pr-3 py-2 text-xs text-slate-900 focus:bg-white"
+            />
+          </div>
 
-            const stockCheck = {
-              available: selectedDepotQty >= item.quantity,
-              availableAtDepot: selectedDepotQty,
-              alternativeDepots,
-            };
-
-            return (
-              <div
-                key={idx}
-                className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 space-y-3"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                  {/* Product selector */}
-                  <div className="md:col-span-5">
-                    <label className="block text-[11px] text-slate-400 mb-1">Equipment / Model</label>
-                    <select
-                      value={item.productId}
-                      onChange={(e) => handleProductChange(idx, e.target.value)}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-white focus:border-brand-500 focus:outline-none"
-                    >
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} ({p.sku}) - {formatUSD(p.sellingPrice)}
-                        </option>
-                      ))}
-                    </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-1">
+            {filteredCustomers.map((c) => {
+              const isSelected = selectedCustomerId === c.id;
+              return (
+                <div
+                  key={c.id}
+                  onClick={() => setSelectedCustomerId(c.id)}
+                  className={`p-3.5 rounded-lg border cursor-pointer transition-all ${
+                    isSelected
+                      ? 'border-indigo-500 bg-indigo-50/60 shadow-xs'
+                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/80'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-bold text-xs text-slate-900 line-clamp-1">{c.companyName}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">{c.contactPerson}</div>
+                    </div>
+                    <span className="font-mono text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                      {c.customerCode}
+                    </span>
                   </div>
-
-                  {/* Depot selector */}
-                  <div className="md:col-span-3">
-                    <label className="block text-[11px] text-slate-400 mb-1">Fulfilment Depot</label>
-                    <select
-                      value={item.selectedDepotId}
-                      onChange={(e) => {
-                        const updated = [...items];
-                        updated[idx].selectedDepotId = e.target.value;
-                        setItems(updated);
-                      }}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-white focus:border-brand-500 focus:outline-none"
-                    >
-                      {depots.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name.replace(' Central Depot', '').replace(' Logistics Hub', '')}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-2 space-y-0.5">
+                    <div>Email: <span className="text-slate-700">{c.email}</span></div>
+                    <div>Country: <span className="text-slate-700">{c.country}</span></div>
                   </div>
+                </div>
+              );
+            })}
+          </div>
 
-                  {/* Quantity */}
-                  <div className="md:col-span-2">
-                    <label className="block text-[11px] text-slate-400 mb-1">Qty</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={item.quantity}
-                      onChange={(e) => {
-                        const updated = [...items];
-                        updated[idx].quantity = Math.max(1, Number(e.target.value));
-                        setItems(updated);
-                      }}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-white font-mono focus:border-brand-500 focus:outline-none"
-                    />
+          <div className="flex justify-end pt-4 border-t border-slate-100">
+            <Button
+              onClick={() => setCurrentStep(2)}
+              disabled={!selectedCustomerId}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs"
+            >
+              Continue to Product Selection →
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 2: PRODUCT SELECTION */}
+      {currentStep === 2 && (
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-xs space-y-5">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">Step 2: Equipment & Product Selection</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Search catalog for Sony, Canon, DJI cameras, lenses, and cine accessories</p>
+          </div>
+
+          {/* Product Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              value={productQuery}
+              onChange={(e) => setProductQuery(e.target.value)}
+              placeholder="Quick search Sony, Canon, DJI, SKU, lens category..."
+              className="w-full rounded-md border border-slate-200 bg-slate-50/50 pl-9 pr-3 py-2 text-xs text-slate-900 focus:bg-white"
+            />
+          </div>
+
+          {/* Catalog grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-72 overflow-y-auto pr-1">
+            {filteredProducts.map((p) => {
+              const inItems = items.some((i) => i.productId === p.id);
+              return (
+                <div
+                  key={p.id}
+                  className={`p-3 rounded-lg border flex items-center gap-3 transition-colors ${
+                    inItems ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-200 bg-white hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="h-12 w-12 rounded bg-slate-100 overflow-hidden border border-slate-200 shrink-0 flex items-center justify-center">
+                    {p.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <ImageIcon className="h-5 w-5 text-slate-400" />
+                    )}
                   </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-bold text-slate-900 truncate">{p.name}</div>
+                    <div className="text-[11px] font-mono text-slate-500">{p.sku}</div>
+                    <div className="text-xs font-semibold text-slate-900 mt-0.5">{formatUSD(p.sellingPrice)}</div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={inItems ? 'secondary' : 'outline'}
+                    onClick={() => addProductToItems(p)}
+                    className="shrink-0 text-xs"
+                  >
+                    {inItems ? '+ Add Qty' : 'Add'}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
 
-                  {/* Unit Price (USD) */}
-                  <div className="md:col-span-2 relative">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-[11px] text-slate-400 mb-1">Unit Price ($)</label>
-                      {items.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(idx)}
-                          className="text-rose-400 hover:text-rose-300 mb-1 p-0.5"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+          {/* Selected Items Table */}
+          <div className="border-t border-slate-100 pt-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+              Selected Order Items ({items.length})
+            </h3>
+            <div className="space-y-2">
+              {items.map((item, idx) => {
+                const prod = products.find((p) => p.id === item.productId);
+                return (
+                  <div key={idx} className="flex items-center gap-3 p-2.5 rounded-md border border-slate-200 bg-slate-50/50 text-xs">
+                    <div className="h-9 w-9 rounded bg-white overflow-hidden border border-slate-200 shrink-0 flex items-center justify-center">
+                      {prod?.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={prod.imageUrl} alt={prod.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <ImageIcon className="h-4 w-4 text-slate-400" />
                       )}
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-slate-900 truncate">{prod?.name || 'Select equipment'}</div>
+                      <div className="text-[11px] text-slate-500 font-mono">{prod?.sku}</div>
+                    </div>
+                    <div className="w-24">
+                      <label className="text-[10px] text-slate-400 block">Quantity</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.quantity}
+                        onChange={(e) => {
+                          const updated = [...items];
+                          updated[idx].quantity = Math.max(1, Number(e.target.value));
+                          setItems(updated);
+                        }}
+                        className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs font-mono"
+                      />
+                    </div>
+                    <div className="w-28 text-right font-mono font-semibold text-slate-900">
+                      {formatUSD(item.quantity * item.unitPrice)}
+                    </div>
+                    {items.length > 1 && (
+                      <button onClick={() => handleRemoveItem(idx)} className="p-1 text-slate-400 hover:text-rose-600">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <Button variant="outline" onClick={() => setCurrentStep(1)}>
+              ← Back to Customer
+            </Button>
+            <Button onClick={() => setCurrentStep(3)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs">
+              Continue to Pricing & Discounts →
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 3: PRICING & DISCOUNTS */}
+      {currentStep === 3 && (
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">Step 3: Line Item Pricing & Overall Discounts</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Adjust unit pricing, volume discounts, freight charges, and tax rates</p>
+          </div>
+
+          <div className="space-y-3">
+            {items.map((item, idx) => {
+              const prod = products.find((p) => p.id === item.productId);
+              return (
+                <div key={idx} className="p-3.5 rounded-md border border-slate-200 bg-slate-50/50 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center text-xs">
+                  <div className="sm:col-span-5 font-semibold text-slate-900">
+                    {prod?.name} <span className="font-mono text-slate-500 text-[11px]">({prod?.sku})</span>
+                  </div>
+                  <div className="sm:col-span-3">
+                    <label className="text-[10px] text-slate-400 block">Unit Selling Price ($)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -602,287 +570,273 @@ function ProformaBuilder() {
                         updated[idx].unitPrice = Number(e.target.value);
                         setItems(updated);
                       }}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-white font-mono focus:border-brand-500 focus:outline-none"
+                      className="w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-mono"
                     />
                   </div>
-                </div>
-
-                {/* Live Stock Availability Checker Banner */}
-                <div
-                  className={`p-2.5 rounded-lg text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
-                    stockCheck.available
-                      ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
-                      : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {stockCheck.available ? (
-                      <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
-                    ) : (
-                      <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
-                    )}
-                    <span>
-                      <strong>Stock at selected depot:</strong> {stockCheck.availableAtDepot} units available (Requested: {item.quantity}).
-                    </span>
+                  <div className="sm:col-span-2">
+                    <label className="text-[10px] text-slate-400 block">Line Discount %</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={item.discountPercent}
+                      onChange={(e) => {
+                        const updated = [...items];
+                        updated[idx].discountPercent = Number(e.target.value);
+                        setItems(updated);
+                      }}
+                      className="w-full rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-mono"
+                    />
                   </div>
-
-                  {!stockCheck.available && stockCheck.alternativeDepots.length > 0 && (
-                    <div className="text-[11px] text-amber-300 font-mono">
-                      Available elsewhere: {stockCheck.alternativeDepots.map((alt) => `${alt.depotName.split(' ')[0]}: ${alt.availableQty}`).join(' • ')}
-                    </div>
-                  )}
+                  <div className="sm:col-span-2 text-right font-mono font-bold text-slate-900">
+                    {formatUSD(item.quantity * item.unitPrice * (1 - (item.discountPercent || 0) / 100))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
-        )}
-      </div>
 
-      {/* Commercial Terms & Pricing Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
-            3. Commercial Terms & Expiry
-          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Overall Deal Discount (%)</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(Number(e.target.value))}
+                className="w-full rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-700 block mb-1">Estimated Shipping / Freight ($)</label>
+              <input
+                type="number"
+                min={0}
+                value={shippingCost}
+                onChange={(e) => setShippingCost(Number(e.target.value))}
+                className="w-full rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <Button variant="outline" onClick={() => setCurrentStep(2)}>
+              ← Back to Products
+            </Button>
+            <Button onClick={() => setCurrentStep(4)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs">
+              Continue to Depot Assignment →
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 4: DEPOT / FULFILMENT ASSIGNMENT */}
+      {currentStep === 4 && (
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">Step 4: Depot & Fulfilment Hub Assignment</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Assign primary depot location for picking and physical shipping</p>
+          </div>
 
           <div className="space-y-3">
-            <div>
-              <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                Payment Terms
-              </label>
-              <input
-                type="text"
-                value={paymentTerms}
-                onChange={(e) => setPaymentTerms(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-white focus:border-brand-500 focus:outline-none"
-              />
-            </div>
+            {items.map((item, idx) => {
+              const prod = products.find((p) => p.id === item.productId);
+              return (
+                <div key={idx} className="p-3.5 rounded-md border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div>
+                    <div className="font-semibold text-slate-900">{prod?.name}</div>
+                    <div className="text-[11px] text-slate-500">Requested quantity: {item.quantity} units</div>
+                  </div>
+                  <div className="w-full sm:w-64">
+                    <label className="text-[10px] text-slate-400 block mb-1">Dispatch Depot</label>
+                    <select
+                      value={item.selectedDepotId}
+                      onChange={(e) => {
+                        const updated = [...items];
+                        updated[idx].selectedDepotId = e.target.value;
+                        setItems(updated);
+                      }}
+                      className="w-full rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 font-medium"
+                    >
+                      {depots.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-            <div>
-              <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                Delivery / Dispatch Terms
-              </label>
-              <input
-                type="text"
-                value={deliveryTerms}
-                onChange={(e) => setDeliveryTerms(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-white focus:border-brand-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                  Validity Window (Days)
-                </label>
-                <input
-                  type="number"
-                  value={expiryDays}
-                  onChange={(e) => setExpiryDays(Number(e.target.value))}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-white font-mono focus:border-brand-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                  Currency
-                </label>
-                <input
-                  type="text"
-                  disabled
-                  value="USD ($)"
-                  className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs text-slate-400 font-mono"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                Internal Remarks / Notes
-              </label>
-              <textarea
-                rows={2}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-white focus:border-brand-500 focus:outline-none"
-              />
-            </div>
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <Button variant="outline" onClick={() => setCurrentStep(3)}>
+              ← Back to Pricing
+            </Button>
+            <Button onClick={() => setCurrentStep(5)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs">
+              Continue to Financial Review →
+            </Button>
           </div>
         </div>
+      )}
 
-        {/* Pricing Summary */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4">
+      {/* STEP 5: REVIEW */}
+      {currentStep === 5 && (
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-xs space-y-5">
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono mb-4">
-              4. Pricing & Tax Breakdown
-            </h2>
+            <h2 className="text-sm font-bold text-slate-900">Step 5: Review Financial Quotation Summary</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Verify customer profile, line item breakdown, and total values before creation</p>
+          </div>
 
-            <div className="space-y-3 font-mono text-xs">
-              <div className="flex justify-between text-slate-400">
-                <span>Subtotal ({items.length} items):</span>
-                <span className="text-white font-bold">{formatUSD(subtotal)}</span>
-              </div>
-
-              <div className="flex items-center justify-between text-slate-400">
-                <span>Overall Discount (%):</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={discountPercent}
-                  onChange={(e) => setDiscountPercent(Number(e.target.value))}
-                  className="w-20 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-xs text-white focus:outline-none"
-                />
-              </div>
-
-              <div className="flex justify-between text-slate-400">
-                <span>VAT / Tax (Standard 5%):</span>
-                <span className="text-white">{formatUSD(totalTax)}</span>
-              </div>
-
-              <div className="flex items-center justify-between text-slate-400">
-                <span>Estimated Freight / Shipping ($):</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={shippingCost}
-                  onChange={(e) => setShippingCost(Number(e.target.value))}
-                  className="w-24 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-xs text-white focus:outline-none"
-                />
-              </div>
-
-              <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
-                <span className="text-sm font-bold text-white">Grand Total (USD):</span>
-                <span className="text-xl font-black text-brand-400">{formatUSD(grandTotal)}</span>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs border border-slate-200 rounded-md p-4 bg-slate-50/50">
+            <div>
+              <span className="text-slate-400 block">Customer Account</span>
+              <span className="font-bold text-slate-900">{selectedCustomer?.companyName}</span>
+              <div className="text-slate-500">{selectedCustomer?.contactPerson} • {selectedCustomer?.email}</div>
+            </div>
+            <div>
+              <span className="text-slate-400 block">Payment & Delivery Terms</span>
+              <span className="font-semibold text-slate-900">{paymentTerms}</span>
+              <div className="text-slate-500">{deliveryTerms}</div>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-800/80 flex items-center justify-end gap-3">
-            <Link
-              href="/proformas"
-              className="px-4 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all"
-            >
-              Cancel
-            </Link>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow transition-all disabled:opacity-50 flex items-center gap-1.5"
-            >
-              <FileCheck2 className="h-4 w-4" />
-              <span>{isSubmitting ? 'Creating Proforma...' : 'Create Proforma Quotation'}</span>
-            </button>
+          <div className="border border-slate-200 rounded-md p-4 bg-white space-y-3 font-mono text-xs max-w-md ml-auto">
+            <div className="flex justify-between text-slate-600">
+              <span>Subtotal:</span>
+              <span className="font-bold text-slate-900">{formatUSD(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Overall Discount ({discountPercent}%):</span>
+              <span className="text-rose-600">-{formatUSD(overallDiscountAmt)}</span>
+            </div>
+            <div className="flex justify-between text-slate-600">
+              <span>VAT / Tax (5%):</span>
+              <span className="text-slate-900">{formatUSD(totalTax)}</span>
+            </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Freight / Shipping:</span>
+              <span className="text-slate-900">{formatUSD(shippingCost)}</span>
+            </div>
+            <div className="flex justify-between text-sm font-bold text-slate-900 pt-3 border-t border-slate-200">
+              <span>Grand Total (USD):</span>
+              <span className="text-indigo-600">{formatUSD(grandTotal)}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <Button variant="outline" onClick={() => setCurrentStep(4)}>
+              ← Back to Depot Assignment
+            </Button>
+            <Button onClick={() => setCurrentStep(6)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs">
+              Proceed to Create & Send →
+            </Button>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* STEP 6: CREATE & SEND */}
+      {currentStep === 6 && (
+        <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-xs text-center space-y-4 max-w-xl mx-auto">
+          <div className="h-12 w-12 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
+            <Send className="h-6 w-6" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-slate-900">Ready to Issue Proforma Quotation</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Clicking below will save the proforma in the database and generate official document records.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-md bg-slate-50 border border-slate-200 text-xs text-left space-y-1">
+            <div className="flex justify-between text-slate-600">
+              <span>Client:</span>
+              <span className="font-semibold text-slate-900">{selectedCustomer?.companyName}</span>
+            </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Total Items:</span>
+              <span className="font-mono text-slate-900">{items.length} line items</span>
+            </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Grand Total:</span>
+              <span className="font-mono font-bold text-indigo-600">{formatUSD(grandTotal)}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <Button variant="outline" onClick={() => setCurrentStep(5)}>
+              ← Back to Review
+            </Button>
+            <Button
+              loading={isSubmitting}
+              onClick={handleSubmit}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-6 py-2"
+            >
+              Issue & Create Proforma Now
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Quick Add Customer Modal */}
       {isQuickAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+          <div className="relative w-full max-w-lg rounded-xl border border-slate-200 bg-white shadow-2xl p-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-brand-400" />
-                <h3 className="text-sm font-bold text-white">Quick Add Wholesale Customer</h3>
+                <Users className="h-5 w-5 text-indigo-600" />
+                <h3 className="text-sm font-bold text-slate-900">Quick Add Wholesale Customer</h3>
               </div>
-              <button
-                onClick={() => setIsQuickAddOpen(false)}
-                className="text-slate-400 hover:text-white"
-              >
+              <button onClick={() => setIsQuickAddOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleQuickAddCustomer} className="flex flex-col gap-3 text-xs text-slate-300">
-              <div>
-                <label className="block text-slate-400 mb-1">Company Legal Name *</label>
-                <input
-                  type="text"
+            <form onSubmit={handleQuickAddCustomer} className="flex flex-col gap-3 text-xs text-slate-700">
+              <Input
+                label="Company Legal Name *"
+                required
+                placeholder="e.g. Apex Media Middle East"
+                value={newCustCompany}
+                onChange={(e) => setNewCustCompany(e.target.value)}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Contact Person *"
                   required
-                  placeholder="e.g. Apex Media Middle East"
-                  value={newCustCompany}
-                  onChange={(e) => setNewCustCompany(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white"
+                  placeholder="e.g. Tariq Al-Sayed"
+                  value={newCustContact}
+                  onChange={(e) => setNewCustContact(e.target.value)}
+                />
+                <Input
+                  label="Email Address *"
+                  type="email"
+                  required
+                  placeholder="tariq@apexmedia.com"
+                  value={newCustEmail}
+                  onChange={(e) => setNewCustEmail(e.target.value)}
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Contact Person *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Tariq Al-Sayed"
-                    value={newCustContact}
-                    onChange={(e) => setNewCustContact(e.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="tariq@apexmedia.com"
-                    value={newCustEmail}
-                    onChange={(e) => setNewCustEmail(e.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Phone Number</label>
-                  <input
-                    type="text"
-                    placeholder="+971 4 881 2299"
-                    value={newCustPhone}
-                    onChange={(e) => setNewCustPhone(e.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Country</label>
-                  <input
-                    type="text"
-                    value={newCustCountry}
-                    onChange={(e) => setNewCustCountry(e.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Billing & Shipping Address</label>
-                <textarea
-                  rows={2}
-                  placeholder="Studio City Tower, Office 1402, Dubai, UAE"
-                  value={newCustBilling}
-                  onChange={(e) => {
-                    setNewCustBilling(e.target.value);
-                    setNewCustShipping(e.target.value);
-                  }}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-white"
+                <Input
+                  label="Phone Number"
+                  placeholder="+971 4 881 2299"
+                  value={newCustPhone}
+                  onChange={(e) => setNewCustPhone(e.target.value)}
+                />
+                <Input
+                  label="Country"
+                  value={newCustCountry}
+                  onChange={(e) => setNewCustCountry(e.target.value)}
                 />
               </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setIsQuickAddOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs text-slate-400 hover:text-white"
-                >
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <Button type="button" variant="outline" onClick={() => setIsQuickAddOpen(false)}>
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-glow"
-                >
-                  Save & Select Customer
-                </button>
+                </Button>
+                <Button type="submit">Save & Select Customer</Button>
               </div>
             </form>
           </div>
@@ -894,7 +848,7 @@ function ProformaBuilder() {
 
 export default function NewProformaPage() {
   return (
-    <Suspense fallback={<div className="p-12 text-center text-xs text-slate-400">Loading Proforma Builder...</div>}>
+    <Suspense fallback={<div className="p-12 text-center text-xs text-slate-400">Loading Proforma Wizard...</div>}>
       <ProformaBuilder />
     </Suspense>
   );
