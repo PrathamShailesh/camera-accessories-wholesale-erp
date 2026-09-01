@@ -133,7 +133,7 @@ export default function SettingsPage() {
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Cloudinary Integration Status Card */}
-        <div className="p-5 rounded-2xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/40 via-slate-900 to-slate-900 shadow-glow space-y-2">
+        <div className="p-5 rounded-2xl border border-cyan-500/40 bg-cyan-500/10 shadow-glow space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Cloud className="h-5 w-5 text-cyan-400" />

@@ -36,6 +36,8 @@ export default function DepotMobilePage() {
   const [isSlipOpen, setIsSlipOpen] = useState(false);
   const [awbInput, setAwbInput] = useState('');
   const [courierInput, setCourierInput] = useState('DHL_EXPRESS');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busyInvoiceId, setBusyInvoiceId] = useState<string | null>(null);
 
   const loadData = async () => {
     let user = dataStore.getCurrentUser();
@@ -57,7 +59,14 @@ export default function DepotMobilePage() {
       }
     } catch {}
 
-    const allDepots = dataStore.getDepots();
+    let allDepots = dataStore.getDepots();
+    try {
+      const depotsRes = await fetch('/api/depots');
+      if (depotsRes.ok) {
+        const databaseDepots = await depotsRes.json();
+        if (Array.isArray(databaseDepots)) allDepots = databaseDepots;
+      }
+    } catch {}
     setDepots(allDepots);
 
     const activeDepot = selectedDepotId || user.assignedDepotId || allDepots[0]?.id || 'dep-dxb';
@@ -90,26 +99,48 @@ export default function DepotMobilePage() {
   const inPacking = invoices.filter((i) => i.fulfilmentStatus === 'PROCESSING' || i.fulfilmentStatus === 'PACKED');
   const dispatched = invoices.filter((i) => i.fulfilmentStatus === 'SHIPPED' || i.fulfilmentStatus === 'DELIVERED');
 
-  const handlePickOrder = (inv: TaxInvoice) => {
-    const picks = inv.items.map((i) => ({ itemId: i.id, serials: i.allocatedSerials }));
-    dataStore.pickInvoiceItems(inv.id, picks);
-    loadData();
+  const performInvoiceAction = async (invoiceId: string, path: 'pick' | 'pack' | 'ship', body: Record<string, unknown>) => {
+    setActionError(null);
+    setBusyInvoiceId(invoiceId);
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        throw new Error(result.error || `Unable to ${path} this order`);
+      }
+      await loadData();
+      return true;
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Unable to complete this depot action');
+      return false;
+    } finally {
+      setBusyInvoiceId(null);
+    }
   };
 
-  const handlePackOrder = (inv: TaxInvoice) => {
-    dataStore.packInvoice(inv.id, {
+  const handlePickOrder = async (inv: TaxInvoice) => {
+    await performInvoiceAction(inv.id, 'pick', {
+      itemPicks: Object.fromEntries(inv.items.map((item) => [item.id, true])),
+    });
+  };
+
+  const handlePackOrder = async (inv: TaxInvoice) => {
+    await performInvoiceAction(inv.id, 'pack', {
       packedBy: currentUser.name,
       packageCount: 1,
       totalWeightKg: 6.8,
       dimensionsCm: { length: 45, width: 35, height: 25 },
       packagePhotoUrl: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&auto=format&fit=crop&q=80',
     });
-    loadData();
   };
 
-  const handleQuickShip = (inv: TaxInvoice) => {
+  const handleQuickShip = async (inv: TaxInvoice) => {
     const awb = awbInput || `DHL-${Math.floor(1000000000 + Math.random() * 9000000000)}`;
-    dataStore.dispatchShipment(inv.id, {
+    const shipped = await performInvoiceAction(inv.id, 'ship', {
       courier: courierInput as any,
       airwayBillNumber: awb,
       trackingUrl: `https://www.dhl.com/en/express/tracking.html?AWB=${awb.replace(/[^0-9]/g, '')}`,
@@ -118,8 +149,7 @@ export default function DepotMobilePage() {
       packageCount: 1,
       airwayBillDocUrl: 'https://res.cloudinary.com/camera-erp-dev2/image/upload/v1724500000/documents/sample_awb_dhl.png',
     });
-    setAwbInput('');
-    loadData();
+    if (shipped) setAwbInput('');
   };
 
   return (
@@ -158,6 +188,13 @@ export default function DepotMobilePage() {
           </select>
         )}
       </div>
+
+      {actionError && (
+        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-600 flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{actionError}</span>
+        </div>
+      )}
 
       {/* Touch-Friendly Workflow Navigation Tabs */}
       <div className="grid grid-cols-3 gap-2 bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
@@ -272,10 +309,11 @@ export default function DepotMobilePage() {
                   </Link>
                   <button
                     onClick={() => handlePickOrder(inv)}
+                    disabled={busyInvoiceId === inv.id}
                     className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-glow-amber transition-all"
                   >
                     <CheckCircle2 className="h-4 w-4" />
-                    <span>Confirm Pick & Move to Packing</span>
+                    <span>{busyInvoiceId === inv.id ? 'Saving…' : 'Confirm Pick & Move to Packing'}</span>
                   </button>
                 </div>
               </div>
@@ -326,10 +364,11 @@ export default function DepotMobilePage() {
                   {inv.fulfilmentStatus !== 'PACKED' ? (
                     <button
                       onClick={() => handlePackOrder(inv)}
+                      disabled={busyInvoiceId === inv.id}
                       className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold shadow-glow text-xs"
                     >
                       <Package className="h-4 w-4" />
-                      <span>Mark Packed & Verified</span>
+                      <span>{busyInvoiceId === inv.id ? 'Saving…' : 'Mark Packed & Verified'}</span>
                     </button>
                   ) : (
                     <div className="space-y-2 pt-2 border-t border-slate-800">
@@ -346,9 +385,10 @@ export default function DepotMobilePage() {
                         />
                         <button
                           onClick={() => handleQuickShip(inv)}
+                          disabled={busyInvoiceId === inv.id}
                           className="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-glow whitespace-nowrap"
                         >
-                          Ship AWB
+                          {busyInvoiceId === inv.id ? 'Shipping…' : 'Ship AWB'}
                         </button>
                       </div>
                     </div>

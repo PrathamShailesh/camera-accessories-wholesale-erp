@@ -23,6 +23,24 @@ export default function ShipmentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const handleMarkDelivered = async (shipmentId: string) => {
+    setError(null);
+    try {
+      const res = await fetch('/api/shipments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: shipmentId, status: 'DELIVERED' }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Unable to mark this shipment as delivered');
+      }
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to mark this shipment as delivered');
+    }
+  };
+
   const loadData = async () => {
     setIsLoading(true);
     setError(null);
@@ -175,10 +193,7 @@ export default function ShipmentsPage() {
 
                   {s.status !== 'DELIVERED' && (
                     <button
-                      onClick={() => {
-                        dataStore.updateShipmentStatus(s.id, 'DELIVERED');
-                        loadData();
-                      }}
+                      onClick={() => handleMarkDelivered(s.id)}
                       className="px-3 py-1 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-600/30"
                     >
                       Mark Delivered

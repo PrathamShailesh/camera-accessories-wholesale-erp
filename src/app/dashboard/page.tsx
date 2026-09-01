@@ -148,7 +148,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Top Banner / Welcome Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-5 rounded-2xl border border-slate-800 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-925 shadow-glass">
+      <div className="workspace-hero flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-5 rounded-2xl border shadow-glass">
         <div>
           <div className="flex items-center gap-2 text-xs font-mono text-brand-400 font-semibold mb-1">
             <Sparkles className="h-4 w-4" />

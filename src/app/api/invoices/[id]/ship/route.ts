@@ -35,6 +35,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const existing = await prisma.taxInvoice.findFirst({ where: { OR: [{ id: params.id }, { invoiceNumber: params.id }] }, include: { customer: true } });
     if (!existing) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+    if (existing.shipmentId || existing.fulfilmentStatus === 'SHIPPED' || existing.fulfilmentStatus === 'DELIVERED') {
+      return NextResponse.json({ error: 'This invoice has already been dispatched' }, { status: 409 });
+    }
     const shipmentNumber = `SHP-${Date.now()}`;
     const shipment = await prisma.shipment.create({ data: { shipmentNumber, invoiceId: existing.id, invoiceNumber: existing.invoiceNumber, customerId: existing.customerId, customerName: existing.customerName, customerCompany: existing.customerCompany, destinationCountry: existing.customer.country, shippingAddress: existing.shippingAddress, depotId: existing.depotId, depotName: existing.depotName, courier: courier || 'DHL_EXPRESS', customCourierName, airwayBillNumber, trackingUrl: trackingUrl || `https://track.courier.com/?awb=${airwayBillNumber}`, totalWeightKg: Number(weightKg) || 1, packageCount: Number(packageCount) || 1, awbDocumentUrl: airwayBillDocUrl || null, status: 'DISPATCHED' } });
     await prisma.taxInvoice.update({ where: { id: existing.id }, data: { fulfilmentStatus: 'SHIPPED', shipmentId: shipment.id } });

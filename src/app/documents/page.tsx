@@ -69,11 +69,20 @@ export default function DocumentsPage() {
     return true;
   });
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm('Are you sure you want to remove this document from the hub?')) {
-      dataStore.deleteCloudDocument(id);
-      loadData();
+      try {
+        const res = await fetch(`/api/documents?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || 'Unable to delete the document');
+        }
+        setPreviewDoc((current) => (current?.id === id ? null : current));
+        await loadData();
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Unable to delete the document');
+      }
     }
   };
 

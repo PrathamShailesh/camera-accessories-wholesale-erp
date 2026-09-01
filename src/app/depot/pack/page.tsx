@@ -77,7 +77,12 @@ export default function DepotPackPage() {
                     <Camera className="h-5 w-5 text-cyan-400" />
                     <span className="text-sm text-white">Package Photo</span>
                   </div>
-                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-medium">
+                  <button
+                    type="button"
+                    onClick={() => { window.location.href = '/depot-mobile'; }}
+                    title="Open the mobile camera upload workflow"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-medium"
+                  >
                     <Upload className="h-4 w-4" />
                     <span>Upload</span>
                   </button>

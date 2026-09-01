@@ -56,6 +56,15 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Document ID required' }, { status: 400 });
     }
 
+    const document = await prisma.cloudDocument.findUnique({ where: { id }, select: { id: true, depotId: true } });
+    if (!document) {
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+    }
+    const scopedDepotId = depotIdFilter(auth.user);
+    if (scopedDepotId && document.depotId !== scopedDepotId) {
+      return NextResponse.json({ error: 'Forbidden: document is outside your assigned depot' }, { status: 403 });
+    }
+
     await prisma.cloudDocument.delete({
       where: { id },
     });

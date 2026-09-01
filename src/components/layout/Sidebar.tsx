@@ -109,7 +109,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 shrink-0 border-r border-slate-800 bg-slate-925/95 flex flex-col justify-between hidden md:flex h-full min-h-0 overflow-hidden select-none">
+    <aside className="w-60 shrink-0 border-r border-[#e8e8e4] bg-[#fbfbfa] flex flex-col justify-between hidden md:flex h-full min-h-0 overflow-hidden select-none">
       {/* Depot sandboxing alert if Depot User */}
       {isDepotUser && (
         <div className="shrink-0 m-3 p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs">
@@ -124,13 +124,13 @@ export default function Sidebar() {
       )}
 
       {/* Nav Menu */}
-      <div className="flex-1 min-h-0 overflow-y-auto py-4 px-3 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto py-4 px-2.5 space-y-5">
         {navSections.map((section, idx) => {
           if (section.items.length === 0) return null;
 
           return (
             <div key={idx}>
-              <div className="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 font-mono">
+              <div className="px-3 text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1.5">
                 {section.title}
               </div>
               <div className="space-y-1">
@@ -143,10 +143,10 @@ export default function Sidebar() {
                       key={item.href}
                       href={item.href}
                       className={`group flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${isActive
-                          ? 'bg-brand-600/20 text-brand-300 border border-brand-500/40 shadow-sm font-semibold'
+                          ? 'bg-[#eef0ff] text-[#4f61c4] border border-[#dce0fb] shadow-none font-semibold'
                           : item.highlight
                             ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                            : 'text-slate-500 hover:text-slate-900 hover:bg-[#f1f1ee]'
                         }`}
                     >
                       <div className="flex items-center gap-2.5">
@@ -178,7 +178,7 @@ export default function Sidebar() {
       </div>
 
       {/* Cloudinary CDN Indicator Footer */}
-      <div className="shrink-0 p-3 border-t border-slate-800/80 bg-slate-950/80">
+      <div className="shrink-0 p-3 border-t border-[#e8e8e4] bg-[#f7f7f5]">
         <div className="flex items-center justify-between text-[11px]">
           <div className="flex items-center gap-1.5 text-slate-400">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />

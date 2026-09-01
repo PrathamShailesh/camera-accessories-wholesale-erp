@@ -81,7 +81,12 @@ export default function DepotPickPage() {
                   <h3 className="text-lg font-bold text-white">{invoice.customerCompany}</h3>
                   <p className="text-sm text-slate-400">{invoice.invoiceNumber}</p>
                 </div>
-                <button className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  title="Print this pick list"
+                  className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400"
+                >
                   <Printer className="h-4 w-4" />
                 </button>
               </div>

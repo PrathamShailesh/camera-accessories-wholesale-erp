@@ -7,8 +7,8 @@ import { User, TaxInvoice } from '@/types/erp';
 export default function DepotShipPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
-  const [awbInput, setAwbInput] = useState('');
-  const [courierInput, setCourierInput] = useState('DHL_EXPRESS');
+  const [awbInputs, setAwbInputs] = useState<Record<string, string>>({});
+  const [courierInputs, setCourierInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadData = async () => {
@@ -29,7 +29,11 @@ export default function DepotShipPage() {
         const res = await fetch('/api/invoices');
         if (res.ok) {
           const allInvoices = await res.json();
-          const filtered = allInvoices.filter((inv: any) => ['PACKED', 'SHIPPED', 'DELIVERED'].includes(inv.fulfilmentStatus));
+          const filtered = allInvoices.filter((inv: any) => {
+            const statusMatch = ['PACKED', 'SHIPPED', 'DELIVERED'].includes(inv.fulfilmentStatus);
+            const depotMatch = !user?.assignedDepotId || inv.depotId === user.assignedDepotId;
+            return statusMatch && depotMatch;
+          });
           setInvoices(filtered);
         }
       } catch {}
@@ -39,9 +43,21 @@ export default function DepotShipPage() {
   }, []);
 
   const handleQuickShip = async (inv: TaxInvoice) => {
-    if (!awbInput.trim()) return;
-    const res = await fetch(`/api/invoices/${inv.id}/ship`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ courier: courierInput, airwayBillNumber: awbInput.trim(), trackingUrl: `https://www.dhl.com/en/express/tracking.html?AWB=${awbInput.replace(/[^0-9]/g, '')}`, weightKg: 6.8, packageCount: 1 }) });
-    if (res.ok) { setAwbInput(''); setInvoices((items) => items.filter((i) => i.id !== inv.id)); }
+    const awbNumber = awbInputs[inv.id] || '';
+    if (!awbNumber.trim()) {
+      alert('Please enter an Airway Bill number');
+      return;
+    }
+    const courier = courierInputs[inv.id] || 'DHL_EXPRESS';
+    const res = await fetch(`/api/invoices/${inv.id}/ship`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ courier, airwayBillNumber: awbNumber.trim(), trackingUrl: `https://www.dhl.com/en/express/tracking.html?AWB=${awbNumber.replace(/[^0-9]/g, '')}`, weightKg: 6.8, packageCount: 1 }) });
+    if (res.ok) {
+      setAwbInputs(prev => ({ ...prev, [inv.id]: '' }));
+      setInvoices((items) => items.filter((i) => i.id !== inv.id));
+      alert('Shipment created successfully!');
+    } else {
+      const error = await res.json();
+      alert(`Failed to create shipment: ${error.error || 'Unknown error'}`);
+    }
   };
 
   const packedOrders = invoices.filter(i => i.fulfilmentStatus === 'PACKED');
@@ -76,16 +92,16 @@ export default function DepotShipPage() {
                   <input
                     type="text"
                     placeholder="e.g. DHL-9482103847"
-                    value={awbInput}
-                    onChange={(e) => setAwbInput(e.target.value)}
+                    value={awbInputs[invoice.id] || ''}
+                    onChange={(e) => setAwbInputs(prev => ({ ...prev, [invoice.id]: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-cyan-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">Courier</label>
                   <select
-                    value={courierInput}
-                    onChange={(e) => setCourierInput(e.target.value)}
+                    value={courierInputs[invoice.id] || 'DHL_EXPRESS'}
+                    onChange={(e) => setCourierInputs(prev => ({ ...prev, [invoice.id]: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-cyan-500"
                   >
                     <option value="DHL_EXPRESS">DHL Express</option>

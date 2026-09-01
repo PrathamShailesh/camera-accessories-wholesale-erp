@@ -69,7 +69,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen h-[100dvh] flex flex-col overflow-hidden bg-slate-950">
       {/* Depot Header */}
       <header className="bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-900 border-b border-emerald-500/30 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -149,9 +149,9 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
       )}
 
       {/* Desktop Sidebar + Main Content */}
-      <div className="flex">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Desktop Sidebar */}
-        <aside className="hidden md:flex w-64 flex-col border-r border-slate-800 bg-slate-950/80 min-h-screen">
+        <aside className="hidden md:flex w-64 flex-col border-r border-slate-800 bg-slate-950/80">
           <div className="p-4">
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 mb-4">
               <ShieldAlert className="h-4 w-4 text-amber-400" />
@@ -195,7 +195,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8">
           {children}
         </main>
       </div>

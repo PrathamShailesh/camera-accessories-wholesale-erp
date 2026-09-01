@@ -11,6 +11,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'LensCore ERP',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport: Viewport = {
@@ -36,4 +39,3 @@ export default function RootLayout({
     </html>
   );
 }
-
