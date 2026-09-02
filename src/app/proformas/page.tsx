@@ -23,6 +23,7 @@ import { StatusBadge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { fetchWithCache } from '@/lib/client-cache';
 
 export default function ProformasPage() {
   const [proformas, setProformas] = useState<Proforma[]>([]);
@@ -31,18 +32,17 @@ export default function ProformasPage() {
   const [selectedDoc, setSelectedDoc] = useState<Proforma | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const loadData = async (force = false) => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/proformas');
-      if (res.ok) {
-        const data = await res.json();
-        setProformas(Array.isArray(data) ? data : []);
+      const data = await fetchWithCache<Proforma[]>('/api/proformas', undefined, force ? 0 : 15000);
+      if (Array.isArray(data)) {
+        setProformas(data);
       } else {
-        setError('Failed to load proformas');
-        setProformas(dataStore.getProformas());
+        setProformas([]);
       }
     } catch {
       setError('Something went wrong. Please try again.');
@@ -62,20 +62,34 @@ export default function ProformasPage() {
         try {
           const payload = JSON.parse(event.data);
           if (payload.type === 'PROFORMA_UPDATED' || payload.type === 'PROFORMA_CONFIRMED') {
-            loadData();
+            loadData(true);
           }
         } catch {}
       };
     } catch {}
 
-    const onFocus = () => loadData();
-    window.addEventListener('focus', onFocus);
-
     return () => {
       if (eventSource) eventSource.close();
-      window.removeEventListener('focus', onFocus);
     };
   }, []);
+
+  const handleApprove = async (proformaId: string) => {
+    setApprovingId(proformaId);
+    try {
+      const res = await fetch(`/api/proformas/${proformaId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'CONFIRMED' }),
+      });
+      if (res.ok) {
+        loadData(true);
+      }
+    } catch (err) {
+      console.error('Approve error:', err);
+    } finally {
+      setApprovingId(null);
+    }
+  };
 
   const filteredProformas = proformas.filter((pf) => {
     if (filterStatus !== 'ALL' && pf.status !== filterStatus) return false;
@@ -105,7 +119,7 @@ export default function ProformasPage() {
       <PageHeader
         eyebrow="02 / SALES"
         title="Proformas"
-        description="Create and manage customer quotations and sales proposals."
+        description="Create, approve, and convert customer quotations and sales proposals into tax invoices."
         actions={
           <LinkButton href="/proformas/new" iconLeft={<PlusCircle className="h-4 w-4" />}>
             New Proforma
@@ -120,66 +134,69 @@ export default function ProformasPage() {
         </div>
       )}
 
-      {/* Filter and Search Bar */}
-      <Card className="p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search Proforma # or Customer..."
-            className="w-full rounded-md border border-slate-200 bg-slate-50/50 pl-9 pr-3 py-1.5 text-xs text-slate-900 focus:bg-white"
-          />
-        </div>
-
-        {/* Status Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-          {['ALL', 'DRAFT', 'SENT', 'CONFIRMED', 'CONVERTED'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                filterStatus === status
-                  ? 'bg-brand-50 text-brand-700 font-bold border border-brand-200'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {status}
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      {/* Pipeline Summary Ribbon */}
-      <div className="flex items-center justify-between text-xs text-slate-500 font-mono px-1">
-        <span>Showing {filteredProformas.length} proformas</span>
-        <span>
-          Total Pipeline: <strong className="text-slate-900">{formatUSD(totalProformaValue)}</strong>
-        </span>
+      {/* Summary Cards & Search Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4 bg-white border-slate-200">
+          <div className="text-xs font-semibold text-slate-500">Total Proformas</div>
+          <div className="text-2xl font-bold text-slate-900 font-mono mt-1">{filteredProformas.length}</div>
+        </Card>
+        <Card className="p-4 bg-white border-slate-200">
+          <div className="text-xs font-semibold text-slate-500">Pipeline Value</div>
+          <div className="text-2xl font-bold text-brand-600 font-mono mt-1">{formatUSD(totalProformaValue)}</div>
+        </Card>
+        <Card className="p-4 bg-white border-slate-200">
+          <div className="text-xs font-semibold text-slate-500">Search & Filter</div>
+          <div className="relative mt-1">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search proforma #, customer..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 rounded-md border border-slate-200 text-xs focus:outline-none focus:border-brand-500 font-mono"
+            />
+          </div>
+        </Card>
       </div>
 
-      {/* Proformas Table */}
-      <Card className="overflow-hidden">
+      {/* Status Filter Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        {['ALL', 'DRAFT', 'SENT', 'CONFIRMED', 'CONVERTED', 'CANCELLED'].map((st) => (
+          <button
+            key={st}
+            onClick={() => setFilterStatus(st)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
+              filterStatus === st
+                ? 'bg-[#005E82] text-white shadow-xs'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            {st}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <Card className="overflow-hidden border-slate-200 bg-white">
         {filteredProformas.length === 0 ? (
           <EmptyState
-            icon={FileText}
+            icon={FileCheck2}
             title="No Proformas Found"
-            description="Create your first proforma to start a new customer deal."
+            description="Create a new proforma quotation to start tracking wholesale pipeline orders."
             action={
               <LinkButton href="/proformas/new" iconLeft={<Plus className="h-4 w-4" />}>
-                Create Proforma
+                New Proforma
               </LinkButton>
             }
           />
         ) : (
-          <Table className="border-0 rounded-none shadow-none">
+          <Table>
             <TableHeader>
               <TableHead>Proforma #</TableHead>
-              <TableHead>Customer / Company</TableHead>
+              <TableHead>Customer</TableHead>
               <TableHead>Manager</TableHead>
               <TableHead>Issue Date</TableHead>
-              <TableHead align="right">Amount (USD)</TableHead>
+              <TableHead align="right">Amount</TableHead>
               <TableHead>Status</TableHead>
               <TableHead align="right">Actions</TableHead>
             </TableHeader>
@@ -217,7 +234,27 @@ export default function ProformasPage() {
                     <StatusBadge status={pf.status} />
                   </TableCell>
                   <TableCell align="right">
-                    <div className="flex items-center justify-end gap-1">
+                    <div className="flex items-center justify-end gap-1.5">
+                      {(pf.status === 'DRAFT' || pf.status === 'SENT') && (
+                        <button
+                          type="button"
+                          onClick={() => handleApprove(pf.id)}
+                          disabled={approvingId === pf.id}
+                          className="px-2.5 py-1 rounded-md bg-[#005E82] hover:bg-[#004B68] text-white text-[11px] font-bold transition-all shadow-xs"
+                        >
+                          {approvingId === pf.id ? 'Approving...' : 'Approve'}
+                        </button>
+                      )}
+
+                      {pf.status === 'CONFIRMED' && (
+                        <Link
+                          href={`/proformas/${pf.id}`}
+                          className="px-2.5 py-1 rounded-md bg-[#15803D] hover:bg-[#166534] text-white text-[11px] font-bold transition-all shadow-xs"
+                        >
+                          Convert
+                        </Link>
+                      )}
+
                       <IconButton label="Print / PDF" onClick={() => setSelectedDoc(pf)}>
                         <Printer className="h-3.5 w-3.5 text-slate-500" />
                       </IconButton>

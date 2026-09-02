@@ -367,6 +367,7 @@ model Customer {
 
   proformas      Proforma[]
   taxInvoices    TaxInvoice[]
+  serviceInvoices ServiceInvoice[]
   shipments      Shipment[]
 
   @@index([customerCode])
@@ -704,4 +705,81 @@ model EmailLog {
   @@index([notificationType])
   @@index([relatedEntityId])
   @@index([status])
+}
+
+enum ServiceInvoiceStatus {
+  DRAFT
+  ISSUED
+  SENT
+  PAID
+  PARTIALLY_PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum ServiceCategory {
+  LOGISTICS
+  PACKAGING
+  TRANSPORTATION
+  HANDLING
+  INSTALLATION
+  DOCUMENTATION
+  SERVICE_FEE
+  OTHER
+}
+
+model ServiceInvoice {
+  id                 String               @id @default(cuid())
+  invoiceNumber      String               @unique
+  customerId         String
+  customerName       String
+  customerEmail      String
+  customerCompany    String
+  customerPhone      String?
+  billingAddress     String?
+  issueDate          DateTime             @default(now())
+  dueDate            DateTime
+  paymentTerms       String               @default("IMMEDIATE")
+  status             ServiceInvoiceStatus @default(DRAFT)
+  currency           String               @default("USD")
+  subtotal           Float                @default(0)
+  discountAmount     Float                @default(0)
+  taxAmount          Float                @default(0)
+  otherCharges       Float                @default(0)
+  grandTotal         Float                @default(0)
+  notes              String?
+  internalRemarks    String?
+  pdfUrl             String?
+  emailStatus        String               @default("NOT_SENT")
+  emailSentAt        DateTime?
+  createdBy          String?
+  createdByName      String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  items              ServiceInvoiceItem[]
+  customer           Customer             @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
+  @@index([invoiceNumber])
+  @@index([createdAt])
+}
+
+model ServiceInvoiceItem {
+  id               String          @id @default(cuid())
+  serviceInvoiceId String
+  description      String
+  category         ServiceCategory @default(OTHER)
+  quantity         Float           @default(1)
+  unitPrice        Float           @default(0)
+  discountPercent  Float           @default(0)
+  taxRate          Float           @default(0)
+  taxAmount        Float           @default(0)
+  totalPrice       Float           @default(0)
+
+  serviceInvoice   ServiceInvoice  @relation(fields: [serviceInvoiceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceInvoiceId])
+  @@index([category])
 }

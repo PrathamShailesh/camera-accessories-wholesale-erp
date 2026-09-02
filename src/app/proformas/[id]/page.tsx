@@ -134,12 +134,8 @@ export default function ProformaDetailPage() {
       eventSource.onerror = () => setIsLiveConnected(false);
     } catch {}
 
-    const onFocus = () => loadData(true);
-    window.addEventListener('focus', onFocus);
-
     return () => {
       if (eventSource) eventSource.close();
-      window.removeEventListener('focus', onFocus);
     };
   }, [id]);
 
@@ -354,65 +350,54 @@ export default function ProformaDetailPage() {
             </Button>
           )}
 
-          {proforma.status === 'SENT' && (
+          {/* 1. APPROVE PROFORMA BUTTON (When status is DRAFT, SENT, or PENDING) */}
+          {(proforma.status === 'DRAFT' || proforma.status === 'SENT' || (proforma.status as string) === 'PENDING') && (
             <Button
               size="sm"
               loading={isChangingStatus}
-              iconLeft={<CheckCircle2 className="h-3.5 w-3.5" />}
+              iconLeft={<CheckCircle2 className="h-3.5 w-3.5 text-white" />}
               onClick={() => handleStatusChange('CONFIRMED')}
-              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs"
+              className="bg-[#005E82] hover:bg-[#004B68] text-white font-bold text-xs shadow-sm"
             >
-              Confirm Order
+              Approve Proforma
             </Button>
           )}
 
-          {/* Change Status — only offers transitions the server will accept. */}
-          {statusOptions.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline" loading={isChangingStatus}>
-                  Change Status
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Move this proforma to</DropdownMenuLabel>
-                {statusOptions.map((next) => (
-                  <DropdownMenuItem
-                    key={next}
-                    destructive={next === 'CANCELLED'}
-                    onSelect={() => {
-                      if (next === 'CANCELLED') setPendingCancel(true);
-                      else handleStatusChange(next as Proforma['status']);
-                    }}
-                  >
-                    {STATUS_LABELS[next]}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          {/* Primary Convert to Tax Invoice Action */}
+          {/* 2. CONVERT TO TAX INVOICE BUTTON (When status is CONFIRMED) */}
           {proforma.status === 'CONFIRMED' && (
             <Button
               size="sm"
-              iconLeft={<Sparkles className="h-3.5 w-3.5" />}
+              iconLeft={<Sparkles className="h-3.5 w-3.5 text-white" />}
               onClick={() => setIsConvertModalOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm"
+              className="bg-[#15803D] hover:bg-[#166534] text-white font-bold text-xs shadow-sm"
             >
               Convert to Tax Invoice
             </Button>
           )}
 
+          {/* VIEW CONVERTED INVOICE */}
           {proforma.status === 'CONVERTED' && proforma.convertedToInvoiceId && (
             <LinkButton
               href={`/invoices/${proforma.convertedToInvoiceId}`}
               size="sm"
               iconLeft={<Receipt className="h-3.5 w-3.5" />}
-              className="bg-emerald-600 text-white font-semibold text-xs"
+              className="bg-[#15803D] hover:bg-[#166534] text-white font-bold text-xs"
             >
               View Tax Invoice #{proforma.convertedToInvoiceNumber}
             </LinkButton>
+          )}
+
+          {/* CANCEL OPTION */}
+          {proforma.status !== 'CONVERTED' && proforma.status !== 'CANCELLED' && (
+            <Button
+              size="sm"
+              variant="outline"
+              loading={isChangingStatus}
+              onClick={() => setPendingCancel(true)}
+              className="text-red-600 border-red-200 hover:bg-red-50 text-xs font-semibold"
+            >
+              Cancel
+            </Button>
           )}
         </div>
       </div>

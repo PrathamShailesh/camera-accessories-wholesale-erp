@@ -554,3 +554,66 @@ export interface EmailLog {
   createdAt: string;
   updatedAt: string;
 }
+
+export type ServiceInvoiceStatus =
+  | 'DRAFT'
+  | 'ISSUED'
+  | 'SENT'
+  | 'PAID'
+  | 'PARTIALLY_PAID'
+  | 'OVERDUE'
+  | 'CANCELLED';
+
+export type ServiceCategory =
+  | 'LOGISTICS'
+  | 'PACKAGING'
+  | 'TRANSPORTATION'
+  | 'HANDLING'
+  | 'INSTALLATION'
+  | 'DOCUMENTATION'
+  | 'SERVICE_FEE'
+  | 'OTHER';
+
+export interface ServiceInvoiceItem {
+  id?: string;
+  serviceInvoiceId?: string;
+  description: string;
+  category: ServiceCategory;
+  quantity: number;
+  unitPrice: number;
+  discountPercent: number;
+  taxRate: number;
+  taxAmount: number;
+  totalPrice: number;
+}
+
+export interface ServiceInvoice {
+  id: string;
+  invoiceNumber: string;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  customerCompany: string;
+  customerPhone?: string;
+  billingAddress?: string;
+  issueDate: string;
+  dueDate: string;
+  paymentTerms: string;
+  status: ServiceInvoiceStatus;
+  currency: 'USD';
+  items: ServiceInvoiceItem[];
+  subtotal: number;
+  discountAmount: number;
+  taxAmount: number;
+  otherCharges: number;
+  grandTotal: number;
+  notes?: string;
+  internalRemarks?: string;
+  pdfUrl?: string;
+  emailStatus: 'NOT_SENT' | 'PENDING' | 'SENT' | 'FAILED';
+  emailSentAt?: string;
+  createdBy?: string;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt: string;
+}

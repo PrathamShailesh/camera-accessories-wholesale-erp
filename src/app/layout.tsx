@@ -36,12 +36,21 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                  for (let registration of registrations) {
-                    registration.unregister();
-                  }
-                }).catch(function() {});
+              if (typeof window !== 'undefined') {
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for (let registration of registrations) {
+                      registration.unregister();
+                    }
+                  }).catch(function() {});
+                }
+                if ('caches' in window) {
+                  caches.keys().then(function(keys) {
+                    for (let key of keys) {
+                      caches.delete(key);
+                    }
+                  }).catch(function() {});
+                }
               }
             `,
           }}

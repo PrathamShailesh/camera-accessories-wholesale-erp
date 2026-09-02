@@ -10,7 +10,7 @@ const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || '
 /**
  * Configure Nodemailer transport using Environment Variables with DB Settings Fallback
  */
-async function createTransporter() {
+export async function createTransporter() {
   let host = process.env.SMTP_HOST;
   let port = Number(process.env.SMTP_PORT) || 587;
   let user = process.env.SMTP_USER;
@@ -64,7 +64,7 @@ async function createTransporter() {
 /**
  * ARIB GLOBAL Premium White Enterprise HTML Email Wrapper
  */
-function renderEmailWrapper(title: string, preheader: string, contentHtml: string): string {
+export function renderEmailWrapper(title: string, preheader: string, contentHtml: string): string {
   return `
 <!DOCTYPE html>
 <html lang="en">

@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   FileCheck2,
   Receipt,
+  FileText,
   ShoppingCart,
   Users,
   Package,
@@ -36,6 +37,7 @@ const iconMap: Record<string, any> = {
   LayoutDashboard,
   FileCheck2,
   Receipt,
+  FileText,
   ShoppingCart,
   Users,
   Package,
@@ -180,6 +182,7 @@ export default function Sidebar() {
                   <Link
                     key={`${item.href}-${item.name}`}
                     href={item.href}
+                    prefetch={false}
                     title={collapsed ? item.name : undefined}
                     className={cn(
                       'group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative',

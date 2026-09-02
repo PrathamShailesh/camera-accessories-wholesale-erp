@@ -26,16 +26,18 @@ const STAGES: StageConfig[] = [
   { key: 'delivered', label: 'Delivered', description: 'Completed orders', icon: CheckCircle2 },
 ];
 
+import { fetchWithCache } from '@/lib/client-cache';
+
 export default function OrdersPipelinePage() {
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
   const [proformas, setProformas] = useState<Proforma[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadData = async (force = false) => {
     try {
       const [invRes, pfRes] = await Promise.all([
-        fetch('/api/invoices').then((r) => (r.ok ? r.json() : [])),
-        fetch('/api/proformas').then((r) => (r.ok ? r.json() : [])),
+        fetchWithCache<TaxInvoice[]>('/api/invoices', undefined, force ? 0 : 15000),
+        fetchWithCache<Proforma[]>('/api/proformas', undefined, force ? 0 : 15000),
       ]);
       setInvoices(Array.isArray(invRes) ? invRes : []);
       setProformas(Array.isArray(pfRes) ? pfRes : []);
@@ -57,18 +59,14 @@ export default function OrdersPipelinePage() {
         try {
           const payload = JSON.parse(event.data);
           if (['PROFORMA_UPDATED', 'PROFORMA_CONFIRMED', 'INVOICE_CREATED'].includes(payload.type)) {
-            loadData();
+            loadData(true);
           }
         } catch {}
       };
     } catch {}
 
-    const onFocus = () => loadData();
-    window.addEventListener('focus', onFocus);
-
     return () => {
       if (eventSource) eventSource.close();
-      window.removeEventListener('focus', onFocus);
     };
   }, []);
 

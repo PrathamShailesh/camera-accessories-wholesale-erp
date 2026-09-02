@@ -98,6 +98,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
               {['SUPER_ADMIN', 'MANAGER', 'ERP_USER'].includes(currentUser.role) && (
                 <Link
                   href="/dashboard"
+                  prefetch={false}
                   className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F8FAFC] hover:bg-[#E5E7EB] text-[#111827] text-xs font-semibold transition-colors border border-[#E5E7EB]"
                   title="Switch to Management ERP Dashboard"
                 >
@@ -136,6 +137,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={false}
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
                     'flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-colors',
@@ -169,6 +171,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={false}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     isActive ? 'bg-[#005E82] text-white shadow-xs font-semibold' : 'text-[#4B5563] hover:text-[#111827] hover:bg-[#F8FAFC]'
