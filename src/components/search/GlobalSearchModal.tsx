@@ -89,7 +89,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
       case 'Tax Invoices':
         return <Receipt className="h-4 w-4 text-emerald-600" />;
       case 'Proforma Invoices':
-        return <FileCheck2 className="h-4 w-4 text-indigo-600" />;
+        return <FileCheck2 className="h-4 w-4 text-brand-600" />;
       case 'Products & Inventory':
         return <Package className="h-4 w-4 text-sky-600" />;
       case 'Serial Numbers':
@@ -108,7 +108,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
       <div className="relative w-full max-w-2xl rounded-xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
         {/* Search Input Bar */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100 bg-slate-50/50">
-          <Search className="h-4 w-4 text-indigo-600 shrink-0" />
+          <Search className="h-4 w-4 text-brand-600 shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -152,7 +152,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-slate-900 group-hover:text-indigo-600">
+                      <span className="text-xs font-semibold text-slate-900 group-hover:text-brand-600">
                         {res.title}
                       </span>
                       {res.badge && (
@@ -165,7 +165,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 text-[11px] text-slate-400 group-hover:text-indigo-600">
+                <div className="flex items-center gap-1 text-[11px] text-slate-400 group-hover:text-brand-600">
                   <span className="hidden sm:inline font-mono text-[10px] text-slate-400">{res.category}</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </div>

@@ -10,11 +10,34 @@ import {
 } from '@/lib/rbac';
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/).*)'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files with extensions (e.g. .png, .jpg, .svg, .json, .js, .css, .ico)
+     */
+    '/((?!_next/static|_next/image|_next/data|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|json|txt|woff|woff2|ttf)$).*)',
+  ],
 };
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // Never intercept internal Next.js assets, public static files, or service worker
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/icons') ||
+    pathname === '/favicon.ico' ||
+    pathname === '/manifest.json' ||
+    pathname === '/pdflogo.png' ||
+    pathname === '/Logo-Samples.png' ||
+    pathname === '/sw.js'
+  ) {
+    return NextResponse.next();
+  }
+
   const isApi = pathname.startsWith('/api/');
   const token = req.cookies.get('erp_auth_token')?.value;
   const session = await verifyAuthPayload(token);

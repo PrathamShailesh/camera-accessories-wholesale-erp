@@ -59,7 +59,7 @@ export default function ProductDetailPage() {
         title={
           <span className="inline-flex items-center gap-2.5">
             {product.name}
-            <span className="font-mono text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 align-middle">
+            <span className="font-mono text-xs text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded border border-brand-200 align-middle">
               {product.sku}
             </span>
           </span>

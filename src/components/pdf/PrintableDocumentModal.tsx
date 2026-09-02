@@ -115,27 +115,19 @@ export default function PrintableDocumentModal({
           >
             {/* Header: Company Logo, Name & Contact (Left) vs Document Info (Right) */}
             <div className="flex justify-between items-start mb-6">
-              {/* Top Left: Logo & Company Name */}
-              <div className="flex items-center gap-3.5">
+              {/* Top Left: Logo & Contact */}
+              <div className="flex flex-col items-start gap-1">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/pdflogo.png"
-                  alt="Company Logo"
+                  alt="ARIB GLOBAL"
                   className="h-14 w-auto object-contain shrink-0 max-h-16"
                   onError={(e) => {
                     (e.target as HTMLElement).style.display = 'none';
                   }}
                 />
-                <div>
-                  <h1 className="text-xl font-black text-black tracking-tight uppercase">
-                    {settings.companyName || 'ARIB GLOBAL'}
-                  </h1>
-                  <div className="text-xs font-semibold text-black mt-0.5">
-                    {settings.tradingName || 'ARIB GLOBAL'}
-                  </div>
-                  <div className="text-xs text-black mt-0.5 font-medium">
-                    Contact: {settings.phone || '+91 62827 59863'}
-                  </div>
+                <div className="text-xs text-black mt-1 font-medium">
+                  Contact: {settings.phone || '+91 62827 59863'}
                 </div>
               </div>
 

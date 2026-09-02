@@ -143,7 +143,7 @@ export default function DocumentsPage() {
               onClick={() => setSelectedCategory(tab.value)}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${
                 selectedCategory === tab.value
-                  ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200'
+                  ? 'bg-brand-50 text-brand-700 font-bold border border-brand-200'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -168,7 +168,7 @@ export default function DocumentsPage() {
               <Card
                 key={doc.id}
                 onClick={() => setPreviewDoc(doc)}
-                className="p-4 flex flex-col justify-between cursor-pointer hover:border-indigo-300 hover:shadow-md transition-all group"
+                className="p-4 flex flex-col justify-between cursor-pointer hover:border-brand-300 hover:shadow-md transition-all group"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
@@ -183,11 +183,11 @@ export default function DocumentsPage() {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="h-9 w-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-indigo-600">
+                    <div className="h-9 w-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-brand-600">
                       {isImage ? <ImageIcon className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 line-clamp-1">
+                      <h3 className="text-xs font-bold text-slate-900 group-hover:text-brand-600 line-clamp-1">
                         {doc.title}
                       </h3>
                       <p className="text-[11px] text-slate-400 font-mono mt-0.5 truncate">{doc.fileName}</p>
@@ -231,7 +231,7 @@ export default function DocumentsPage() {
                   href={previewDoc.cloudinaryUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold"
                 >
                   <Download className="h-3.5 w-3.5" />
                   <span>Download</span>
@@ -252,13 +252,13 @@ export default function DocumentsPage() {
                 />
               ) : (
                 <div className="text-center py-8 space-y-3">
-                  <FileText className="h-12 w-12 text-indigo-600 mx-auto" />
+                  <FileText className="h-12 w-12 text-brand-600 mx-auto" />
                   <div className="text-xs font-bold text-slate-900">{previewDoc.fileName}</div>
                   <a
                     href={previewDoc.cloudinaryUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-4 py-2 rounded-md bg-indigo-600 text-white text-xs font-semibold"
+                    className="inline-flex items-center gap-1 px-4 py-2 rounded-md bg-brand-600 text-white text-xs font-semibold"
                   >
                     Open Document Link <ExternalLink className="h-3.5 w-3.5" />
                   </a>

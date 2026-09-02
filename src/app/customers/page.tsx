@@ -4,51 +4,79 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Users,
-  Search,
   Plus,
-  Building2,
-  DollarSign,
   ArrowRight,
-  Mail,
-  Phone,
-  CreditCard,
-  AlertCircle,
   CheckCircle2,
-  Edit2,
-  X,
-  MapPin,
-  FileText,
-  ShieldCheck,
-  RefreshCw,
 } from 'lucide-react';
-import { formatUSD, formatDate } from '@/lib/utils';
+import { formatUSD } from '@/lib/utils';
 import { Customer, PaymentTerms } from '@/types/erp';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Button, LinkButton } from '@/components/ui/Button';
+import { StatusBadge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { SearchInput, Input, Select, Textarea } from '@/components/ui/Input';
+import { Drawer } from '@/components/ui/Modal';
+import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
+import { SkeletonTable } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
+
+const PAYMENT_TERMS_OPTIONS = [
+  { label: 'NET 15 Days', value: 'NET_15' },
+  { label: 'NET 30 Days', value: 'NET_30' },
+  { label: 'NET 60 Days', value: 'NET_60' },
+  { label: 'Immediate / Wire Transfer', value: 'IMMEDIATE' },
+  { label: '50% Advance, 50% on Dispatch', value: 'ADVANCE_50' },
+];
+
+const STATUS_OPTIONS = [
+  { label: 'Active', value: 'ACTIVE' },
+  { label: 'On Hold', value: 'ON_HOLD' },
+  { label: 'Inactive', value: 'INACTIVE' },
+];
+
+interface CustomerFormState {
+  companyName: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  country: string;
+  billingAddress: string;
+  shippingAddress: string;
+  taxNumber: string;
+  paymentTerms: PaymentTerms;
+  creditLimit: number;
+  status: 'ACTIVE' | 'ON_HOLD' | 'INACTIVE';
+  notes: string;
+}
+
+const EMPTY_FORM: CustomerFormState = {
+  companyName: '',
+  contactPerson: '',
+  email: '',
+  phone: '',
+  country: '',
+  billingAddress: '',
+  shippingAddress: '',
+  taxNumber: '',
+  paymentTerms: 'NET_30',
+  creditLimit: 50000,
+  status: 'ACTIVE',
+  notes: '',
+};
 
 export default function CustomersPage() {
+  const { toast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Form fields (used for both create & edit)
-  const [companyName, setCompanyName] = useState('');
-  const [contactPerson, setContactPerson] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState('United States');
-  const [billingAddress, setBillingAddress] = useState('');
-  const [shippingAddress, setShippingAddress] = useState('');
-  const [taxNumber, setTaxNumber] = useState('');
-  const [paymentTerms, setPaymentTerms] = useState<PaymentTerms>('NET_30');
-  const [creditLimit, setCreditLimit] = useState<number>(50000);
-  const [status, setStatus] = useState<'ACTIVE' | 'ON_HOLD' | 'INACTIVE'>('ACTIVE');
-  const [notes, setNotes] = useState('');
+  const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [form, setForm] = useState<CustomerFormState>(EMPTY_FORM);
+  const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadData = async () => {
     setError(null);
@@ -58,10 +86,9 @@ export default function CustomersPage() {
         const data = await response.json();
         setCustomers(Array.isArray(data) ? data : []);
       } else {
-        setError('Failed to load customers');
+        setError('Unable to load customer accounts.');
       }
-    } catch (error) {
-      console.error('Error loading customers:', error);
+    } catch {
       setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
@@ -72,838 +99,316 @@ export default function CustomersPage() {
     loadData();
   }, []);
 
-  const resetForm = () => {
-    setCompanyName('');
-    setContactPerson('');
-    setEmail('');
-    setPhone('');
-    setCountry('United States');
-    setBillingAddress('');
-    setShippingAddress('');
-    setTaxNumber('');
-    setPaymentTerms('NET_30');
-    setCreditLimit(50000);
-    setStatus('ACTIVE');
-    setNotes('');
-    setErrorMessage('');
-    setSuccessMessage('');
+  const openCreate = () => {
+    setForm(EMPTY_FORM);
+    setFormError('');
+    setDrawerMode('create');
   };
 
-  const handleOpenCreate = () => {
-    resetForm();
-    setIsCreateModalOpen(true);
-  };
-
-  const handleOpenEdit = (customer: Customer) => {
+  const openEdit = (customer: Customer) => {
     setEditingCustomer(customer);
-    setCompanyName(customer.companyName || '');
-    setContactPerson(customer.contactPerson || '');
-    setEmail(customer.email || '');
-    setPhone(customer.phone || '');
-    setCountry(customer.country || 'United States');
-    setBillingAddress(customer.billingAddress || '');
-    setShippingAddress(customer.shippingAddress || '');
-    setTaxNumber(customer.taxNumber || '');
-    setPaymentTerms(customer.paymentTerms || 'NET_30');
-    setCreditLimit(customer.creditLimit || 50000);
-    setStatus((customer.status as any) || 'ACTIVE');
-    setNotes(customer.notes || '');
-    setErrorMessage('');
-    setSuccessMessage('');
-    setIsEditModalOpen(true);
+    setForm({
+      companyName: customer.companyName || '',
+      contactPerson: customer.contactPerson || '',
+      email: customer.email || '',
+      phone: customer.phone || '',
+      country: customer.country || '',
+      billingAddress: customer.billingAddress || '',
+      shippingAddress: customer.shippingAddress || '',
+      taxNumber: customer.taxNumber || '',
+      paymentTerms: customer.paymentTerms || 'NET_30',
+      creditLimit: customer.creditLimit || 50000,
+      status: (customer.status as any) || 'ACTIVE',
+      notes: customer.notes || '',
+    });
+    setFormError('');
+    setDrawerMode('edit');
   };
 
-  const handleCreateCustomer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
-    setSuccessMessage('');
+  const closeDrawer = () => {
+    setDrawerMode(null);
+    setEditingCustomer(null);
+  };
 
-    if (!companyName.trim() || !contactPerson.trim() || !email.trim()) {
-      setErrorMessage('Company Name, Contact Person, and Email are required.');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+
+    if (!form.companyName.trim() || !form.contactPerson.trim() || !form.email.trim()) {
+      setFormError('Company name, contact person, and email are required.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/customers', {
-        method: 'POST',
+      const isEdit = drawerMode === 'edit' && editingCustomer;
+      const url = isEdit ? `/api/customers/${editingCustomer.id}` : '/api/customers';
+      const method = isEdit ? 'PUT' : 'POST';
+      const body = isEdit
+        ? { ...form }
+        : {
+            companyName: form.companyName.trim(),
+            contactPerson: form.contactPerson.trim(),
+            email: form.email.trim(),
+            phone: form.phone.trim(),
+            country: form.country.trim(),
+            billingAddress: form.billingAddress.trim() || `${form.companyName}, ${form.country}`,
+            shippingAddress: form.shippingAddress.trim() || form.billingAddress.trim() || `${form.companyName}, ${form.country}`,
+            taxNumber: form.taxNumber.trim() || 'TAX-PENDING',
+            paymentTerms: form.paymentTerms,
+            creditLimit: Number(form.creditLimit),
+            notes: form.notes.trim(),
+          };
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyName: companyName.trim(),
-          contactPerson: contactPerson.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
-          country: country.trim(),
-          billingAddress: billingAddress.trim() || `${companyName}, ${country}`,
-          shippingAddress: shippingAddress.trim() || billingAddress.trim() || `${companyName}, ${country}`,
-          taxNumber: taxNumber.trim() || 'TAX-PENDING',
-          paymentTerms,
-          creditLimit: Number(creditLimit),
-          notes: notes.trim(),
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create customer');
+        throw new Error(data.error || `Failed to ${isEdit ? 'update' : 'create'} customer`);
       }
 
-      setSuccessMessage('Customer created successfully in database.');
+      toast({ title: isEdit ? 'Customer updated' : 'Customer created', variant: 'success' });
       await loadData();
-
-      setTimeout(() => {
-        setIsCreateModalOpen(false);
-        resetForm();
-      }, 700);
+      closeDrawer();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to create customer');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdateCustomer = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCustomer) return;
-
-    setErrorMessage('');
-    setSuccessMessage('');
-
-    if (!companyName.trim() || !contactPerson.trim() || !email.trim()) {
-      setErrorMessage('Company Name, Contact Person, and Email are required.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const response = await fetch(`/api/customers/${editingCustomer.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyName: companyName.trim(),
-          contactPerson: contactPerson.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
-          country: country.trim(),
-          billingAddress: billingAddress.trim(),
-          shippingAddress: shippingAddress.trim(),
-          taxNumber: taxNumber.trim(),
-          paymentTerms,
-          creditLimit: Number(creditLimit),
-          status,
-          notes: notes.trim(),
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update customer');
-      }
-
-      setSuccessMessage(`Changes saved for ${companyName}.`);
-      await loadData();
-
-      setTimeout(() => {
-        setIsEditModalOpen(false);
-        setEditingCustomer(null);
-        resetForm();
-      }, 700);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to update customer');
+      setFormError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const filtered = customers.filter((c) => {
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return (
-        c.companyName.toLowerCase().includes(q) ||
-        c.contactPerson.toLowerCase().includes(q) ||
-        c.customerCode.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        (c.country && c.country.toLowerCase().includes(q))
-      );
-    }
-    return true;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      c.companyName.toLowerCase().includes(q) ||
+      c.contactPerson.toLowerCase().includes(q) ||
+      c.customerCode.toLowerCase().includes(q) ||
+      c.email.toLowerCase().includes(q) ||
+      (c.country && c.country.toLowerCase().includes(q))
+    );
   });
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-16">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <Users className="h-6 w-6 text-brand-400" />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-              Wholesale Customer Accounts
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-slate-800 text-brand-400 border border-slate-700">
-              {customers.length} Accounts
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            B2B client directory, credit limits, VAT/GST registrations, payment terms & account management.
-          </p>
-        </div>
+    <div className="flex flex-col gap-6 pb-16">
+      <PageHeader
+        eyebrow="02 / SALES"
+        title="Customers"
+        description="B2B client directory — credit limits, payment terms, and account management."
+        actions={
+          <Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreate}>
+            New Customer
+          </Button>
+        }
+      />
 
-        <button
-          onClick={handleOpenCreate}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-glow transition-all active:scale-98"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Create New Customer</span>
-        </button>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <SearchInput
+          placeholder="Search company, code, email, or country..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          wrapperClassName="w-full sm:w-96"
+        />
+        <span className="text-xs text-muted sm:ml-auto">{filtered.length} accounts</span>
       </div>
 
-      {/* Search Bar */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search Company, Code, Email, Country or Contact..."
-            className="w-full rounded-xl border border-slate-700 bg-slate-900 pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none font-mono"
-          />
-        </div>
-      </div>
-
-      {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Customers Cards */}
       {loading ? (
-        <div className="glass-panel p-16 rounded-2xl border border-slate-800 text-center space-y-3">
-          <RefreshCw className="h-6 w-6 text-brand-400 animate-spin mx-auto" />
-          <div className="text-slate-300 text-sm font-semibold">Loading customer directory...</div>
-        </div>
+        <SkeletonTable rows={6} cols={7} />
+      ) : error ? (
+        <ErrorState description={error} action={<Button onClick={loadData}>Try Again</Button>} />
       ) : filtered.length === 0 ? (
-        <div className="glass-panel p-16 rounded-3xl border border-slate-800 text-center space-y-4">
-          <div className="w-16 h-16 rounded-3xl bg-slate-900 border border-slate-800 text-slate-500 flex items-center justify-center mx-auto">
-            <Users className="h-8 w-8" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-white">No Customer Accounts Found</h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-              {searchQuery
-                ? 'No client accounts match your search query.'
-                : 'Create your first B2B wholesale client profile to begin issuing proformas and tax invoices.'}
-            </p>
-          </div>
-          <button
-            onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-glow"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create New Customer</span>
-          </button>
-        </div>
+        <EmptyState
+          icon={Users}
+          title={searchQuery ? 'No matching customers' : 'No customers yet'}
+          description={
+            searchQuery
+              ? 'No client accounts match your search.'
+              : 'Create your first B2B wholesale client to start issuing proformas and invoices.'
+          }
+          action={
+            !searchQuery && (
+              <Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreate}>
+                Create Customer
+              </Button>
+            )
+          }
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {filtered.map((c) => (
-            <div
-              key={c.id}
-              className="glass-panel-interactive p-6 rounded-2xl border border-slate-800 flex flex-col justify-between group"
-            >
-              <div>
-                {/* Header with Code, Name, Status, and Edit Button */}
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div>
-                    <span className="px-2.5 py-0.5 rounded-lg bg-brand-500/10 border border-brand-500/30 text-brand-300 font-mono text-[10px] font-bold">
-                      {c.customerCode}
-                    </span>
-                    <h3 className="text-base font-bold text-white mt-1.5 group-hover:text-brand-300 transition-colors">
-                      {c.companyName}
-                    </h3>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono border ${
-                        c.status === 'ACTIVE'
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                          : c.status === 'ON_HOLD'
-                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                          : 'bg-slate-500/10 text-slate-400 border-slate-700'
-                      }`}
-                    >
-                      {c.status}
-                    </span>
-
-                    {/* Edit Customer Action Button */}
-                    <button
-                      onClick={() => handleOpenEdit(c)}
-                      title={`Edit ${c.companyName}`}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-brand-600 text-slate-300 hover:text-white border border-slate-700 transition-all active:scale-95"
-                    >
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 text-xs text-slate-300 mt-3">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-3.5 w-3.5 text-slate-500" />
-                    <span className="font-semibold text-white">{c.contactPerson}</span>
-                  </div>
-                  <div className="flex items-center gap-2 font-mono text-[11px]">
-                    <Mail className="h-3.5 w-3.5 text-slate-500" />
-                    <span className="text-slate-300">{c.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2 font-mono text-[11px]">
-                    <Phone className="h-3.5 w-3.5 text-slate-500" />
-                    <span className="text-slate-400">{c.phone || '—'}</span>
-                  </div>
-                  {c.country && (
-                    <div className="flex items-center gap-2 text-[11px]">
-                      <MapPin className="h-3.5 w-3.5 text-slate-500" />
-                      <span className="text-slate-400">{c.country}</span>
+        <Card className="overflow-hidden p-0">
+          <Table>
+            <TableHeader>
+              <TableHead>Company</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead>Country</TableHead>
+              <TableHead align="right">Credit Limit</TableHead>
+              <TableHead align="right">Balance</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead align="right">Action</TableHead>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell>
+                    <div className="font-semibold text-ink">{c.companyName}</div>
+                    <div className="text-xs text-muted font-mono mt-0.5">{c.customerCode}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-ink">{c.contactPerson}</div>
+                    <div className="text-xs text-muted mt-0.5">{c.email}</div>
+                  </TableCell>
+                  <TableCell className="text-muted">{c.country || '—'}</TableCell>
+                  <TableCell align="right" className="font-mono">{formatUSD(c.creditLimit)}</TableCell>
+                  <TableCell align="right" className="font-mono">{formatUSD(c.currentBalance)}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={c.status} />
+                  </TableCell>
+                  <TableCell align="right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
+                        Edit
+                      </Button>
+                      <LinkButton href={`/customers/${c.id}`} size="sm" variant="secondary" iconRight={<ArrowRight className="h-3.5 w-3.5" />}>
+                        View
+                      </LinkButton>
                     </div>
-                  )}
-                </div>
-
-                {/* Financial & Terms Tile */}
-                <div className="mt-4 p-3 rounded-xl bg-slate-950/80 border border-slate-800 grid grid-cols-3 gap-2 text-xs font-mono">
-                  <div>
-                    <div className="text-[10px] text-slate-500">Credit Limit</div>
-                    <div className="font-bold text-white mt-0.5">{formatUSD(c.creditLimit)}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-500">Current Balance</div>
-                    <div className="font-bold text-amber-400 mt-0.5">{formatUSD(c.currentBalance)}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-500">Terms</div>
-                    <div className="font-bold text-slate-300 mt-0.5">{c.paymentTerms?.replace('_', ' ')}</div>
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-slate-400 mt-3 italic line-clamp-1">
-                  {c.notes || 'Standard wholesale terms.'}
-                </p>
-              </div>
-
-              <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                <span className="text-[10px] text-slate-500 font-mono">
-                  {c.totalOrders || 0} Orders • {formatUSD(c.totalSpent || 0)} Volume
-                </span>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => handleOpenEdit(c)}
-                    className="text-xs text-slate-400 hover:text-white font-medium transition-colors"
-                  >
-                    Edit Profile
-                  </button>
-                  <Link
-                    href={`/customers/${c.id}`}
-                    className="text-xs text-brand-400 hover:text-brand-300 font-semibold flex items-center gap-1"
-                  >
-                    <span>Customer 360</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
-      {/* ========================================================================= */}
-      {/* CREATE CUSTOMER MODAL                                                     */}
-      {/* ========================================================================= */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-3xl h-full max-h-[90vh] rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl flex flex-col overflow-hidden">
-            {/* Modal Header */}
-            <div className="shrink-0 flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-brand-500/10 text-brand-400 border border-brand-500/20">
-                  <Users className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">Create New Customer Account</h3>
-                  <p className="text-xs text-slate-400">
-                    Register a new B2B wholesaler, production house or rental agency in database.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
+      <Drawer
+        open={drawerMode !== null}
+        onClose={closeDrawer}
+        width="lg"
+        title={drawerMode === 'edit' ? `Edit ${editingCustomer?.companyName || 'Customer'}` : 'New Customer'}
+        description={
+          drawerMode === 'edit'
+            ? 'Update commercial terms, addresses, and contact information.'
+            : 'Register a new B2B wholesale client, production house, or rental agency.'
+        }
+        footer={
+          <>
+            <Button variant="outline" onClick={closeDrawer} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" form="customer-form" loading={isSubmitting} iconLeft={!isSubmitting ? <CheckCircle2 className="h-4 w-4" /> : undefined}>
+              {drawerMode === 'edit' ? 'Save Changes' : 'Create Customer'}
+            </Button>
+          </>
+        }
+      >
+        <form id="customer-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
+          {formError && (
+            <div className="rounded-lg border border-danger-border bg-danger-soft px-3.5 py-2.5 text-xs text-danger">
+              {formError}
             </div>
+          )}
 
-            {/* Scrollable Modal Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 flex flex-col gap-4 text-xs">
-              {errorMessage && (
-                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              {successMessage && (
-                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-                  <span>{successMessage}</span>
-                </div>
-              )}
-
-              <form id="create-customer-form" onSubmit={handleCreateCustomer} className="flex flex-col gap-4">
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
-                  <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                    1. Company & Primary Contact
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">
-                        Company Name <span className="text-rose-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                        placeholder="e.g. Apex Broadcast & Cinema Solutions LLC"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">
-                        Primary Contact Person <span className="text-rose-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={contactPerson}
-                        onChange={(e) => setContactPerson(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                        placeholder="e.g. Alex Morgan"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">
-                        Work Email <span className="text-rose-400">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                        placeholder="e.g. purchasing@apexbroadcast.com"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Phone / WhatsApp</label>
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                        placeholder="e.g. +971 4 390 1200"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
-                  <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                    2. Location & Tax Registration
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Country / Region</label>
-                      <input
-                        type="text"
-                        value={country}
-                        onChange={(e) => setCountry(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-brand-500 focus:outline-none"
-                        placeholder="e.g. United Arab Emirates, India, Singapore, USA"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Tax / VAT / GST Number</label>
-                      <input
-                        type="text"
-                        value={taxNumber}
-                        onChange={(e) => setTaxNumber(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                        placeholder="e.g. TRN-10029384910003"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Billing Address</label>
-                      <textarea
-                        rows={2}
-                        value={billingAddress}
-                        onChange={(e) => setBillingAddress(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                        placeholder="Registered commercial billing address..."
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Shipping Address</label>
-                      <textarea
-                        rows={2}
-                        value={shippingAddress}
-                        onChange={(e) => setShippingAddress(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                        placeholder="Warehouse or studio delivery address..."
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
-                  <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                    3. Commercial Terms & Credit
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Payment Terms</label>
-                      <select
-                        value={paymentTerms}
-                        onChange={(e) => setPaymentTerms(e.target.value as any)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none"
-                      >
-                        <option value="NET_15">NET 15 Days</option>
-                        <option value="NET_30">NET 30 Days</option>
-                        <option value="NET_60">NET 60 Days</option>
-                        <option value="IMMEDIATE">Immediate / Wire Transfer</option>
-                        <option value="ADVANCE_50">50% Advance, 50% on Dispatch</option>
-                      </select>
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Credit Limit ($ USD)</label>
-                      <input
-                        type="number"
-                        min={0}
-                        step={1000}
-                        value={creditLimit}
-                        onChange={(e) => setCreditLimit(Number(e.target.value))}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2 flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Internal Notes & Commercial Profile</label>
-                      <textarea
-                        rows={2}
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                        placeholder="e.g. VIP Cine Rental House, preferential pricing tier 1..."
-                      />
-                    </div>
-                  </div>
-                </div>
-              </form>
+          <div className="flex flex-col gap-3.5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted">Company &amp; Contact</div>
+            <Input
+              label="Company Name"
+              required
+              value={form.companyName}
+              onChange={(e) => setForm({ ...form, companyName: e.target.value })}
+              placeholder="e.g. Apex Broadcast & Cinema Solutions LLC"
+            />
+            <Input
+              label="Primary Contact Person"
+              required
+              value={form.contactPerson}
+              onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
+              placeholder="e.g. Alex Morgan"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Work Email"
+                type="email"
+                required
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="purchasing@company.com"
+              />
+              <Input
+                label="Phone / WhatsApp"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="+971 4 390 1200"
+              />
             </div>
-
-            {/* Modal Footer */}
-            <div className="shrink-0 flex items-center justify-end gap-3 p-4 px-6 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md">
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="create-customer-form"
-                disabled={isSubmitting}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-glow transition-all disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    <span>Saving to Database...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span>Create Customer Profile</span>
-                  </>
-                )}
-              </button>
-            </div>
+            {drawerMode === 'edit' && (
+              <Select
+                label="Account Status"
+                options={STATUS_OPTIONS}
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value as any })}
+              />
+            )}
           </div>
-        </div>
-      )}
 
-      {/* ========================================================================= */}
-      {/* EDIT CUSTOMER MODAL                                                       */}
-      {/* ========================================================================= */}
-      {isEditModalOpen && editingCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-3xl h-full max-h-[90vh] rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl flex flex-col overflow-hidden">
-            {/* Modal Header */}
-            <div className="shrink-0 flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-brand-500/10 text-brand-400 border border-brand-500/20">
-                  <Edit2 className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <span>Edit Customer: {editingCustomer.companyName}</span>
-                    <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-brand-400 border border-slate-700">
-                      {editingCustomer.customerCode}
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Update commercial terms, billing addresses, credit limits, and contact information.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setIsEditModalOpen(false);
-                  setEditingCustomer(null);
-                }}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Scrollable Modal Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 flex flex-col gap-4 text-xs">
-              {errorMessage && (
-                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              {successMessage && (
-                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-                  <span>{successMessage}</span>
-                </div>
-              )}
-
-              <form id="edit-customer-form" onSubmit={handleUpdateCustomer} className="flex flex-col gap-4">
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                      1. Company Profile & Status
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <label className="text-slate-400 font-medium">Account Status:</label>
-                      <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value as any)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono text-xs focus:border-brand-500 focus:outline-none"
-                      >
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="ON_HOLD">ON HOLD</option>
-                        <option value="INACTIVE">INACTIVE</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">
-                        Company Name <span className="text-rose-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">
-                        Primary Contact Person <span className="text-rose-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={contactPerson}
-                        onChange={(e) => setContactPerson(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">
-                        Work Email <span className="text-rose-400">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Phone / WhatsApp</label>
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
-                  <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                    2. Location & Tax Registration
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Country / Region</label>
-                      <input
-                        type="text"
-                        value={country}
-                        onChange={(e) => setCountry(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Tax / VAT / GST Number</label>
-                      <input
-                        type="text"
-                        value={taxNumber}
-                        onChange={(e) => setTaxNumber(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Billing Address</label>
-                      <textarea
-                        rows={2}
-                        value={billingAddress}
-                        onChange={(e) => setBillingAddress(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Shipping Address</label>
-                      <textarea
-                        rows={2}
-                        value={shippingAddress}
-                        onChange={(e) => setShippingAddress(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col gap-3.5">
-                  <div className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                    3. Commercial Terms & Credit
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Payment Terms</label>
-                      <select
-                        value={paymentTerms}
-                        onChange={(e) => setPaymentTerms(e.target.value as any)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none"
-                      >
-                        <option value="NET_15">NET 15 Days</option>
-                        <option value="NET_30">NET 30 Days</option>
-                        <option value="NET_60">NET 60 Days</option>
-                        <option value="IMMEDIATE">Immediate / Wire Transfer</option>
-                        <option value="ADVANCE_50">50% Advance, 50% on Dispatch</option>
-                      </select>
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Credit Limit ($ USD)</label>
-                      <input
-                        type="number"
-                        min={0}
-                        step={1000}
-                        value={creditLimit}
-                        onChange={(e) => setCreditLimit(Number(e.target.value))}
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2 flex flex-col gap-1">
-                      <label className="block text-slate-300 font-medium">Internal Notes & Remarks</label>
-                      <textarea
-                        rows={2}
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:border-brand-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </form>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="shrink-0 flex items-center justify-end gap-3 p-4 px-6 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsEditModalOpen(false);
-                  setEditingCustomer(null);
-                }}
-                className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="edit-customer-form"
-                disabled={isSubmitting}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-glow transition-all disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    <span>Saving Updates...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span>Update Customer</span>
-                  </>
-                )}
-              </button>
-            </div>
+          <div className="flex flex-col gap-3.5 pt-2 border-t border-line">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted">Location &amp; Tax</div>
+            <Input
+              label="Country / Region"
+              value={form.country}
+              onChange={(e) => setForm({ ...form, country: e.target.value })}
+              placeholder="e.g. United Arab Emirates"
+            />
+            <Input
+              label="Tax / VAT / GST Number"
+              value={form.taxNumber}
+              onChange={(e) => setForm({ ...form, taxNumber: e.target.value })}
+              placeholder="e.g. TRN-10029384910003"
+            />
+            <Textarea
+              label="Billing Address"
+              rows={2}
+              value={form.billingAddress}
+              onChange={(e) => setForm({ ...form, billingAddress: e.target.value })}
+            />
+            <Textarea
+              label="Shipping Address"
+              rows={2}
+              value={form.shippingAddress}
+              onChange={(e) => setForm({ ...form, shippingAddress: e.target.value })}
+            />
           </div>
-        </div>
-      )}
+
+          <div className="flex flex-col gap-3.5 pt-2 border-t border-line">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted">Commercial Terms</div>
+            <div className="grid grid-cols-2 gap-3">
+              <Select
+                label="Payment Terms"
+                options={PAYMENT_TERMS_OPTIONS}
+                value={form.paymentTerms}
+                onChange={(e) => setForm({ ...form, paymentTerms: e.target.value as PaymentTerms })}
+              />
+              <Input
+                label="Credit Limit ($ USD)"
+                type="number"
+                min={0}
+                step={1000}
+                value={form.creditLimit}
+                onChange={(e) => setForm({ ...form, creditLimit: Number(e.target.value) })}
+              />
+            </div>
+            <Textarea
+              label="Internal Notes"
+              rows={2}
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              placeholder="e.g. VIP rental house, preferential pricing tier 1..."
+            />
+          </div>
+        </form>
+      </Drawer>
     </div>
   );
 }

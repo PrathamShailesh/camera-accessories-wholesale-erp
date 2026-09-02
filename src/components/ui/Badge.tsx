@@ -10,7 +10,7 @@ const toneClasses: Record<BadgeTone, string> = {
   warning: 'bg-warning-soft text-warning border-warning-border',
   danger: 'bg-danger-soft text-danger border-danger-border',
   info: 'bg-info-soft text-info border-info-border',
-  primary: 'bg-primary-soft text-primary border-[#d7dbf9]',
+  primary: 'bg-primary-soft text-primary border-info-border',
 };
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {

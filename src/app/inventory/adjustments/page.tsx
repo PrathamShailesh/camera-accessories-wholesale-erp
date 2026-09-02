@@ -1,48 +1,45 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import {
-  SlidersHorizontal,
-  Plus,
-  ArrowLeft,
-  Search,
-  Building2,
-  Package,
-  AlertTriangle,
-  CheckCircle2,
-  X,
-  AlertCircle,
-  TrendingDown,
-  TrendingUp,
-  Boxes,
-  Clock,
-  ShieldCheck,
-  Filter,
-} from 'lucide-react';
-import dataStore from '@/lib/data-store';
+import { SlidersHorizontal, Plus, CheckCircle2 } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
 import { StockAdjustment, Product, Depot } from '@/types/erp';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { SearchInput, Input, Select, Textarea } from '@/components/ui/Input';
+import { Drawer } from '@/components/ui/Modal';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonTable } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
+
+const REASON_OPTIONS = [
+  { label: 'Cycle Count', value: 'CYCLE_COUNT' },
+  { label: 'Damaged', value: 'DAMAGED' },
+  { label: 'Found', value: 'FOUND' },
+  { label: 'Defective', value: 'DEFECTIVE' },
+  { label: 'Other', value: 'OTHER' },
+];
 
 export default function StockAdjustmentsPage() {
+  const { toast } = useToast();
   const [adjustments, setAdjustments] = useState<StockAdjustment[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [depots, setDepots] = useState<Depot[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedReason, setSelectedReason] = useState<string>('ALL');
-  const [selectedDepot, setSelectedDepot] = useState<string>('ALL');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+  const [reasonFilter, setReasonFilter] = useState('ALL');
+  const [loading, setLoading] = useState(true);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Form states
   const [productId, setProductId] = useState('');
   const [depotId, setDepotId] = useState('');
   const [adjustmentType, setAdjustmentType] = useState<'ADD' | 'REMOVE'>('REMOVE');
   const [quantity, setQuantity] = useState<number>(1);
-  const [reason, setReason] = useState<'DAMAGED' | 'CYCLE_COUNT' | 'FOUND' | 'DEFECTIVE' | 'OTHER'>('CYCLE_COUNT');
+  const [reason, setReason] = useState('CYCLE_COUNT');
   const [notes, setNotes] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadData = async () => {
@@ -52,49 +49,50 @@ export default function StockAdjustmentsPage() {
         fetch('/api/products'),
         fetch('/api/depots'),
       ]);
-      if (adjRes.ok) setAdjustments(await adjRes.json());
+      if (adjRes.ok) {
+        const data = await adjRes.json();
+        setAdjustments(Array.isArray(data) ? data : []);
+      }
       if (prodRes.ok) {
         const prods = await prodRes.json();
-        setProducts(prods);
-        if (!productId && prods.length > 0) setProductId(prods[0].id);
+        setProducts(Array.isArray(prods) ? prods : []);
+        if (prods.length > 0) setProductId((prev) => prev || prods[0].id);
       }
       if (depRes.ok) {
         const deps = await depRes.json();
-        setDepots(deps);
-        if (!depotId && deps.length > 0) setDepotId(deps[0].id);
+        setDepots(Array.isArray(deps) ? deps : []);
+        if (deps.length > 0) setDepotId((prev) => prev || deps[0].id);
       }
     } catch {
-      setAdjustments(dataStore.getAdjustments());
-      setProducts(dataStore.getProducts());
-      setDepots(dataStore.getDepots());
+      toast({ title: 'Unable to load stock adjustments', variant: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    setIsMounted(true);
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Compute selected product current depot stock
   const selectedProduct = products.find((p) => p.id === productId);
   const selectedDepotObj = depots.find((d) => d.id === depotId);
   const currentDepotStock = selectedProduct?.depotBreakdown?.[depotId] ?? 0;
-
   const deltaQty = adjustmentType === 'ADD' ? Math.abs(quantity) : -Math.abs(quantity);
   const projectedNewQty = Math.max(0, currentDepotStock + deltaQty);
 
   const handleCreateAdjustment = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage('');
-    setSuccessMessage('');
+    setFormError('');
 
     if (!productId || !depotId || !quantity || quantity <= 0) {
-      setErrorMessage('Please select product, depot and enter a valid quantity.');
+      setFormError('Select a product and depot, and enter a valid quantity.');
       return;
     }
-
     if (adjustmentType === 'REMOVE' && currentDepotStock - quantity < 0) {
-      setErrorMessage(`Cannot deduct ${quantity} units. Current stock at ${selectedDepotObj?.name || 'depot'} is only ${currentDepotStock}.`);
+      setFormError(
+        `Cannot deduct ${quantity} units — ${selectedDepotObj?.name || 'this depot'} only has ${currentDepotStock}.`
+      );
       return;
     }
 
@@ -105,459 +103,208 @@ export default function StockAdjustmentsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId, depotId, deltaQty, reason, notes }),
       });
-
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Stock adjustment failed.');
       }
-
-      setSuccessMessage(`Stock adjusted successfully for ${selectedProduct?.sku || 'product'}.`);
-      loadData();
-      setTimeout(() => {
-        setIsModalOpen(false);
-        setSuccessMessage('');
-        setQuantity(1);
-        setNotes('');
-      }, 700);
+      toast({ title: 'Stock adjusted', variant: 'success' });
+      setIsDrawerOpen(false);
+      setQuantity(1);
+      setNotes('');
+      await loadData();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Stock adjustment failed.');
+      setFormError(err.message || 'Stock adjustment failed.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Filter adjustments
   const filtered = adjustments.filter((adj) => {
-    if (selectedReason !== 'ALL' && adj.reason !== selectedReason) return false;
-    if (selectedDepot !== 'ALL' && adj.depotId !== selectedDepot) return false;
+    if (reasonFilter !== 'ALL' && adj.reason !== reasonFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
-        adj.productSku.toLowerCase().includes(q) ||
-        adj.productName.toLowerCase().includes(q) ||
-        adj.depotName.toLowerCase().includes(q) ||
-        adj.user.toLowerCase().includes(q) ||
-        (adj.notes && adj.notes.toLowerCase().includes(q))
+        (adj.productSku || '').toLowerCase().includes(q) ||
+        (adj.productName || '').toLowerCase().includes(q) ||
+        (adj.depotName || '').toLowerCase().includes(q) ||
+        (adj.user || '').toLowerCase().includes(q) ||
+        (adj.notes || '').toLowerCase().includes(q)
       );
     }
     return true;
   });
 
-  // KPI calculations
-  const totalAdjustmentsCount = adjustments.length;
-  const positiveAdjustments = adjustments.filter((a) => a.deltaQty > 0).reduce((sum, a) => sum + a.deltaQty, 0);
-  const negativeAdjustments = adjustments.filter((a) => a.deltaQty < 0).reduce((sum, a) => sum + Math.abs(a.deltaQty), 0);
-  const damagedCount = adjustments.filter((a) => a.reason === 'DAMAGED' || a.reason === 'DEFECTIVE').reduce((sum, a) => sum + Math.abs(a.deltaQty), 0);
-
-  const getReasonBadge = (r: string) => {
-    switch (r) {
-      case 'DAMAGED':
-        return 'bg-rose-500/10 text-rose-400 border-rose-500/30';
-      case 'DEFECTIVE':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
-      case 'FOUND':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
-      case 'CYCLE_COUNT':
-        return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30';
-      default:
-        return 'bg-slate-500/10 text-slate-300 border-slate-700';
-    }
-  };
+  const canAdjust = products.length > 0 && depots.length > 0;
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-16">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/inventory"
-            className="p-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-6 w-6 text-brand-400" />
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                Depot Stock Adjustments & Cycle Counts
-              </h1>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Audit log and manual reconciliation for physical counts, write-offs, found units, and damaged goods.
-            </p>
-          </div>
-        </div>
+    <div className="flex flex-col gap-6 pb-16">
+      <PageHeader
+        eyebrow="03 / INVENTORY"
+        breadcrumbs={[{ label: 'Inventory', href: '/inventory' }, { label: 'Stock Adjustments' }]}
+        title="Stock Adjustments"
+        description="Correct stock levels from cycle counts, damage, or recovered units."
+        actions={
+          canAdjust && (
+            <Button iconLeft={<Plus className="h-4 w-4" />} onClick={() => setIsDrawerOpen(true)}>
+              New Adjustment
+            </Button>
+          )
+        }
+      />
 
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/inventory/transfers"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
-          >
-            <Boxes className="h-4 w-4 text-cyan-400" />
-            <span>Stock Transfers</span>
-          </Link>
-
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow transition-all active:scale-98"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Record New Adjustment</span>
-          </button>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <SearchInput
+          placeholder="Search product, SKU, depot, or user..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          wrapperClassName="w-full sm:w-80"
+        />
+        <Select
+          options={[{ label: 'All reasons', value: 'ALL' }, ...REASON_OPTIONS]}
+          value={reasonFilter}
+          onChange={(e) => setReasonFilter(e.target.value)}
+          wrapperClassName="w-44"
+        />
+        <span className="text-xs text-muted sm:ml-auto">{filtered.length} adjustments</span>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="glass-panel p-4 rounded-2xl border border-slate-800">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Total Adjustments</span>
-            <SlidersHorizontal className="h-4 w-4 text-brand-400" />
-          </div>
-          <div className="text-2xl font-bold font-mono text-white mt-1.5">
-            {totalAdjustmentsCount}
-          </div>
-          <span className="text-[10px] text-slate-500 font-mono">Recorded in ERP ledger</span>
-        </div>
-
-        <div className="glass-panel p-4 rounded-2xl border border-slate-800">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Surplus / Found Units</span>
-            <TrendingUp className="h-4 w-4 text-emerald-400" />
-          </div>
-          <div className="text-2xl font-bold font-mono text-emerald-400 mt-1.5">
-            +{positiveAdjustments}
-          </div>
-          <span className="text-[10px] text-emerald-500/80 font-mono">Credited to inventory</span>
-        </div>
-
-        <div className="glass-panel p-4 rounded-2xl border border-slate-800">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Write-Offs / Discrepancies</span>
-            <TrendingDown className="h-4 w-4 text-rose-400" />
-          </div>
-          <div className="text-2xl font-bold font-mono text-rose-400 mt-1.5">
-            -{negativeAdjustments}
-          </div>
-          <span className="text-[10px] text-rose-500/80 font-mono">Deducted from ledger</span>
-        </div>
-
-        <div className="glass-panel p-4 rounded-2xl border border-slate-800">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Damaged & Defective</span>
-            <AlertTriangle className="h-4 w-4 text-amber-400" />
-          </div>
-          <div className="text-2xl font-bold font-mono text-amber-400 mt-1.5">
-            {damagedCount} units
-          </div>
-          <span className="text-[10px] text-amber-500/80 font-mono">Quarantine & scrap</span>
-        </div>
-      </div>
-
-      {/* Filter & Search Toolbar */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row gap-3 items-center justify-between">
-        <div className="relative w-full md:w-80">
-          <Search className="h-4 w-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search SKU, Product, Depot, User..."
-            className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 font-mono"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
-          {/* Reason Filter */}
-          <select
-            value={selectedReason}
-            onChange={(e) => setSelectedReason(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-brand-500 font-mono"
-          >
-            <option value="ALL">All Reasons</option>
-            <option value="CYCLE_COUNT">Cycle Count</option>
-            <option value="DAMAGED">Damaged Goods</option>
-            <option value="FOUND">Found Surplus</option>
-            <option value="DEFECTIVE">Defective</option>
-            <option value="OTHER">Other</option>
-          </select>
-
-          {/* Depot Filter */}
-          <select
-            value={selectedDepot}
-            onChange={(e) => setSelectedDepot(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-brand-500 font-mono"
-          >
-            <option value="ALL">All Depots</option>
-            {depots.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Adjustments Table */}
-      <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-slate-800 bg-slate-900/90 text-slate-400 font-mono uppercase text-[10px]">
-                <th className="p-3.5">Timestamp</th>
-                <th className="p-3.5">Product / Hardware</th>
-                <th className="p-3.5">Depot Location</th>
-                <th className="p-3.5">Adjustment Type & Reason</th>
-                <th className="p-3.5 text-center">Variance (Delta)</th>
-                <th className="p-3.5 text-center">Previous ➔ New Qty</th>
-                <th className="p-3.5">Adjusted By</th>
-                <th className="p-3.5">Notes & Context</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-medium">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="p-12 text-center">
-                    <div className="mx-auto w-12 h-12 rounded-2xl bg-slate-800/80 text-brand-400 flex items-center justify-center mb-3">
-                      <SlidersHorizontal className="h-6 w-6" />
-                    </div>
-                    <h4 className="text-sm font-bold text-white">No Stock Adjustments Recorded</h4>
-                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                      Record manual stock reconciliations, cycle count variances, found surplus, and damaged write-offs.
-                    </p>
-                    <button
-                      onClick={() => setIsModalOpen(true)}
-                      className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow"
+      {loading ? (
+        <SkeletonTable rows={6} cols={6} />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={SlidersHorizontal}
+          title={adjustments.length === 0 ? 'No stock adjustments yet' : 'No matching adjustments'}
+          description={
+            adjustments.length === 0
+              ? canAdjust
+                ? 'Record an adjustment when a cycle count, damage, or recovery changes physical stock.'
+                : 'Add products and stock first — adjustments correct existing inventory levels.'
+              : 'No adjustments match your search or filter.'
+          }
+          action={
+            adjustments.length === 0 &&
+            canAdjust && (
+              <Button iconLeft={<Plus className="h-4 w-4" />} onClick={() => setIsDrawerOpen(true)}>
+                New Adjustment
+              </Button>
+            )
+          }
+        />
+      ) : (
+        <Card className="overflow-hidden p-0">
+          <Table>
+            <TableHeader>
+              <TableHead>Product</TableHead>
+              <TableHead>Depot</TableHead>
+              <TableHead align="right">Change</TableHead>
+              <TableHead align="right">New Qty</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>By</TableHead>
+              <TableHead>When</TableHead>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((adj) => (
+                <TableRow key={adj.id}>
+                  <TableCell>
+                    <div className="font-semibold text-ink">{adj.productName}</div>
+                    <div className="text-xs text-muted font-mono mt-0.5">{adj.productSku}</div>
+                  </TableCell>
+                  <TableCell className="text-muted">{adj.depotName}</TableCell>
+                  <TableCell align="right">
+                    <span
+                      className={`font-mono font-semibold ${adj.deltaQty >= 0 ? 'text-success' : 'text-danger'}`}
                     >
-                      <Plus className="h-4 w-4" />
-                      <span>Record Stock Adjustment</span>
-                    </button>
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((adj) => (
-                  <tr key={adj.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="p-3.5 font-mono text-slate-400 text-[11px] whitespace-nowrap">
-                      {isMounted ? formatDateTime(adj.createdAt) : adj.createdAt?.slice(0, 16).replace('T', ' ')}
-                    </td>
-                    <td className="p-3.5">
-                      <div className="font-bold text-white line-clamp-1">{adj.productName}</div>
-                      <div className="text-[10px] font-mono text-brand-400 mt-0.5">{adj.productSku}</div>
-                    </td>
-                    <td className="p-3.5 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 text-slate-300">
-                        <Building2 className="h-3.5 w-3.5 text-slate-500" />
-                        <span>{adj.depotName}</span>
-                      </div>
-                    </td>
-                    <td className="p-3.5 whitespace-nowrap">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono border font-semibold ${getReasonBadge(adj.reason)}`}>
-                        {adj.reason.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="p-3.5 text-center whitespace-nowrap">
-                      <span
-                        className={`font-mono font-bold text-xs px-2.5 py-1 rounded-lg border ${
-                          adj.deltaQty > 0
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                        }`}
-                      >
-                        {adj.deltaQty > 0 ? `+${adj.deltaQty}` : adj.deltaQty} units
-                      </span>
-                    </td>
-                    <td className="p-3.5 text-center font-mono whitespace-nowrap">
-                      <span className="text-slate-400">{adj.previousQty}</span>
-                      <span className="text-slate-600 mx-1.5">➔</span>
-                      <span className="text-white font-bold">{adj.newQty}</span>
-                    </td>
-                    <td className="p-3.5 whitespace-nowrap">
-                      <div className="font-semibold text-slate-200">{adj.user}</div>
-                    </td>
-                    <td className="p-3.5 text-slate-400 text-[11px] max-w-xs truncate">
-                      {adj.notes || '—'}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Record Stock Adjustment Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl p-6 flex flex-col gap-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="h-5 w-5 text-brand-400" />
-                <h3 className="text-sm font-bold text-white">Record Stock Adjustment</h3>
-              </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {errorMessage && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
-
-            {successMessage && (
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-                <span>{successMessage}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleCreateAdjustment} className="flex flex-col gap-3.5 text-xs">
-              {/* Depot Selection */}
-              <div className="space-y-1">
-                <label className="block text-slate-300 font-medium">Select Depot Warehouse</label>
-                <select
-                  value={depotId}
-                  onChange={(e) => setDepotId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none"
-                >
-                  {depots.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name} ({d.city}, {d.country})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Product Selection */}
-              <div className="space-y-1">
-                <label className="block text-slate-300 font-medium">Select Product Hardware</label>
-                <select
-                  value={productId}
-                  onChange={(e) => setProductId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none"
-                >
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.sku} &bull; {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Live Depot Stock Status Indicator */}
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-400">Current Stock at {selectedDepotObj?.name?.split(' ')[0] || 'Depot'}:</span>
-                <span className="text-white font-bold">{currentDepotStock} units</span>
-              </div>
-
-              {/* Adjustment Direction and Quantity */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="block text-slate-300 font-medium">Direction</label>
-                  <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => setAdjustmentType('REMOVE')}
-                      className={`py-1.5 rounded-lg font-semibold text-center transition-all ${
-                        adjustmentType === 'REMOVE'
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      Deduct (-)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAdjustmentType('ADD')}
-                      className={`py-1.5 rounded-lg font-semibold text-center transition-all ${
-                        adjustmentType === 'ADD'
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      Add (+)
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-slate-300 font-medium">Quantity (Units)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Reason Selection */}
-              <div className="space-y-1">
-                <label className="block text-slate-300 font-medium">Adjustment Reason</label>
-                <select
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value as any)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:border-brand-500 focus:outline-none"
-                >
-                  <option value="CYCLE_COUNT">Cycle Count (Physical audit difference)</option>
-                  <option value="DAMAGED">Damaged (Broken optics/body scrap)</option>
-                  <option value="FOUND">Found Surplus (Unrecorded item discovered)</option>
-                  <option value="DEFECTIVE">Defective (Factory defect quarantined)</option>
-                  <option value="OTHER">Other Discrepancy</option>
-                </select>
-              </div>
-
-              {/* Projected Result Preview */}
-              <div className="p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-300">Projected Result:</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400">{currentDepotStock}</span>
-                  <span className={deltaQty > 0 ? 'text-emerald-400' : 'text-rose-400'}>
-                    {deltaQty > 0 ? `+${deltaQty}` : deltaQty}
-                  </span>
-                  <span className="text-slate-500">=</span>
-                  <span className="text-white font-bold text-sm">{projectedNewQty} units</span>
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-1">
-                <label className="block text-slate-300 font-medium">Audit Notes & Justification</label>
-                <textarea
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. Discovered during weekly cycle count on shelf B4..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="pt-2 flex gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-glow transition-all disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Recording...' : 'Commit Adjustment'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+                      {adj.deltaQty >= 0 ? '+' : ''}
+                      {adj.deltaQty}
+                    </span>
+                  </TableCell>
+                  <TableCell align="right" className="font-mono">{adj.newQty}</TableCell>
+                  <TableCell>
+                    <Badge tone={adj.reason === 'DAMAGED' || adj.reason === 'DEFECTIVE' ? 'danger' : 'neutral'}>
+                      {(adj.reason || '').replace(/_/g, ' ')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted">{adj.user}</TableCell>
+                  <TableCell className="text-muted whitespace-nowrap">{formatDateTime(adj.createdAt)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
+
+      <Drawer
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        title="New Stock Adjustment"
+        description="Correct the recorded stock level for a product at a depot."
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setIsDrawerOpen(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" form="adjustment-form" loading={isSubmitting} iconLeft={!isSubmitting ? <CheckCircle2 className="h-4 w-4" /> : undefined}>
+              Apply Adjustment
+            </Button>
+          </>
+        }
+      >
+        <form id="adjustment-form" onSubmit={handleCreateAdjustment} className="flex flex-col gap-4">
+          {formError && (
+            <div className="rounded-lg border border-danger-border bg-danger-soft px-3.5 py-2.5 text-xs text-danger">
+              {formError}
+            </div>
+          )}
+
+          <Select
+            label="Product"
+            options={products.map((p) => ({ label: `${p.name} (${p.sku})`, value: p.id }))}
+            value={productId}
+            onChange={(e) => setProductId(e.target.value)}
+          />
+          <Select
+            label="Depot"
+            options={depots.map((d) => ({ label: d.name, value: d.id }))}
+            value={depotId}
+            onChange={(e) => setDepotId(e.target.value)}
+          />
+          <Select
+            label="Adjustment Type"
+            options={[
+              { label: 'Remove stock', value: 'REMOVE' },
+              { label: 'Add stock', value: 'ADD' },
+            ]}
+            value={adjustmentType}
+            onChange={(e) => setAdjustmentType(e.target.value as 'ADD' | 'REMOVE')}
+          />
+          <Input
+            label="Quantity"
+            type="number"
+            min={1}
+            value={quantity}
+            onChange={(e) => setQuantity(Number(e.target.value))}
+          />
+
+          <div className="rounded-lg border border-line bg-surface-muted px-3.5 py-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted">Current stock</span>
+              <span className="font-mono font-semibold text-ink">{currentDepotStock}</span>
+            </div>
+            <div className="flex items-center justify-between mt-1.5">
+              <span className="text-muted">After adjustment</span>
+              <span className="font-mono font-semibold text-ink">{projectedNewQty}</span>
+            </div>
+          </div>
+
+          <Select
+            label="Reason"
+            options={REASON_OPTIONS}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+          <Textarea label="Notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </form>
+      </Drawer>
     </div>
   );
 }

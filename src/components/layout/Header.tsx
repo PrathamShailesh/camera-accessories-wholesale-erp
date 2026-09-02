@@ -21,7 +21,7 @@ import {
 import { User, Notification } from '@/types/erp';
 import { formatDateTime } from '@/lib/utils';
 import dataStore from '@/lib/data-store';
-import { fetchCurrentUserCached, fetchSettingsCached, invalidateCurrentUser, invalidateSettings } from '@/lib/client-cache';
+import { fetchCurrentUserCached, getCurrentUserCachedSync, fetchSettingsCached, invalidateCurrentUser, invalidateSettings } from '@/lib/client-cache';
 import GlobalSearchModal from '@/components/search/GlobalSearchModal';
 import CloudinaryUploadModal from '@/components/documents/CloudinaryUploadModal';
 import { Avatar } from '@/components/ui/Avatar';
@@ -71,7 +71,7 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
-  const [currentUser, setCurrentUser] = useState<User>(dataStore.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<User>(() => getCurrentUserCachedSync()?.user || dataStore.getCurrentUser());
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -240,12 +240,12 @@ export default function Header() {
             <DropdownMenuContent className="w-80 sm:w-96 p-0 bg-white border border-slate-200 shadow-lg">
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
                 <div className="flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-indigo-600" />
+                  <Bell className="h-4 w-4 text-brand-600" />
                   <span className="text-xs font-semibold text-slate-900">Notifications</span>
                   <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-mono font-medium text-slate-600">{notifications.length}</span>
                 </div>
                 {unreadCount > 0 && (
-                  <button onClick={handleMarkAllRead} className="text-xs text-indigo-600 font-medium hover:underline">
+                  <button onClick={handleMarkAllRead} className="text-xs text-brand-600 font-medium hover:underline">
                     Mark all read
                   </button>
                 )}
@@ -263,12 +263,12 @@ export default function Header() {
                         reloadData();
                       }}
                       className={`block p-2.5 rounded-md border transition-colors ${
-                        n.read ? 'border-transparent hover:bg-slate-50' : 'border-indigo-100 bg-indigo-50/50'
+                        n.read ? 'border-transparent hover:bg-slate-50' : 'border-brand-100 bg-brand-50/50'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-xs font-semibold text-slate-900 line-clamp-1">{n.title}</span>
-                        {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-indigo-600 shrink-0 mt-1" />}
+                        {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-brand-600 shrink-0 mt-1" />}
                       </div>
                       <p className="text-xs text-slate-500 mt-1 line-clamp-2">{n.message}</p>
                       <span className="text-[10px] font-mono text-slate-400 mt-1.5 block">{formatDateTime(n.createdAt)}</span>
@@ -313,8 +313,8 @@ export default function Header() {
         </div>
       </header>
 
-      <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-      <CloudinaryUploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} onUploaded={() => reloadData()} />
+      {isSearchOpen && <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
+      {isUploadOpen && <CloudinaryUploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} onUploaded={() => reloadData()} />}
 
       <Modal
         open={isChangePasswordOpen}

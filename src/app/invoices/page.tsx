@@ -20,9 +20,11 @@ import { StatusBadge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonTable } from '@/components/ui/Skeleton';
+import { fetchWithCache, getCurrentUserCachedSync } from '@/lib/client-cache';
 
 export default function InvoicesPage() {
-  const [currentUser, setCurrentUser] = useState<User>(dataStore.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<User>(() => getCurrentUserCachedSync()?.user || dataStore.getCurrentUser());
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -31,17 +33,12 @@ export default function InvoicesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
-    setError(null);
     try {
-      setCurrentUser(dataStore.getCurrentUser());
-      const res = await fetch('/api/invoices');
-      if (res.ok) {
-        const data = await res.json();
-        setInvoices(Array.isArray(data) ? data : []);
-      } else {
-        setError('Failed to load invoices');
-        setInvoices(dataStore.getInvoices());
-      }
+      const cached = getCurrentUserCachedSync()?.user;
+      if (cached) setCurrentUser(cached);
+      const data = await fetchWithCache<TaxInvoice[]>('/api/invoices', undefined, 10000);
+      setInvoices(Array.isArray(data) ? data : []);
+      setError(null);
     } catch {
       setError('Something went wrong. Please try again.');
       setInvoices(dataStore.getInvoices());
@@ -75,14 +72,6 @@ export default function InvoicesPage() {
   const totalInvoiced = filteredInvoices
     .filter((i) => i.fulfilmentStatus !== 'CANCELLED')
     .reduce((sum, i) => sum + i.grandTotal, 0);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <div className="text-slate-500 text-xs font-medium">Loading tax invoices...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-6 pb-12">
@@ -147,7 +136,9 @@ export default function InvoicesPage() {
 
       {/* Invoices Table */}
       <Card className="overflow-hidden">
-        {filteredInvoices.length === 0 ? (
+        {isLoading && invoices.length === 0 ? (
+          <SkeletonTable rows={8} cols={6} />
+        ) : filteredInvoices.length === 0 ? (
           <EmptyState
             icon={Receipt}
             title="No Tax Invoices Found"
@@ -176,7 +167,7 @@ export default function InvoicesPage() {
                   <TableCell>
                     <Link
                       href={`/invoices/${inv.id}`}
-                      className="font-mono font-bold text-indigo-600 hover:underline text-xs"
+                      className="font-mono font-bold text-brand-600 hover:underline text-xs"
                     >
                       {inv.invoiceNumber}
                     </Link>

@@ -2,31 +2,35 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  BarChart3,
-  Calendar,
-  Filter,
-  Download,
-  Building2,
-  Users,
-  DollarSign,
-  Printer,
-} from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { formatUSD, formatDate } from '@/lib/utils';
-import { TaxInvoice } from '@/types/erp';
+import { TaxInvoice, Depot } from '@/types/erp';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Card } from '@/components/ui/Card';
+import { StatusBadge } from '@/components/ui/Badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { Select } from '@/components/ui/Input';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonTable } from '@/components/ui/Skeleton';
 
 export default function SalesReportsPage() {
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
+  const [depots, setDepots] = useState<Depot[]>([]);
   const [selectedDepot, setSelectedDepot] = useState('ALL');
+  const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     try {
-      const res = await fetch('/api/invoices');
-      if (res.ok) {
-        const data = await res.json();
-        setInvoices(data);
-      }
-    } catch {}
+      const [invRes, depRes] = await Promise.all([fetch('/api/invoices'), fetch('/api/depots')]);
+      const invData = invRes.ok ? await invRes.json() : [];
+      const depData = depRes.ok ? await depRes.json() : [];
+      setInvoices(Array.isArray(invData) ? invData : []);
+      setDepots(Array.isArray(depData) ? depData : []);
+    } catch {
+      setInvoices([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -40,86 +44,90 @@ export default function SalesReportsPage() {
 
   const totalSales = filteredInvoices.reduce((sum, i) => sum + i.grandTotal, 0);
   const totalTax = filteredInvoices.reduce((sum, i) => sum + i.taxAmount, 0);
+  const averageOrder = filteredInvoices.length > 0 ? totalSales / filteredInvoices.length : 0;
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-16">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-brand-400" />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-              Sales & Revenue Reports
-            </h1>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Breakdown of wholesale transactions by customer, equipment model, and depot hub.
-          </p>
+    <div className="flex flex-col gap-6 pb-16">
+      <PageHeader
+        eyebrow="06 / ANALYTICS"
+        title="Sales Reports"
+        description="Invoiced revenue, tax collected, and order volume."
+        actions={
+          depots.length > 1 && (
+            <Select
+              options={[
+                { label: 'All depots', value: 'ALL' },
+                ...depots.map((d) => ({ label: d.name, value: d.id })),
+              ]}
+              value={selectedDepot}
+              onChange={(e) => setSelectedDepot(e.target.value)}
+              wrapperClassName="w-48"
+            />
+          )
+        }
+      />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-lg divide-x divide-y lg:divide-y-0 divide-line bg-surface">
+        <div className="p-4">
+          <div className="text-xs uppercase tracking-wider text-muted">Total Sales</div>
+          <div className="text-2xl font-semibold text-ink mt-1.5">{formatUSD(totalSales)}</div>
+        </div>
+        <div className="p-4">
+          <div className="text-xs uppercase tracking-wider text-muted">Tax Collected</div>
+          <div className="text-2xl font-semibold text-ink mt-1.5">{formatUSD(totalTax)}</div>
+        </div>
+        <div className="p-4">
+          <div className="text-xs uppercase tracking-wider text-muted">Invoices</div>
+          <div className="text-2xl font-semibold text-ink mt-1.5">{filteredInvoices.length}</div>
+        </div>
+        <div className="p-4">
+          <div className="text-xs uppercase tracking-wider text-muted">Average Order</div>
+          <div className="text-2xl font-semibold text-ink mt-1.5">{formatUSD(averageOrder)}</div>
         </div>
       </div>
 
-      {/* Summary KPI Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800">
-          <div className="text-xs text-slate-400 font-medium">Total Period Sales</div>
-          <div className="text-2xl font-bold font-mono text-white mt-1">
-            {formatUSD(totalSales)}
-          </div>
-          <span className="text-[11px] text-emerald-400 font-mono">USD Invoiced</span>
-        </div>
-
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800">
-          <div className="text-xs text-slate-400 font-medium">Total VAT / Tax Collected</div>
-          <div className="text-2xl font-bold font-mono text-cyan-400 mt-1">
-            {formatUSD(totalTax)}
-          </div>
-          <span className="text-[11px] text-slate-400">Standard 5% Rate</span>
-        </div>
-
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800">
-          <div className="text-xs text-slate-400 font-medium">Invoiced Deals Count</div>
-          <div className="text-2xl font-bold font-mono text-white mt-1">
-            {filteredInvoices.length} Invoices
-          </div>
-          <span className="text-[11px] text-slate-400">100% Fulfilment Ratio</span>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden shadow-lg">
-        <div className="overflow-x-auto">
-          <table className="erp-table">
-            <thead>
-              <tr>
-                <th>Invoice #</th>
-                <th>Customer</th>
-                <th>Depot Hub</th>
-                <th>Date</th>
-                <th>Subtotal</th>
-                <th>Tax</th>
-                <th className="text-right">Total (USD)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
+      {loading ? (
+        <SkeletonTable rows={6} cols={6} />
+      ) : filteredInvoices.length === 0 ? (
+        <EmptyState
+          icon={BarChart3}
+          title="No sales data yet"
+          description="Sales figures appear here once proformas are converted into tax invoices."
+        />
+      ) : (
+        <Card className="overflow-hidden p-0">
+          <Table>
+            <TableHeader>
+              <TableHead>Invoice</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Depot</TableHead>
+              <TableHead>Issued</TableHead>
+              <TableHead align="right">Tax</TableHead>
+              <TableHead align="right">Total</TableHead>
+              <TableHead>Status</TableHead>
+            </TableHeader>
+            <TableBody>
               {filteredInvoices.map((inv) => (
-                <tr key={inv.id}>
-                  <td className="font-bold text-brand-400">
-                    <Link href={`/invoices/${inv.id}`} className="hover:underline">
+                <TableRow key={inv.id}>
+                  <TableCell>
+                    <Link href={`/invoices/${inv.id}`} className="font-mono font-semibold text-primary hover:underline">
                       {inv.invoiceNumber}
                     </Link>
-                  </td>
-                  <td className="font-sans text-slate-200 font-medium">{inv.customerCompany}</td>
-                  <td className="font-sans text-slate-300">{inv.depotName}</td>
-                  <td className="text-slate-400">{formatDate(inv.issueDate)}</td>
-                  <td className="text-slate-300">{formatUSD(inv.subtotal)}</td>
-                  <td className="text-slate-400">{formatUSD(inv.taxAmount)}</td>
-                  <td className="text-right font-bold text-emerald-400">{formatUSD(inv.grandTotal)}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell>{inv.customerCompany}</TableCell>
+                  <TableCell className="text-muted">{inv.depotName}</TableCell>
+                  <TableCell className="text-muted">{formatDate(inv.issueDate)}</TableCell>
+                  <TableCell align="right" className="font-mono text-muted">{formatUSD(inv.taxAmount)}</TableCell>
+                  <TableCell align="right" className="font-mono font-semibold">{formatUSD(inv.grandTotal)}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={inv.fulfilmentStatus} />
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </TableBody>
+          </Table>
+        </Card>
+      )}
     </div>
   );
 }

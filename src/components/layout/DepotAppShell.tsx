@@ -66,29 +66,27 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
   const logoUrl = settings?.logoUrl;
 
   return (
-    <div className="min-h-screen h-[100dvh] flex flex-col overflow-hidden bg-workspace">
-      <header className="bg-surface border-b border-line sticky top-0 z-50">
+    <div className="min-h-screen h-[100dvh] flex flex-col overflow-hidden bg-white text-[#111827]">
+      <header className="bg-white border-b border-[#E5E7EB] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3 min-w-0">
-              {logoUrl ? (
-                <div className="h-10 w-10 rounded-xl overflow-hidden shrink-0 border border-line bg-surface-muted flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={logoUrl}
-                    alt={brandName}
-                    className="h-full w-full object-cover"
-                    onError={(e) => ((e.target as HTMLElement).style.display = 'none')}
-                  />
-                </div>
-              ) : (
-                <div className="h-10 w-10 rounded-xl bg-success-soft text-success flex items-center justify-center shrink-0">
-                  <Smartphone className="h-5 w-5" />
-                </div>
-              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/pdflogo.png"
+                alt="ARIB GLOBAL"
+                className="h-8 w-auto object-contain shrink-0 max-h-9"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
               <div className="min-w-0">
-                <h1 className="text-base font-semibold text-ink truncate">{brandName} Depot</h1>
-                <p className="text-xs text-success font-medium truncate">{currentUser.assignedDepotName || 'Warehouse Operations'}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#005E82]/10 text-[#005E82] border border-[#005E82]/20 uppercase shrink-0">
+                    DEPOT
+                  </span>
+                  <p className="text-xs text-[#005E82] font-semibold truncate">{currentUser.assignedDepotName || 'Central Logistics Hub'}</p>
+                </div>
               </div>
             </div>
 
@@ -100,7 +98,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
               {['SUPER_ADMIN', 'MANAGER', 'ERP_USER'].includes(currentUser.role) && (
                 <Link
                   href="/dashboard"
-                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-muted hover:bg-line-soft text-ink text-xs font-semibold transition-colors border border-line"
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F8FAFC] hover:bg-[#E5E7EB] text-[#111827] text-xs font-semibold transition-colors border border-[#E5E7EB]"
                   title="Switch to Management ERP Dashboard"
                 >
                   <span>Main ERP</span>
@@ -110,7 +108,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
 
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2.5 rounded-lg text-muted hover:text-ink hover:bg-surface-muted"
+                className="md:hidden p-2.5 rounded-lg text-[#6B7280] hover:text-[#111827] hover:bg-[#F8FAFC]"
                 aria-label="Toggle menu"
               >
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -118,7 +116,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
 
               <button
                 onClick={handleLogout}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-muted hover:bg-line-soft text-ink text-xs font-medium border border-line transition-colors"
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#F8FAFC] hover:bg-[#E5E7EB] text-[#111827] text-xs font-medium border border-[#E5E7EB] transition-colors"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
@@ -129,7 +127,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
       </header>
 
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-surface">
+        <div className="md:hidden fixed inset-0 z-50 bg-white">
           <div className="pt-20 px-4 space-y-1.5">
             {depotNavItems.map((item) => {
               const Icon = item.icon;
@@ -140,8 +138,8 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
-                    'flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors',
-                    isActive ? 'bg-success text-white' : 'text-ink hover:bg-surface-muted'
+                    'flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-colors',
+                    isActive ? 'bg-[#005E82] text-white shadow-xs' : 'text-[#4B5563] hover:text-[#111827] hover:bg-[#F8FAFC]'
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -152,7 +150,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
             })}
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-ink hover:bg-surface-muted text-sm font-medium"
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-[#DC2626] hover:bg-[#DC2626]/10 text-sm font-medium"
             >
               <LogOut className="h-5 w-5" />
               <span>Logout</span>
@@ -161,8 +159,8 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
         </div>
       )}
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        <aside className="hidden md:flex w-64 flex-col border-r border-line bg-surface">
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#F8FAFC]">
+        <aside className="hidden md:flex w-64 flex-col border-r border-[#E5E7EB] bg-white">
           <nav className="flex-1 px-3 py-4 space-y-1">
             {depotNavItems.map((item) => {
               const Icon = item.icon;
@@ -173,7 +171,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
                   href={item.href}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    isActive ? 'bg-success text-white shadow-card' : 'text-muted hover:text-ink hover:bg-surface-muted'
+                    isActive ? 'bg-[#005E82] text-white shadow-xs font-semibold' : 'text-[#4B5563] hover:text-[#111827] hover:bg-[#F8FAFC]'
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -184,18 +182,18 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
             })}
           </nav>
 
-          <div className="p-3 border-t border-line">
+          <div className="p-3 border-t border-[#E5E7EB]">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-muted hover:bg-line-soft text-ink text-sm font-medium transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F8FAFC] hover:bg-[#E5E7EB] text-[#4B5563] hover:text-[#111827] text-sm font-medium transition-colors border border-[#E5E7EB]"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4 w-4 text-[#DC2626]" />
               <span>Logout</span>
             </button>
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8 bg-[#F8FAFC]">{children}</main>
       </div>
     </div>
   );

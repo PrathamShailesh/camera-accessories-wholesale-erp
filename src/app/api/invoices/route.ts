@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { depotIdFilter, guardApi } from '@/lib/api-auth';
 import { deductStockForInvoice } from '@/lib/inventory-service';
 import { parsePagination } from '@/lib/pagination';
+import { triggerInvoiceCreatedDepotEmail } from '@/lib/email-service';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'invoices.read');
@@ -10,13 +11,15 @@ export async function GET(req: NextRequest) {
 
   try {
     const scopedDepotId = depotIdFilter(auth.user);
-    const { take, skip } = parsePagination(req);
+    const { take, skip } = parsePagination(req, { defaultLimit: 50, maxLimit: 200 });
     // customerCompany/depotName are denormalized onto TaxInvoice itself;
     // the list view only needs a handful of shipment fields for the
     // shippingDetails summary below, not the full related records.
     const invoices = await prisma.taxInvoice.findMany({
       where: scopedDepotId ? { depotId: scopedDepotId } : undefined,
       include: {
+        items: true,
+        packingDetails: true,
         shipment: {
           select: {
             courier: true,
@@ -48,7 +51,11 @@ export async function GET(req: NextRequest) {
         : undefined,
     }));
 
-    return NextResponse.json(mappedInvoices);
+    return NextResponse.json(mappedInvoices, {
+      headers: {
+        'Cache-Control': 'private, max-age=10, stale-while-revalidate=30',
+      },
+    });
   } catch (error) {
     console.error('Error fetching invoices:', error);
     return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 });
@@ -177,7 +184,14 @@ export async function POST(req: NextRequest) {
         include: { items: true, customer: true, depot: true },
       });
 
-      return NextResponse.json(completeInvoice, { status: 201 });
+      // Trigger async transactional email for Depot team (non-blocking)
+      try {
+        triggerInvoiceCreatedDepotEmail(completeInvoice || invoice);
+      } catch (emailErr) {
+        console.error('Failed to queue depot email:', emailErr);
+      }
+
+      return NextResponse.json(completeInvoice || invoice, { status: 201 });
     }
 
     return NextResponse.json({ error: 'ProformaId required for invoice creation' }, { status: 400 });

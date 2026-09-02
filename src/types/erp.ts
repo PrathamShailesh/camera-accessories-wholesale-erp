@@ -313,6 +313,7 @@ export interface TaxInvoice {
     courier?: string;
     airwayBillNumber?: string;
     trackingUrl?: string;
+    awbDocumentUrl?: string;
     dispatchedAt?: string;
   };
   createdAt: string;
@@ -533,4 +534,23 @@ export interface CompanySettings {
   swiftBic?: string;
   iban?: string;
   routingCode?: string;
+}
+
+export type NotificationType = 'INVOICE_CREATED_DEPOT' | 'SHIPMENT_DISPATCHED_MANAGER' | 'PROFORMA_SENT_CUSTOMER';
+
+export interface EmailLog {
+  id: string;
+  idempotencyKey: string;
+  notificationType: NotificationType;
+  recipientEmail: string;
+  recipientName?: string | null;
+  subject: string;
+  relatedEntityId: string;
+  relatedEntityRef: string;
+  status: 'PENDING' | 'SENT' | 'FAILED';
+  sentAt?: string | null;
+  failureReason?: string | null;
+  retryCount: number;
+  createdAt: string;
+  updatedAt: string;
 }

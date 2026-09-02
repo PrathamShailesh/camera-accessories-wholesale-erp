@@ -31,8 +31,19 @@ import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
 import { Button, LinkButton } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { useToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/ui/Modal';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+} from '@/components/ui/DropdownMenu';
+import { allowedNextStatuses, STATUS_LABELS, ProformaStatus } from '@/lib/proforma-workflow';
 
 export default function ProformaDetailPage() {
+  const { toast } = useToast();
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
@@ -42,6 +53,8 @@ export default function ProformaDetailPage() {
   const [selectedDepotId, setSelectedDepotId] = useState<string>('');
   const [isConverting, setIsConverting] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [pendingCancel, setPendingCancel] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -150,21 +163,39 @@ export default function ProformaDetailPage() {
   }
 
   const handleStatusChange = async (status: Proforma['status']) => {
+    setIsChangingStatus(true);
+    setErrorMessage('');
     try {
       const res = await fetch(`/api/proformas/${proforma.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      if (res.ok) {
-        const updated = await res.json();
-        setProforma(updated);
-        prevStatusRef.current = updated.status;
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        // The server owns the lifecycle rules — surface its reason verbatim.
+        throw new Error(data?.error || 'Could not update the status.');
       }
-    } catch (error) {
-      console.error('Error updating status:', error);
+
+      setProforma(data);
+      prevStatusRef.current = data.status;
+      toast({
+        title: `Status changed to ${STATUS_LABELS[status as ProformaStatus] ?? status}`,
+        variant: 'success',
+      });
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Could not update the status.');
+      toast({ title: 'Status change failed', description: error?.message, variant: 'error' });
+    } finally {
+      setIsChangingStatus(false);
+      setPendingCancel(false);
     }
   };
+
+  // Derived from the shared workflow rules, so the menu can only ever offer
+  // transitions the API will actually accept.
+  const statusOptions: ProformaStatus[] = allowedNextStatuses(proforma.status as ProformaStatus);
 
   const handleConvert = async () => {
     setIsConverting(true);
@@ -194,6 +225,13 @@ export default function ProformaDetailPage() {
       setGeneratedInvoice({ id: newInvoice.id, number: newInvoice.invoiceNumber });
       setConversionSuccess(true);
       setIsConverting(false);
+
+      toast({
+        title: 'Invoice Created Successfully',
+        description: `${newInvoice.invoiceNumber || 'INV-XXXX'} · Depot notification queued`,
+        variant: 'success',
+      });
+
       loadData(true);
     } catch (err: any) {
       setErrorMessage(err.message || 'Conversion failed');
@@ -206,36 +244,37 @@ export default function ProformaDetailPage() {
     try {
       setIsSendingEmail(true);
       setErrorMessage('');
+      // Only the identifier is sent — the server reads line items and totals
+      // from the database so the email always matches the stored document.
       const res = await fetch('/api/emails/send-proforma', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          proformaNumber: proforma.proformaNumber,
           proformaId: proforma.id,
-          customerEmail: proforma.customerEmail,
-          customerName: proforma.customerName,
-          grandTotal: formatUSD(proforma.grandTotal),
           appUrl: typeof window !== 'undefined' ? window.location.origin : undefined,
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json().catch(() => null);
-        if (data?.proforma) {
-          setProforma((prev) => (prev ? { ...prev, status: 'SENT' } : prev));
-        }
-        await loadData(true);
-        setEmailSentSuccess(true);
-        setTimeout(() => {
-          setEmailSentSuccess(false);
-          setIsEmailModalOpen(false);
-        }, 1500);
-      } else {
-        const errorData = await res.json().catch(() => null);
-        setErrorMessage(errorData?.error || 'Failed to send email. Check settings.');
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to send email. Check your SMTP settings.');
       }
+
+      await loadData(true);
+      setEmailSentSuccess(true);
+      toast({
+        title: data.simulated ? 'Email logged (SMTP not configured)' : 'Proforma sent',
+        description: data.message,
+        variant: data.simulated ? 'warning' : 'success',
+      });
+      setTimeout(() => {
+        setEmailSentSuccess(false);
+        setIsEmailModalOpen(false);
+      }, 1500);
     } catch (error: any) {
       setErrorMessage(error?.message || 'Failed to send email.');
+      toast({ title: 'Email failed', description: error?.message, variant: 'error' });
     } finally {
       setIsSendingEmail(false);
     }
@@ -299,7 +338,7 @@ export default function ProformaDetailPage() {
             target="_blank"
             variant="outline"
             size="sm"
-            iconLeft={<ExternalLink className="h-3.5 w-3.5 text-indigo-600" />}
+            iconLeft={<ExternalLink className="h-3.5 w-3.5 text-brand-600" />}
           >
             Customer Portal
           </LinkButton>
@@ -308,7 +347,7 @@ export default function ProformaDetailPage() {
             <Button
               size="sm"
               variant="outline"
-              iconLeft={<Mail className="h-3.5 w-3.5 text-indigo-600" />}
+              iconLeft={<Mail className="h-3.5 w-3.5 text-brand-600" />}
               onClick={() => setIsEmailModalOpen(true)}
             >
               Email Quote
@@ -318,12 +357,39 @@ export default function ProformaDetailPage() {
           {proforma.status === 'SENT' && (
             <Button
               size="sm"
+              loading={isChangingStatus}
               iconLeft={<CheckCircle2 className="h-3.5 w-3.5" />}
               onClick={() => handleStatusChange('CONFIRMED')}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs"
+              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs"
             >
-              Mark Confirmed
+              Confirm Order
             </Button>
+          )}
+
+          {/* Change Status — only offers transitions the server will accept. */}
+          {statusOptions.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline" loading={isChangingStatus}>
+                  Change Status
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Move this proforma to</DropdownMenuLabel>
+                {statusOptions.map((next) => (
+                  <DropdownMenuItem
+                    key={next}
+                    destructive={next === 'CANCELLED'}
+                    onSelect={() => {
+                      if (next === 'CANCELLED') setPendingCancel(true);
+                      else handleStatusChange(next as Proforma['status']);
+                    }}
+                  >
+                    {STATUS_LABELS[next]}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
           {/* Primary Convert to Tax Invoice Action */}
@@ -430,7 +496,7 @@ export default function ProformaDetailPage() {
               </div>
               <div className="flex justify-between w-64 pt-2 border-t border-slate-200 text-sm font-bold text-slate-900">
                 <span>Grand Total (USD):</span>
-                <span className="text-indigo-600 font-bold">{formatUSD(proforma.grandTotal)}</span>
+                <span className="text-brand-600 font-bold">{formatUSD(proforma.grandTotal)}</span>
               </div>
             </div>
           </Card>
@@ -538,7 +604,7 @@ export default function ProformaDetailPage() {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-2 pt-4 border-t border-slate-100">
-                  <LinkButton href={`/invoices/${generatedInvoice?.id}`} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs">
+                  <LinkButton href={`/invoices/${generatedInvoice?.id}`} size="sm" className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs">
                     View Invoice
                   </LinkButton>
                   <Button size="sm" variant="outline" iconLeft={<Printer className="h-3.5 w-3.5" />} onClick={() => setIsPrintModalOpen(true)}>
@@ -570,11 +636,11 @@ export default function ProformaDetailPage() {
                   </div>
                   <div className="flex justify-between px-3.5 py-2.5 bg-slate-50 rounded-b-lg">
                     <span className="font-semibold text-slate-900">Total</span>
-                    <span className="font-bold text-indigo-600">{formatUSD(proforma.grandTotal)}</span>
+                    <span className="font-bold text-brand-600">{formatUSD(proforma.grandTotal)}</span>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-900 text-xs leading-relaxed">
+                <div className="p-3 rounded-lg bg-brand-50 border border-brand-100 text-brand-900 text-xs leading-relaxed">
                   This will create a Tax Invoice and move this order into the depot fulfilment workflow.
                 </div>
 
@@ -620,6 +686,18 @@ export default function ProformaDetailPage() {
           data={proforma}
         />
       )}
+
+      <ConfirmDialog
+        open={pendingCancel}
+        onClose={() => setPendingCancel(false)}
+        onConfirm={() => handleStatusChange('CANCELLED')}
+        title={`Cancel ${proforma.proformaNumber}?`}
+        description="The quotation will be marked as cancelled. You can reopen it as a draft later if the customer comes back."
+        confirmLabel="Cancel Proforma"
+        cancelLabel="Keep Active"
+        destructive
+        loading={isChangingStatus}
+      />
     </div>
   );
 }

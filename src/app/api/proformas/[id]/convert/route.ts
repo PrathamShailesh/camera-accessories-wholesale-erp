@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { deductStockForInvoice } from '@/lib/inventory-service';
 import { broadcastSystemEvent } from '@/lib/events-emitter';
 import { guardApi } from '@/lib/api-auth';
+import { triggerInvoiceCreatedDepotEmail } from '@/lib/email-service';
 
 export async function POST(
   req: NextRequest,
@@ -147,6 +148,13 @@ export async function POST(
       where: { id: invoice.id },
       include: { items: true, customer: true, depot: true },
     });
+
+    // Trigger async transactional email for Depot team (non-blocking)
+    try {
+      triggerInvoiceCreatedDepotEmail(completeInvoice || invoice);
+    } catch (emailErr) {
+      console.error('Failed to queue depot email:', emailErr);
+    }
 
     try {
       broadcastSystemEvent({

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { UploadCloud, Link as LinkIcon, Image as ImageIcon, X, Check, RefreshCw } from 'lucide-react';
+import { UploadCloud, Link as LinkIcon, Image as ImageIcon, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ImageUploadFieldProps {
   value: string;
@@ -15,26 +16,23 @@ interface ImageUploadFieldProps {
 export default function ImageUploadField({
   value,
   onChange,
-  label = 'Product Image',
-  placeholder = 'https://images.unsplash.com/... or upload a local file',
-  previewHeightClass = 'h-32',
-  fallbackIcon,
+  label = 'Image',
+  placeholder = 'Paste an image URL',
 }: ImageUploadFieldProps) {
-  const [mode, setMode] = useState<'UPLOAD' | 'URL'>(value && value.startsWith('http') && !value.startsWith('data:') ? 'URL' : 'UPLOAD');
+  const [mode, setMode] = useState<'UPLOAD' | 'URL'>(
+    value && value.startsWith('http') && !value.startsWith('data:') ? 'URL' : 'UPLOAD'
+  );
   const [isDragging, setIsDragging] = useState(false);
   const [urlInput, setUrlInput] = useState(value && !value.startsWith('data:') ? value : '');
+  const [previewFailed, setPreviewFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      alert('Please select a valid image file (PNG, JPG, WebP, etc.)');
-      return;
-    }
-
+    if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      const dataUri = e.target?.result as string;
-      onChange(dataUri);
+      setPreviewFailed(false);
+      onChange(e.target?.result as string);
     };
     reader.readAsDataURL(file);
   };
@@ -46,52 +44,35 @@ export default function ImageUploadField({
     if (file) handleFile(file);
   };
 
-  const handleUrlApply = () => {
-    if (urlInput.trim()) {
-      onChange(urlInput.trim());
-    }
-  };
-
   const handleRemove = () => {
     onChange('');
     setUrlInput('');
+    setPreviewFailed(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const tabClasses = (active: boolean) =>
+    cn(
+      'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors',
+      active ? 'bg-primary text-white' : 'text-muted hover:text-ink'
+    );
+
   return (
-    <div className="space-y-2 text-xs">
-      {/* Label and mode toggle */}
+    <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <label className="block text-slate-300 font-medium">{label}</label>
-        <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
-          <button
-            type="button"
-            onClick={() => setMode('UPLOAD')}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all ${
-              mode === 'UPLOAD'
-                ? 'bg-brand-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
+        <label className="text-xs font-medium text-ink">{label}</label>
+        <div className="flex items-center gap-1 rounded-lg border border-line bg-surface-muted p-0.5">
+          <button type="button" onClick={() => setMode('UPLOAD')} className={tabClasses(mode === 'UPLOAD')}>
             <UploadCloud className="h-3 w-3" />
-            <span>Upload Device</span>
+            <span>Upload</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setMode('URL')}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all ${
-              mode === 'URL'
-                ? 'bg-brand-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
+          <button type="button" onClick={() => setMode('URL')} className={tabClasses(mode === 'URL')}>
             <LinkIcon className="h-3 w-3" />
-            <span>Paste URL</span>
+            <span>URL</span>
           </button>
         </div>
       </div>
 
-      {/* Upload or URL input control */}
       {mode === 'UPLOAD' ? (
         <div>
           <input
@@ -104,8 +85,7 @@ export default function ImageUploadField({
             }}
             className="hidden"
           />
-
-          {!value ? (
+          {!value && (
             <div
               onDragOver={(e) => {
                 e.preventDefault();
@@ -114,85 +94,69 @@ export default function ImageUploadField({
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-4 sm:p-6 text-center cursor-pointer transition-all ${
-                isDragging
-                  ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-slate-700 hover:border-brand-500/60 bg-slate-950/60 hover:bg-slate-900/60'
-              }`}
+              className={cn(
+                'rounded-lg border border-dashed p-5 text-center cursor-pointer transition-colors',
+                isDragging ? 'border-primary bg-primary-soft' : 'border-line hover:border-primary bg-surface-muted'
+              )}
             >
-              <div className="mx-auto w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center mb-2">
-                <UploadCloud className="h-5 w-5" />
+              <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-muted border border-line">
+                <UploadCloud className="h-4 w-4" />
               </div>
-              <p className="text-xs font-semibold text-white">Click to browse or drag & drop image</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Supports PNG, JPG, WebP, GIF (Max 10MB)</p>
+              <p className="text-xs font-medium text-ink">Click to browse or drag &amp; drop</p>
+              <p className="text-[11px] text-muted mt-0.5">PNG, JPG or WebP, up to 10MB</p>
             </div>
-          ) : null}
+          )}
         </div>
       ) : (
-        <div className="space-y-1.5">
-          <div className="flex gap-2">
-            <input
-              type="url"
-              placeholder={placeholder}
-              value={urlInput}
-              onChange={(e) => {
-                setUrlInput(e.target.value);
-                onChange(e.target.value);
-              }}
-              className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-            />
-            {urlInput && (
-              <button
-                type="button"
-                onClick={handleUrlApply}
-                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
-              >
-                Apply
-              </button>
-            )}
-          </div>
-        </div>
+        <input
+          type="url"
+          placeholder={placeholder}
+          value={urlInput}
+          onChange={(e) => {
+            setUrlInput(e.target.value);
+            setPreviewFailed(false);
+            onChange(e.target.value);
+          }}
+          className="w-full h-9 rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-ring"
+        />
       )}
 
-      {/* Image Preview Box when image is set */}
       {value && (
-        <div className="relative rounded-2xl border border-slate-800 bg-slate-950 p-2 flex items-center gap-3">
-          <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl overflow-hidden bg-black border border-slate-800 shrink-0 relative flex items-center justify-center">
-            <img
-              src={value}
-              alt="Preview"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src =
-                  'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800';
-              }}
-              className="h-full w-full object-cover"
-            />
+        <div className="flex items-center gap-3 rounded-lg border border-line bg-surface p-2.5">
+          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-line bg-surface-muted flex items-center justify-center">
+            {previewFailed ? (
+              <ImageIcon className="h-5 w-5 text-muted" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={value}
+                alt="Preview"
+                onError={() => setPreviewFailed(true)}
+                className="h-full w-full object-cover"
+              />
+            )}
           </div>
 
-          <div className="flex-1 min-w-0 pr-2">
-            <div className="flex items-center gap-1.5 text-emerald-400 font-mono text-[11px]">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-success">
               <Check className="h-3.5 w-3.5" />
-              <span>Image Attached</span>
+              <span>{previewFailed ? 'Image set (preview unavailable)' : 'Image attached'}</span>
             </div>
-            <p className="text-[11px] text-slate-400 truncate mt-0.5 font-mono">
-              {value.startsWith('data:') ? 'Local file (Base64 ready)' : value}
+            <p className="mt-0.5 truncate font-mono text-[11px] text-muted">
+              {value.startsWith('data:') ? 'Uploaded file' : value}
             </p>
-            <div className="flex items-center gap-2 mt-1.5">
+            <div className="mt-1.5 flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => {
-                  if (mode === 'UPLOAD') fileInputRef.current?.click();
-                  else fileInputRef.current?.click();
-                }}
-                className="text-[11px] text-brand-400 hover:text-brand-300 font-semibold underline"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[11px] font-medium text-primary hover:underline"
               >
-                Change photo
+                Change
               </button>
-              <span className="text-slate-600">•</span>
               <button
                 type="button"
                 onClick={handleRemove}
-                className="text-[11px] text-rose-400 hover:text-rose-300 font-semibold underline"
+                className="text-[11px] font-medium text-danger hover:underline"
               >
                 Remove
               </button>

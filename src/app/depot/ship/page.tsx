@@ -15,13 +15,20 @@ import {
   Layers,
   ArrowRight,
   Filter,
+  Upload,
+  FileCheck,
+  Eye,
+  X,
+  FileText,
 } from 'lucide-react';
 import { User, TaxInvoice } from '@/types/erp';
-import { fetchCurrentUserCached } from '@/lib/client-cache';
+import { fetchCurrentUserCached, getCurrentUserCachedSync, fetchWithCache } from '@/lib/client-cache';
 import { formatUSD, formatDate } from '@/lib/utils';
+import { useToast } from '@/components/ui/Toast';
 
 export default function DepotShipPage() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { toast } = useToast();
+  const [currentUser, setCurrentUser] = useState<User | null>(() => getCurrentUserCachedSync()?.user || null);
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,14 +36,20 @@ export default function DepotShipPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'READY_TO_SHIP' | 'DISPATCHED'>('ALL');
 
-  // Input states per invoice
-  const [awbInputs, setAwbInputs] = useState<Record<string, string>>({});
+  // Per-card input state (invoiceId -> value)
   const [courierInputs, setCourierInputs] = useState<Record<string, string>>({});
+  const [awbInputs, setAwbInputs] = useState<Record<string, string>>({});
   const [isShipping, setIsShipping] = useState<Record<string, boolean>>({});
+
+  // AWB Document Upload States (invoiceId -> url/name/size/progress)
+  const [awbDocUrls, setAwbDocUrls] = useState<Record<string, string>>({});
+  const [awbDocNames, setAwbDocNames] = useState<Record<string, string>>({});
+  const [awbDocSizes, setAwbDocSizes] = useState<Record<string, string>>({});
+  const [isUploadingAwb, setIsUploadingAwb] = useState<Record<string, boolean>>({});
 
   const loadData = async () => {
     setIsLoading(true);
-    let user: User | null = null;
+    let user: User | null = currentUser;
 
     try {
       const userData = await fetchCurrentUserCached();
@@ -47,15 +60,24 @@ export default function DepotShipPage() {
     } catch {}
 
     try {
-      const res = await fetch('/api/invoices');
-      if (res.ok) {
-        const allInvoices = await res.json();
+      const allInvoices = await fetchWithCache<TaxInvoice[]>('/api/invoices', undefined, 10000);
+      if (Array.isArray(allInvoices)) {
         const filtered = allInvoices.filter((inv: any) => {
           const statusMatch = ['PACKED', 'SHIPPED', 'DELIVERED'].includes(inv.fulfilmentStatus);
           const depotMatch = !user?.assignedDepotId || inv.depotId === user.assignedDepotId;
           return statusMatch && depotMatch;
         });
         setInvoices(filtered);
+
+        // Pre-populate existing uploaded AWB documents
+        const existingDocs: Record<string, string> = {};
+        filtered.forEach((inv: any) => {
+          const docUrl = inv.shippingDetails?.awbDocumentUrl || inv.shipment?.awbDocumentUrl;
+          if (docUrl) {
+            existingDocs[inv.id] = docUrl;
+          }
+        });
+        setAwbDocUrls((prev) => ({ ...existingDocs, ...prev }));
       }
     } catch (e) {
       console.error('Error loading ship invoices:', e);
@@ -67,6 +89,106 @@ export default function DepotShipPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Handle Airway Bill Document Upload via Cloudinary
+  const handleAwbFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, invoice: TaxInvoice) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!validTypes.includes(file.type.toLowerCase())) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Please select a PDF, JPG, JPEG, or PNG document.',
+        variant: 'error',
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'File Too Large',
+        description: 'Airway Bill document size must be under 10MB.',
+        variant: 'error',
+      });
+      return;
+    }
+
+    const fileSizeFormatted =
+      file.size > 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+        : `${Math.round(file.size / 1024)} KB`;
+
+    setIsUploadingAwb((prev) => ({ ...prev, [invoice.id]: true }));
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64Data = event.target?.result as string;
+
+        const res = await fetch('/api/cloudinary/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileData: base64Data,
+            fileName: file.name,
+            category: 'AIRWAY_BILL',
+            relatedEntityType: 'SHIPMENT',
+            relatedEntityId: invoice.id,
+            relatedEntityLabel: `AWB Document for Invoice #${invoice.invoiceNumber}`,
+            title: `Airway Bill - Invoice #${invoice.invoiceNumber}`,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to upload Airway Bill document');
+
+        const uploadedUrl = data.cloudinary?.secure_url || data.document?.cloudinaryUrl || base64Data;
+
+        setAwbDocUrls((prev) => ({ ...prev, [invoice.id]: uploadedUrl }));
+        setAwbDocNames((prev) => ({ ...prev, [invoice.id]: file.name }));
+        setAwbDocSizes((prev) => ({ ...prev, [invoice.id]: fileSizeFormatted }));
+
+        toast({
+          title: 'Airway Bill Uploaded',
+          description: `${file.name} uploaded successfully.`,
+          variant: 'success',
+        });
+        setIsUploadingAwb((prev) => ({ ...prev, [invoice.id]: false }));
+      };
+
+      reader.onerror = () => {
+        throw new Error('Failed to read file contents');
+      };
+
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      toast({
+        title: 'Upload Failed',
+        description: err.message || 'Failed to upload Airway Bill document',
+        variant: 'error',
+      });
+      setIsUploadingAwb((prev) => ({ ...prev, [invoice.id]: false }));
+    }
+  };
+
+  const removeAwbDocument = (invoiceId: string) => {
+    setAwbDocUrls((prev) => {
+      const next = { ...prev };
+      delete next[invoiceId];
+      return next;
+    });
+    setAwbDocNames((prev) => {
+      const next = { ...prev };
+      delete next[invoiceId];
+      return next;
+    });
+    setAwbDocSizes((prev) => {
+      const next = { ...prev };
+      delete next[invoiceId];
+      return next;
+    });
+  };
 
   // Filtered Invoices
   const filteredInvoices = invoices.filter((inv) => {
@@ -96,7 +218,21 @@ export default function DepotShipPage() {
   const handleQuickShip = async (inv: TaxInvoice) => {
     const awbNumber = awbInputs[inv.id] || '';
     if (!awbNumber.trim()) {
-      alert('Please enter or generate an Airway Bill (AWB) number before dispatching');
+      toast({
+        title: 'Airway Bill Number Required',
+        description: 'Please enter or auto-generate an Airway Bill (AWB) number before dispatching.',
+        variant: 'error',
+      });
+      return;
+    }
+
+    const docUrl = awbDocUrls[inv.id] || inv.shippingDetails?.awbDocumentUrl || (inv as any).shipment?.awbDocumentUrl;
+    if (!docUrl) {
+      toast({
+        title: 'Airway Bill Document Required',
+        description: 'Please upload the Airway Bill before shipping.',
+        variant: 'error',
+      });
       return;
     }
 
@@ -113,12 +249,19 @@ export default function DepotShipPage() {
           trackingUrl: `https://www.dhl.com/en/express/tracking.html?AWB=${awbNumber.replace(/[^0-9]/g, '')}`,
           weightKg: inv.packingDetails?.totalWeightKg || 5.0,
           packageCount: inv.packingDetails?.packageCount || 1,
+          airwayBillDocUrl: docUrl,
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
         setAwbInputs((prev) => ({ ...prev, [inv.id]: '' }));
+
+        toast({
+          title: 'Shipment Dispatched Successfully',
+          description: `AWB: ${awbNumber.trim()} · Manager notification sent to prajwal0shetty11@gmail.com`,
+          variant: 'success',
+        });
         // Update local invoice state
         setInvoices((prev) =>
           prev.map((item) =>
@@ -129,6 +272,7 @@ export default function DepotShipPage() {
                   shippingDetails: data.invoice?.shippingDetails || {
                     courier,
                     airwayBillNumber: awbNumber.trim(),
+                    awbDocumentUrl: docUrl,
                   },
                 }
               : item
@@ -136,10 +280,18 @@ export default function DepotShipPage() {
         );
       } else {
         const error = await res.json();
-        alert(`Failed to create shipment: ${error.error || 'Unknown error'}`);
+        toast({
+          title: 'Dispatch Failed',
+          description: error.error || 'Failed to complete shipment dispatch',
+          variant: 'error',
+        });
       }
     } catch (err: any) {
-      alert(`Dispatch error: ${err.message}`);
+      toast({
+        title: 'Dispatch Error',
+        description: err.message || 'Dispatch request failed',
+        variant: 'error',
+      });
     } finally {
       setIsShipping((prev) => ({ ...prev, [inv.id]: false }));
     }
@@ -163,22 +315,22 @@ export default function DepotShipPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <Truck className="h-6 w-6 text-cyan-400" />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+            <Truck className="h-6 w-6 text-[#005E82]" />
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#111827]">
               Shipments & Courier Dispatch
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-slate-800 text-cyan-400 border border-slate-700">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-[#005E82]/10 text-[#005E82] border border-[#005E82]/20 font-bold">
               {invoices.length} Shipments
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-[#4B5563] mt-1">
             Depot dispatch bay: Assign Airway Bill (AWB) numbers, choose freight couriers, and generate live tracking links for handover.
           </p>
         </div>
 
         <button
           onClick={loadData}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 text-xs hover:bg-slate-800 self-start sm:self-auto transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white text-[#4B5563] hover:text-[#111827] text-xs hover:bg-[#F8FAFC] self-start sm:self-auto transition-colors shadow-xs"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           <span>Refresh Queue</span>
@@ -186,22 +338,22 @@ export default function DepotShipPage() {
       </div>
 
       {/* Search & Filter Toolbar */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-3 shadow-xl">
+      <div className="p-4 sm:p-5 rounded-3xl bg-white border border-[#E5E7EB] space-y-3 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Quick Search */}
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
             <input
               type="text"
               placeholder="Search by Invoice #, Customer, AWB Tracking #, or Courier name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-xs focus:border-cyan-500 focus:outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] placeholder-[#9CA3AF] text-xs focus:border-[#005E82] focus:bg-white focus:outline-none transition-colors"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#6B7280] hover:text-[#111827]"
               >
                 Clear
               </button>
@@ -214,8 +366,8 @@ export default function DepotShipPage() {
               onClick={() => setFilterType('ALL')}
               className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'ALL'
-                  ? 'bg-cyan-600 text-white'
-                  : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  ? 'bg-[#005E82] text-white shadow-xs'
+                  : 'bg-white text-[#4B5563] hover:text-[#111827] border border-[#E5E7EB] hover:bg-[#F8FAFC]'
               }`}
             >
               All ({invoices.length})
@@ -224,8 +376,8 @@ export default function DepotShipPage() {
               onClick={() => setFilterType('READY_TO_SHIP')}
               className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'READY_TO_SHIP'
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-slate-950 text-slate-400 hover:text-brand-400 border border-slate-800'
+                  ? 'bg-[#F15A29] text-white shadow-xs'
+                  : 'bg-white text-[#4B5563] hover:text-[#F15A29] border border-[#E5E7EB] hover:bg-[#F8FAFC]'
               }`}
             >
               Ready to Ship ({packedOrders.length})
@@ -234,8 +386,8 @@ export default function DepotShipPage() {
               onClick={() => setFilterType('DISPATCHED')}
               className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'DISPATCHED'
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-950 text-slate-400 hover:text-emerald-400 border border-slate-800'
+                  ? 'bg-[#15803D] text-white shadow-xs'
+                  : 'bg-white text-[#4B5563] hover:text-[#15803D] border border-[#E5E7EB] hover:bg-[#F8FAFC]'
               }`}
             >
               Dispatched ({shippedOrders.length})
@@ -246,15 +398,15 @@ export default function DepotShipPage() {
 
       {/* Orders List */}
       {isLoading ? (
-        <div className="text-center py-16 bg-slate-900/50 rounded-2xl border border-slate-800 space-y-3">
-          <RefreshCw className="h-6 w-6 animate-spin text-cyan-400 mx-auto" />
-          <p className="text-xs text-slate-400">Loading dispatch queue...</p>
+        <div className="text-center py-16 bg-white rounded-2xl border border-[#E5E7EB] space-y-3 shadow-xs">
+          <RefreshCw className="h-6 w-6 animate-spin text-[#005E82] mx-auto" />
+          <p className="text-xs text-[#6B7280]">Loading dispatch queue...</p>
         </div>
       ) : filteredInvoices.length === 0 ? (
-        <div className="text-center py-16 bg-slate-900/50 rounded-3xl border border-slate-800 space-y-3">
-          <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto opacity-70" />
-          <h3 className="text-base font-bold text-white">No Shipments Found</h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
+        <div className="text-center py-16 bg-white rounded-3xl border border-[#E5E7EB] space-y-3 shadow-xs">
+          <CheckCircle2 className="h-12 w-12 text-[#15803D] mx-auto opacity-80" />
+          <h3 className="text-base font-bold text-[#111827]">No Shipments Found</h3>
+          <p className="text-xs text-[#6B7280] max-w-md mx-auto">
             {searchQuery
               ? `No shipments matched "${searchQuery}". Clear search to view all.`
               : 'There are no packed shipments ready for courier dispatch in this view.'}
@@ -273,36 +425,36 @@ export default function DepotShipPage() {
             return (
               <div
                 key={invoice.id}
-                className="bg-slate-900/70 rounded-3xl border border-slate-800 p-5 sm:p-6 space-y-5 shadow-xl transition-all"
+                className="bg-white rounded-3xl border border-[#E5E7EB] p-5 sm:p-6 space-y-5 shadow-xs hover:border-[#005E82]/30 hover:shadow-md transition-all"
               >
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800/80">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E5E7EB]">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-bold text-cyan-400">
+                      <span className="font-mono text-sm font-bold text-[#005E82]">
                         #{invoice.invoiceNumber}
                       </span>
                       <span
                         className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono ${
                           isShipped
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                            : 'bg-brand-500/20 text-brand-300 border border-brand-500/40'
+                            ? 'bg-[#15803D]/10 text-[#15803D] border border-[#15803D]/20'
+                            : 'bg-[#F15A29]/10 text-[#F15A29] border border-[#F15A29]/20'
                         }`}
                       >
                         {isShipped ? 'DISPATCHED & IN TRANSIT' : 'PACKED & READY FOR AWB'}
                       </span>
                     </div>
-                    <h3 className="text-base font-bold text-white mt-1">
+                    <h3 className="text-base font-bold text-[#111827] mt-1">
                       {invoice.customerCompany}
                     </h3>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-[#6B7280]">
                       Destination: {invoice.shippingAddress || 'International Cargo Hub'} • Total: {formatUSD(invoice.grandTotal)}
                     </p>
                   </div>
 
                   <div className="text-right text-xs">
-                    <span className="text-slate-400 block text-[11px]">Weight & Boxes</span>
-                    <span className="text-white font-mono font-bold">
+                    <span className="text-[#6B7280] block text-[11px]">Weight & Boxes</span>
+                    <span className="text-[#111827] font-mono font-bold">
                       {invoice.packingDetails?.totalWeightKg || 4.5} KG ({invoice.packingDetails?.packageCount || 1} Box)
                     </span>
                   </div>
@@ -310,26 +462,40 @@ export default function DepotShipPage() {
 
                 {/* Shipped Tracking Details if Dispatched */}
                 {isShipped ? (
-                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
+                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] space-y-2 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Courier Carrier:</span>
-                      <span className="font-bold text-white font-mono">
+                      <span className="text-[#6B7280]">Courier Carrier:</span>
+                      <span className="font-bold text-[#111827] font-mono">
                         {(invoice.shippingDetails?.courier || (invoice as any).shipment?.courier || 'DHL_EXPRESS').replace(/_/g, ' ')}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Airway Bill (AWB) #:</span>
-                      <span className="font-bold text-cyan-400 font-mono text-sm">
+                      <span className="text-[#6B7280]">Airway Bill (AWB) #:</span>
+                      <span className="font-bold text-[#005E82] font-mono text-sm">
                         {invoice.shippingDetails?.airwayBillNumber || (invoice as any).shipment?.airwayBillNumber || 'N/A'}
                       </span>
                     </div>
+                    {(invoice.shippingDetails?.awbDocumentUrl || awbDocUrls[invoice.id] || (invoice as any).shipment?.awbDocumentUrl) && (
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[#6B7280]">AWB Document:</span>
+                        <a
+                          href={invoice.shippingDetails?.awbDocumentUrl || awbDocUrls[invoice.id] || (invoice as any).shipment?.awbDocumentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-[#005E82] font-semibold hover:underline font-mono"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          <span>View Airway Bill PDF/Image</span>
+                        </a>
+                      </div>
+                    )}
                     {(invoice.shippingDetails?.trackingUrl || (invoice as any).shipment?.trackingUrl) && (
-                      <div className="pt-2 border-t border-slate-800/80 flex justify-end">
+                      <div className="pt-2 border-t border-[#E5E7EB] flex justify-end">
                         <a
                           href={invoice.shippingDetails?.trackingUrl || (invoice as any).shipment?.trackingUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 font-semibold underline font-mono"
+                          className="flex items-center gap-1.5 text-xs text-[#005E82] hover:underline font-semibold font-mono"
                         >
                           <span>Track with Courier Carrier</span>
                           <ExternalLink className="h-3.5 w-3.5" />
@@ -339,10 +505,10 @@ export default function DepotShipPage() {
                   </div>
                 ) : (
                   /* Courier & AWB Assignment Form for Ready to Ship */
-                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 text-xs">
+                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] space-y-3 text-xs">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                        <label className="block text-[11px] font-medium text-[#6B7280] mb-1">
                           Freight Courier Carrier
                         </label>
                         <select
@@ -350,7 +516,7 @@ export default function DepotShipPage() {
                           onChange={(e) =>
                             setCourierInputs((prev) => ({ ...prev, [invoice.id]: e.target.value }))
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-cyan-500 focus:outline-none"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs focus:border-[#005E82] focus:outline-none shadow-xs"
                         >
                           <option value="DHL_EXPRESS">DHL Express Worldwide</option>
                           <option value="FEDEX_PRIORITY">FedEx International Priority</option>
@@ -362,13 +528,13 @@ export default function DepotShipPage() {
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="block text-[11px] font-medium text-slate-400">
+                          <label className="block text-[11px] font-medium text-[#6B7280]">
                             Airway Bill (AWB) Number *
                           </label>
                           <button
                             type="button"
                             onClick={() => generateAwb(invoice.id, courierVal.split('_')[0])}
-                            className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 underline"
+                            className="text-[10px] font-mono text-[#005E82] hover:underline font-semibold"
                           >
                             Auto-Generate AWB
                           </button>
@@ -380,17 +546,93 @@ export default function DepotShipPage() {
                           onChange={(e) =>
                             setAwbInputs((prev) => ({ ...prev, [invoice.id]: e.target.value }))
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:border-cyan-500 focus:outline-none"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs font-mono focus:border-[#005E82] focus:outline-none shadow-xs"
                         />
                       </div>
+                    </div>
+
+                    {/* Airway Bill (AWB) Document Upload Field */}
+                    <div className="space-y-1.5 pt-1">
+                      <label className="block text-[11px] font-medium text-[#6B7280]">
+                        Upload Airway Bill (AWB Document) *
+                      </label>
+
+                      {awbDocUrls[invoice.id] ? (
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-[#15803D]/10 border border-[#15803D]/30 text-xs text-[#15803D]">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <FileCheck className="h-5 w-5 text-[#15803D] shrink-0" />
+                            <div className="min-w-0">
+                              <span className="font-semibold block truncate">
+                                {awbDocNames[invoice.id] || 'Airway_Bill_Document.pdf'}
+                              </span>
+                              <span className="text-[10px] opacity-80 block">
+                                {awbDocSizes[invoice.id] || 'Cloud Document Ready'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <a
+                              href={awbDocUrls[invoice.id]}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-2.5 py-1 rounded-lg bg-white border border-[#15803D]/30 text-[#15803D] hover:bg-[#15803D] hover:text-white transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              <span>View</span>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => removeAwbDocument(invoice.id)}
+                              className="px-2.5 py-1 rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs"
+                              title="Replace file"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                              <span>Remove</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <label
+                          className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer ${
+                            isUploadingAwb[invoice.id]
+                              ? 'border-[#005E82] bg-[#005E82]/5'
+                              : 'border-[#E5E7EB] hover:border-[#005E82] hover:bg-white bg-white/50'
+                          }`}
+                        >
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={(e) => handleAwbFileUpload(e, invoice)}
+                            className="hidden"
+                            disabled={Boolean(isUploadingAwb[invoice.id])}
+                          />
+                          {isUploadingAwb[invoice.id] ? (
+                            <div className="flex items-center gap-2 text-xs font-semibold text-[#005E82]">
+                              <RefreshCw className="h-4 w-4 animate-spin text-[#005E82]" />
+                              <span>Uploading Airway Bill to Cloud Storage...</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center text-center gap-1">
+                              <Upload className="h-5 w-5 text-[#005E82]" />
+                              <span className="text-xs font-semibold text-[#111827]">
+                                Click to Upload Airway Bill (AWB)
+                              </span>
+                              <span className="text-[10px] text-[#6B7280]">
+                                Supports PDF, JPG, JPEG, PNG (max 10MB)
+                              </span>
+                            </div>
+                          )}
+                        </label>
+                      )}
                     </div>
 
                     <div className="pt-2">
                       <button
                         type="button"
                         onClick={() => handleQuickShip(invoice)}
-                        disabled={inProgress || !awbVal.trim()}
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-bold shadow-glow transition-all disabled:opacity-50 active:scale-98"
+                        disabled={inProgress || !awbVal.trim() || !awbDocUrls[invoice.id]}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#005E82] hover:bg-[#004B68] text-white text-sm font-bold shadow-xs transition-all disabled:opacity-50 active:scale-98"
                       >
                         {inProgress ? (
                           <>

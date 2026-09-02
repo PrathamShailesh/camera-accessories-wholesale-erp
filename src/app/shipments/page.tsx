@@ -2,29 +2,46 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  Truck,
-  Search,
-  ExternalLink,
-  Building2,
-  Package,
-  CheckCircle2,
-  Clock,
-  Printer,
-  AlertCircle,
-} from 'lucide-react';
-import dataStore from '@/lib/data-store';
-import { formatUSD, formatDate, getStatusBadgeClasses } from '@/lib/utils';
+import { Truck, ExternalLink } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 import { Shipment } from '@/types/erp';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Button, LinkButton } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { StatusBadge } from '@/components/ui/Badge';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { SearchInput } from '@/components/ui/Input';
+import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
+import { SkeletonTable } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
+import { fetchWithCache, invalidateApiCache } from '@/lib/client-cache';
 
 export default function ShipmentsPage() {
+  const { toast } = useToast();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const loadData = async () => {
+    try {
+      const data = await fetchWithCache<Shipment[]>('/api/shipments', undefined, 10000);
+      setShipments(Array.isArray(data) ? data : []);
+      setError(null);
+    } catch {
+      setError('Unable to load shipments.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const handleMarkDelivered = async (shipmentId: string) => {
-    setError(null);
+    setUpdatingId(shipmentId);
     try {
       const res = await fetch('/api/shipments', {
         method: 'PATCH',
@@ -35,189 +52,140 @@ export default function ShipmentsPage() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || 'Unable to mark this shipment as delivered');
       }
+      toast({ title: 'Shipment marked delivered', variant: 'success' });
+      invalidateApiCache('/api/shipments');
       await loadData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to mark this shipment as delivered');
-    }
-  };
-
-  const loadData = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/shipments');
-      if (res.ok) {
-        const data = await res.json();
-        setShipments(Array.isArray(data) ? data : []);
-      } else {
-        setError('Failed to load shipments');
-        setShipments(dataStore.getShipments());
-      }
-    } catch {
-      setError('Something went wrong. Please try again.');
-      setShipments(dataStore.getShipments());
+    } catch (err: any) {
+      toast({ title: 'Update failed', description: err.message, variant: 'error' });
     } finally {
-      setIsLoading(false);
+      setUpdatingId(null);
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const filtered = shipments.filter((s) => {
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return (
-        s.airwayBillNumber.toLowerCase().includes(q) ||
-        s.shipmentNumber.toLowerCase().includes(q) ||
-        s.customerCompany.toLowerCase().includes(q) ||
-        s.invoiceNumber.toLowerCase().includes(q)
-      );
-    }
-    return true;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (s.airwayBillNumber || '').toLowerCase().includes(q) ||
+      (s.shipmentNumber || '').toLowerCase().includes(q) ||
+      (s.customerCompany || '').toLowerCase().includes(q) ||
+      (s.invoiceNumber || '').toLowerCase().includes(q)
+    );
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <div className="text-slate-400 text-sm">Loading shipments...</div>
-      </div>
-    );
-  }
+  const inTransit = shipments.filter((s) => s.status !== 'DELIVERED').length;
+  const delivered = shipments.filter((s) => s.status === 'DELIVERED').length;
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-16">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Truck className="h-6 w-6 text-sky-400" />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-              Shipments & Airway Bills (AWB)
-            </h1>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Global air freight dispatches via DHL Express, FedEx, Aramex & Emirates SkyCargo.
-          </p>
+    <div className="flex flex-col gap-6 pb-16">
+      <PageHeader
+        eyebrow="04 / DEPOT & FULFILMENT"
+        title="Shipments & AWBs"
+        description="Dispatched orders, airway bills, and delivery tracking."
+      />
+
+      <div className="grid grid-cols-3 border border-line rounded-lg divide-x divide-line bg-surface">
+        <div className="p-4">
+          <div className="text-xs uppercase tracking-wider text-muted">Total Shipments</div>
+          <div className="text-2xl font-semibold text-ink mt-1.5">{shipments.length}</div>
+        </div>
+        <div className="p-4">
+          <div className="text-xs uppercase tracking-wider text-muted">In Transit</div>
+          <div className="text-2xl font-semibold text-ink mt-1.5">{inTransit}</div>
+        </div>
+        <div className="p-4">
+          <div className="text-xs uppercase tracking-wider text-muted">Delivered</div>
+          <div className="text-2xl font-semibold text-ink mt-1.5">{delivered}</div>
         </div>
       </div>
 
-      {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Search */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search AWB # (DHL-9482103847) or Client..."
-            className="w-full rounded-xl border border-slate-700 bg-slate-900 pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:border-sky-500 focus:outline-none"
-          />
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <SearchInput
+          placeholder="Search AWB, shipment, invoice, or customer..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          wrapperClassName="w-full sm:w-96"
+        />
+        <span className="text-xs text-muted sm:ml-auto">{filtered.length} shipments</span>
       </div>
 
-      {/* Shipments Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {filtered.length === 0 ? (
-          <div className="col-span-full py-16 text-center glass-panel rounded-2xl border border-slate-800 space-y-3">
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
-              <Truck className="h-6 w-6" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-white">No Dispatches Found</h4>
-              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                Dispatched airway bills and freight manifests generated by depot packing teams will appear here with automated courier tracking.
-              </p>
-            </div>
-            <Link
-              href="/invoices"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
-            >
-              <span>Check Invoices Awaiting Fulfilment</span>
-            </Link>
-          </div>
-        ) : (
-          filtered.map((s) => {
-            const badge = getStatusBadgeClasses(s.status);
-
-            return (
-              <div
-                key={s.id}
-                className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4 hover:border-slate-700 transition-all"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="px-2.5 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-sky-500/10 text-sky-400 border border-sky-500/30">
-                      {s.courier.replace(/_/g, ' ')}
-                    </span>
-                    <h3 className="text-sm font-bold text-white mt-2">{s.customerCompany}</h3>
-                    <div className="font-mono text-xs font-bold text-sky-300 mt-0.5">
-                      AWB: {s.airwayBillNumber}
-                    </div>
-                  </div>
-
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${badge.bg} ${badge.text} ${badge.border}`}
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} />
-                    {s.status}
-                  </span>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 text-xs text-slate-300 font-mono">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-sans">Origin Depot:</span>
-                    <span className="text-white font-medium font-sans">{s.depotName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-sans">Linked Tax Invoice:</span>
-                    <Link href={`/invoices/${s.invoiceId}`} className="text-brand-400 hover:underline">
+      {isLoading ? (
+        <SkeletonTable rows={6} cols={7} />
+      ) : error ? (
+        <ErrorState description={error} action={<Button onClick={loadData}>Try Again</Button>} />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Truck}
+          title={shipments.length === 0 ? 'No shipments yet' : 'No matching shipments'}
+          description={
+            shipments.length === 0
+              ? 'Shipments appear here once depot orders are packed and dispatched with an airway bill.'
+              : 'No shipments match your search.'
+          }
+          action={shipments.length === 0 && <LinkButton href="/depot/ship">Go to Dispatch</LinkButton>}
+        />
+      ) : (
+        <Card className="overflow-hidden p-0">
+          <Table>
+            <TableHeader>
+              <TableHead>Shipment</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Invoice</TableHead>
+              <TableHead>Courier / AWB</TableHead>
+              <TableHead>Dispatched</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead align="right">Action</TableHead>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((s) => (
+                <TableRow key={s.id}>
+                  <TableCell className="font-mono font-semibold text-ink">{s.shipmentNumber}</TableCell>
+                  <TableCell>{s.customerCompany}</TableCell>
+                  <TableCell>
+                    <Link href={`/invoices/${s.invoiceId}`} className="font-mono text-primary hover:underline">
                       {s.invoiceNumber}
                     </Link>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-sans">Gross Weight:</span>
-                    <span className="text-slate-200">{s.weightKg} kg ({s.packageCount} box)</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-sans">Dispatched Date:</span>
-                    <span className="text-slate-200 font-sans">{formatDate(s.shippingDate)}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
-                  <a
-                    href={s.trackingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1"
-                  >
-                    <span>Carrier Tracking Page</span>
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-
-                  {s.status !== 'DELIVERED' && (
-                    <button
-                      onClick={() => handleMarkDelivered(s.id)}
-                      className="px-3 py-1 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-600/30"
-                    >
-                      Mark Delivered
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-ink">{(s.courier || '').replace(/_/g, ' ')}</div>
+                    <div className="text-xs text-muted font-mono mt-0.5">{s.airwayBillNumber}</div>
+                  </TableCell>
+                  <TableCell className="text-muted">
+                    {formatDate(((s as any).dispatchedAt ?? s.shippingDate) as any)}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={s.status} />
+                  </TableCell>
+                  <TableCell align="right">
+                    <div className="flex items-center justify-end gap-2">
+                      {s.trackingUrl && (
+                        <a
+                          href={s.trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                        >
+                          Track <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                      {s.status !== 'DELIVERED' && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          loading={updatingId === s.id}
+                          onClick={() => handleMarkDelivered(s.id)}
+                        >
+                          Mark Delivered
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
     </div>
   );
 }

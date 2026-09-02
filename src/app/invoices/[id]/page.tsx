@@ -245,7 +245,7 @@ export default function InvoiceDetailPage() {
             <Button
               size="sm"
               variant="outline"
-              iconLeft={<UploadCloud className="h-3.5 w-3.5 text-indigo-600" />}
+              iconLeft={<UploadCloud className="h-3.5 w-3.5 text-brand-600" />}
               onClick={() => setIsUploadModalOpen(true)}
             >
               Attach Document
@@ -281,7 +281,7 @@ export default function InvoiceDetailPage() {
                 loading={isShipping}
                 iconLeft={<Truck className="h-3.5 w-3.5" />}
                 onClick={() => setIsShippingModalOpen(true)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs"
+                className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs"
               >
                 Dispatch (AWB)
               </Button>
@@ -328,7 +328,7 @@ export default function InvoiceDetailPage() {
                             {item.allocatedSerials.map((sn) => (
                               <span
                                 key={sn}
-                                className="px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-100 text-indigo-700 font-mono text-[10px] font-semibold"
+                                className="px-1.5 py-0.5 rounded bg-brand-50 border border-brand-100 text-brand-700 font-mono text-[10px] font-semibold"
                               >
                                 {sn}
                               </span>
@@ -379,7 +379,7 @@ export default function InvoiceDetailPage() {
                 </div>
                 <div className="flex justify-between w-64 pt-2 border-t border-slate-200 text-sm font-bold text-slate-900">
                   <span>Grand Total (USD):</span>
-                  <span className="text-indigo-600 font-bold">{formatUSD(invoice.grandTotal)}</span>
+                  <span className="text-brand-600 font-bold">{formatUSD(invoice.grandTotal)}</span>
                 </div>
               </div>
             )}
@@ -391,7 +391,7 @@ export default function InvoiceDetailPage() {
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Cloudinary Documents ({documents.length})
               </h3>
-              <button onClick={() => setIsUploadModalOpen(true)} className="text-xs text-indigo-600 font-medium hover:underline">
+              <button onClick={() => setIsUploadModalOpen(true)} className="text-xs text-brand-600 font-medium hover:underline">
                 + Upload Attachment
               </button>
             </div>
@@ -408,10 +408,10 @@ export default function InvoiceDetailPage() {
                     className="p-2.5 rounded-md border border-slate-200 bg-slate-50/50 hover:bg-slate-50 flex items-center justify-between group transition-colors"
                   >
                     <div>
-                      <div className="text-xs font-semibold text-slate-900 group-hover:text-indigo-600">{doc.title}</div>
+                      <div className="text-xs font-semibold text-slate-900 group-hover:text-brand-600">{doc.title}</div>
                       <span className="text-[10px] text-slate-400 font-mono">{doc.category}</span>
                     </div>
-                    <ExternalLink className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-600 shrink-0" />
+                    <ExternalLink className="h-3.5 w-3.5 text-slate-400 group-hover:text-brand-600 shrink-0" />
                   </a>
                 ))
               )}
@@ -445,9 +445,9 @@ export default function InvoiceDetailPage() {
           </Card>
 
           {shipment && (
-            <Card className="p-5 space-y-3 border-indigo-200 bg-indigo-50/30">
+            <Card className="p-5 space-y-3 border-brand-200 bg-brand-50/30">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-indigo-700">Shipment Dispatched</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-brand-700">Shipment Dispatched</span>
                 <StatusBadge status={shipment.status} />
               </div>
               <div className="space-y-1.5 text-xs text-slate-700 font-mono">
@@ -457,14 +457,14 @@ export default function InvoiceDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>AWB Number:</span>
-                  <span className="font-bold text-indigo-600">{shipment.airwayBillNumber}</span>
+                  <span className="font-bold text-brand-600">{shipment.airwayBillNumber}</span>
                 </div>
               </div>
               <a
                 href={shipment.trackingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-1.5 mt-2 py-1.5 rounded-md bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700"
+                className="w-full flex items-center justify-center gap-1.5 mt-2 py-1.5 rounded-md bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700"
               >
                 Track Shipment <ExternalLink className="h-3.5 w-3.5" />
               </a>

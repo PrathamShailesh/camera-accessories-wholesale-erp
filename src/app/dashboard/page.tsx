@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { formatUSD } from '@/lib/utils';
 import { TaxInvoice, Shipment, User } from '@/types/erp';
-import { fetchCurrentUserCached } from '@/lib/client-cache';
+import { fetchCurrentUserCached, getCurrentUserCachedSync, fetchWithCache } from '@/lib/client-cache';
 import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
 import { PageHeader, SectionHeader } from '@/components/ui/PageHeader';
 import { KPICard } from '@/components/ui/KPICard';
@@ -87,7 +87,7 @@ function trendFor(pct: number | null, positiveIsGood = true) {
 }
 
 export default function DashboardPage() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => getCurrentUserCachedSync()?.user || null);
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -96,30 +96,31 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState('Last 30 days');
 
-  const loadData = async () => {
-    setError(null);
+  const loadData = async (isBackground = false) => {
+    if (!isBackground && !overview) {
+      setError(null);
+    }
     try {
-      const [userData, overviewRes, invoicesRes, shipmentsRes] = await Promise.all([
+      // Parallel non-blocking requests using client-side cache
+      const [userData, overviewData, invoicesData, shipmentsData] = await Promise.all([
         fetchCurrentUserCached(),
-        fetch('/api/dashboard/overview'),
-        fetch('/api/invoices?limit=6'),
-        fetch('/api/shipments?limit=4'),
+        fetchWithCache<OverviewData>('/api/dashboard/overview', undefined, 20000),
+        fetchWithCache<TaxInvoice[]>('/api/invoices?limit=6', undefined, 15000),
+        fetchWithCache<Shipment[]>('/api/shipments?limit=4', undefined, 15000),
       ]);
-      if (userData?.authenticated && userData.user) setCurrentUser(userData.user);
 
-      if (!overviewRes.ok || !invoicesRes.ok || !shipmentsRes.ok) {
-        setError('Unable to load dashboard data.');
-        return;
+      if (userData?.authenticated && userData.user) {
+        setCurrentUser(userData.user);
       }
 
-      setOverview(await overviewRes.json());
-      const invoicesData = await invoicesRes.json();
-      const shipmentsData = await shipmentsRes.json();
-      setInvoices((Array.isArray(invoicesData) ? invoicesData : []).slice(0, 6));
-      setShipments((Array.isArray(shipmentsData) ? shipmentsData : []).slice(0, 4));
+      if (overviewData) setOverview(overviewData);
+      if (Array.isArray(invoicesData)) setInvoices(invoicesData.slice(0, 6));
+      if (Array.isArray(shipmentsData)) setShipments(shipmentsData.slice(0, 4));
     } catch (err) {
       console.error('Error loading dashboard:', err);
-      setError('Something went wrong while loading the dashboard.');
+      if (!overview) {
+        setError('Something went wrong while loading the dashboard.');
+      }
     } finally {
       setLoading(false);
     }
@@ -258,7 +259,7 @@ export default function DashboardPage() {
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Revenue & Profit</CardTitle>
-              <Link href="/reports/sales" className="text-xs text-indigo-600 font-medium hover:underline shrink-0">
+              <Link href="/reports/sales" className="text-xs text-brand-600 font-medium hover:underline shrink-0">
                 Full analytics
               </Link>
             </CardHeader>
@@ -292,7 +293,7 @@ export default function DashboardPage() {
           <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle>Top Products</CardTitle>
-              <Link href="/reports/profit" className="text-xs text-indigo-600 font-medium hover:underline shrink-0">
+              <Link href="/reports/profit" className="text-xs text-brand-600 font-medium hover:underline shrink-0">
                 View catalog
               </Link>
             </CardHeader>
@@ -328,7 +329,7 @@ export default function DashboardPage() {
           <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle>Top Customers</CardTitle>
-              <Link href="/customers" className="text-xs text-indigo-600 font-medium hover:underline shrink-0">
+              <Link href="/customers" className="text-xs text-brand-600 font-medium hover:underline shrink-0">
                 View all
               </Link>
             </CardHeader>
@@ -365,7 +366,7 @@ export default function DashboardPage() {
         <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>Depot Performance</CardTitle>
-            <Link href="/depots" className="text-xs text-indigo-600 font-medium hover:underline shrink-0">
+            <Link href="/depots" className="text-xs text-brand-600 font-medium hover:underline shrink-0">
               Manage hubs
             </Link>
           </CardHeader>
@@ -401,7 +402,7 @@ export default function DashboardPage() {
           <SectionHeader
             title="Tax Invoices & Fulfilment Queue"
             actions={
-              <Link href="/invoices" className="text-xs text-indigo-600 font-medium hover:underline">
+              <Link href="/invoices" className="text-xs text-brand-600 font-medium hover:underline">
                 View all invoices
               </Link>
             }
@@ -432,7 +433,7 @@ export default function DashboardPage() {
                   {invoices.map((inv) => (
                     <TableRow key={inv.id}>
                       <TableCell>
-                        <Link href={`/invoices/${inv.id}`} className="font-mono font-semibold text-indigo-600 hover:underline text-xs">
+                        <Link href={`/invoices/${inv.id}`} className="font-mono font-semibold text-brand-600 hover:underline text-xs">
                           {inv.invoiceNumber}
                         </Link>
                         {inv.proformaNumber && <div className="text-[10px] text-slate-400 font-mono">From: {inv.proformaNumber}</div>}
@@ -475,7 +476,7 @@ export default function DashboardPage() {
           <SectionHeader
             title="Recent Activity & Dispatches"
             actions={
-              <Link href="/shipments" className="text-xs text-indigo-600 font-medium hover:underline">
+              <Link href="/shipments" className="text-xs text-brand-600 font-medium hover:underline">
                 All AWBs
               </Link>
             }
@@ -520,7 +521,7 @@ export default function DashboardPage() {
                       href={shp.trackingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] font-semibold text-indigo-600 hover:underline flex items-center gap-1"
+                      className="text-[11px] font-semibold text-brand-600 hover:underline flex items-center gap-1"
                     >
                       Track Shipment
                       <ExternalLink className="h-3 w-3" />

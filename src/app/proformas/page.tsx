@@ -141,7 +141,7 @@ export default function ProformasPage() {
               onClick={() => setFilterStatus(status)}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
                 filterStatus === status
-                  ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200'
+                  ? 'bg-brand-50 text-brand-700 font-bold border border-brand-200'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -189,7 +189,7 @@ export default function ProformasPage() {
                   <TableCell>
                     <Link
                       href={`/proformas/${pf.id}`}
-                      className="font-mono font-bold text-indigo-600 hover:underline text-xs"
+                      className="font-mono font-bold text-brand-600 hover:underline text-xs"
                     >
                       {pf.proformaNumber}
                     </Link>

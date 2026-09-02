@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { broadcastSystemEvent } from '@/lib/events-emitter';
 import { guardApi } from '@/lib/api-auth';
+import { canTransition, isProformaStatus, ProformaStatus } from '@/lib/proforma-workflow';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await guardApi(req, 'proformas.read');
@@ -50,24 +51,41 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const { status, notes } = body;
 
     // Find id if params.id was proformaNumber
-    let targetId = params.id;
     const existing = await prisma.proforma.findFirst({
       where: {
         OR: [{ id: params.id }, { proformaNumber: params.id }],
       },
     });
 
-    if (existing) {
-      targetId = existing.id;
+    if (!existing) {
+      return NextResponse.json({ error: 'Proforma not found' }, { status: 404 });
+    }
+
+    const targetId = existing.id;
+
+    // Validate the status change server-side — the client is not trusted to
+    // enforce the lifecycle (and CONVERTED must only ever come from /convert).
+    if (status !== undefined) {
+      if (!isProformaStatus(status)) {
+        return NextResponse.json({ error: `Unknown proforma status "${status}".` }, { status: 400 });
+      }
+      const check = canTransition(existing.status as ProformaStatus, status);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 });
+      }
     }
 
     const updateData: any = {};
     if (status) updateData.status = status;
     if (notes !== undefined) updateData.notes = notes;
 
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'No supported fields to update.' }, { status: 400 });
+    }
+
     const proforma = await prisma.proforma.update({
       where: { id: targetId },
-      data: Object.keys(updateData).length > 0 ? updateData : body,
+      data: updateData,
       include: {
         customer: true,
         items: {

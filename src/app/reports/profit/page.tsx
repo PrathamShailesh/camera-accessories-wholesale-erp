@@ -74,7 +74,7 @@ export default function ProfitabilityPage() {
       {/* Automated BI Insights */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-indigo-600" />
+          <Sparkles className="h-4 w-4 text-brand-600" />
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
             Business Intelligence Insights
           </h2>
@@ -100,7 +100,7 @@ export default function ProfitabilityPage() {
                 <div className="pt-3 border-t border-slate-100 mt-2">
                   <Link
                     href={bi.actionLink}
-                    className="text-xs font-semibold text-indigo-600 hover:underline flex items-center gap-1"
+                    className="text-xs font-semibold text-brand-600 hover:underline flex items-center gap-1"
                   >
                     <span>{bi.actionLabel || 'Investigate in System'}</span>
                     <ArrowRight className="h-3.5 w-3.5" />

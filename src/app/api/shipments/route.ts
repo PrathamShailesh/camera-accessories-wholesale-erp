@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guardApi, depotIdFilter } from '@/lib/api-auth';
 import { parsePagination } from '@/lib/pagination';
+import { triggerShipmentDispatchedManagerEmail } from '@/lib/email-service';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'shipments.read');
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const depotFilter = depotIdFilter(auth.user);
-    const { take, skip } = parsePagination(req);
+    const { take, skip } = parsePagination(req, { defaultLimit: 50, maxLimit: 200 });
     // customerName/customerCompany/depotName/invoiceNumber are denormalized
     // onto Shipment itself — no relation include needed for the list view.
     const shipments = await prisma.shipment.findMany({
@@ -18,7 +19,11 @@ export async function GET(req: NextRequest) {
       take,
       skip,
     });
-    return NextResponse.json(shipments);
+    return NextResponse.json(shipments, {
+      headers: {
+        'Cache-Control': 'private, max-age=10, stale-while-revalidate=30',
+      },
+    });
   } catch (error) {
     console.error('Error fetching shipments:', error);
     return NextResponse.json({ error: 'Failed to fetch shipments' }, { status: 500 });
@@ -97,6 +102,13 @@ export async function POST(req: NextRequest) {
       where: { id: shipment.id },
       include: { invoice: true, customer: true, depot: true },
     });
+
+    // Trigger async transactional email for Super Admin (non-blocking)
+    try {
+      triggerShipmentDispatchedManagerEmail(completeShipment || shipment, invoice);
+    } catch (emailErr) {
+      console.error('Failed to queue shipment dispatch email:', emailErr);
+    }
 
     return NextResponse.json(completeShipment, { status: 201 });
   } catch (error) {

@@ -18,12 +18,31 @@ function monthLabel(date: Date): string {
  * (both already consumed elsewhere — reports/profit/page.tsx reads /stats) so this
  * can evolve without touching their response shape.
  */
+interface CachedOverview {
+  data: any;
+  expiresAt: number;
+}
+const overviewCache = new Map<string, CachedOverview>();
+const OVERVIEW_CACHE_TTL_MS = 30 * 1000;
+
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'dashboard.view');
   if (!auth.ok) return auth.response;
 
   try {
     const depotId = depotIdFilter(auth.user);
+    const cacheKey = depotId || 'GLOBAL';
+    const currentTime = Date.now();
+    const cached = overviewCache.get(cacheKey);
+
+    if (cached && currentTime < cached.expiresAt) {
+      return NextResponse.json(cached.data, {
+        headers: {
+          'Cache-Control': 'private, max-age=15, stale-while-revalidate=45',
+        },
+      });
+    }
+
     const isDepotScoped = !!depotId;
 
     const invoiceWhere = depotId ? { depotId, fulfilmentStatus: { not: 'CANCELLED' as const } } : { fulfilmentStatus: { not: 'CANCELLED' as const } };
@@ -217,7 +236,7 @@ export async function GET(req: NextRequest) {
     const inventoryUnits = inventoryRows.reduce((s, r) => s + r.quantity, 0);
     const inventoryValue = inventoryRows.reduce((s, r) => s + r.quantity * (productById.get(r.productId)?.purchasePrice || 0), 0);
 
-    return NextResponse.json({
+    const result = {
       totals: {
         revenue: Math.round(totalRevenue * 100) / 100,
         grossProfit: Math.round(totalGrossProfit * 100) / 100,
@@ -241,6 +260,17 @@ export async function GET(req: NextRequest) {
       topProducts,
       topCustomers,
       depotPerformance,
+    };
+
+    overviewCache.set(cacheKey, {
+      data: result,
+      expiresAt: Date.now() + OVERVIEW_CACHE_TTL_MS,
+    });
+
+    return NextResponse.json(result, {
+      headers: {
+        'Cache-Control': 'private, max-age=15, stale-while-revalidate=45',
+      },
     });
   } catch (error) {
     console.error('Error building dashboard overview:', error);

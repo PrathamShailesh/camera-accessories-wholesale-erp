@@ -501,6 +501,8 @@ model TaxInvoice {
   @@index([customerId])
   @@index([depotId])
   @@index([fulfilmentStatus])
+  @@index([createdAt])
+  @@index([fulfilmentStatus, createdAt])
   @@index([depotId, createdAt])
 }
 
@@ -578,6 +580,8 @@ model Shipment {
   @@index([shipmentNumber])
   @@index([airwayBillNumber])
   @@index([status])
+  @@index([createdAt])
+  @@index([depotId])
   @@index([depotId, createdAt])
 }
 
@@ -678,4 +682,26 @@ model CompanySettings {
   smtpFromName          String   @default("ARIB GLOBAL ERP")
   smtpFromEmail         String   @default("cumrahware@gmail.com")
   updatedAt             DateTime @updatedAt
+}
+
+model EmailLog {
+  id               String    @id @default(cuid())
+  idempotencyKey   String    @unique
+  notificationType String
+  recipientEmail   String
+  recipientName    String?
+  subject          String
+  relatedEntityId  String
+  relatedEntityRef String
+  status           String    @default("PENDING")
+  sentAt           DateTime?
+  failureReason    String?
+  retryCount       Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([idempotencyKey])
+  @@index([notificationType])
+  @@index([relatedEntityId])
+  @@index([status])
 }

@@ -124,7 +124,7 @@ export default function CustomerDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="p-5 space-y-2 text-xs">
           <div className="flex items-center gap-1.5 text-slate-900 font-bold">
-            <MapPin className="h-4 w-4 text-indigo-600" />
+            <MapPin className="h-4 w-4 text-brand-600" />
             <span>Billing Address</span>
           </div>
           <p className="text-slate-600 leading-relaxed">{customer.billingAddress}</p>
@@ -166,7 +166,7 @@ export default function CustomerDetailPage() {
             ) : (
               invoices.map((inv) => (
                 <TableRow key={inv.id}>
-                  <TableCell className="font-mono font-bold text-indigo-600">{inv.invoiceNumber}</TableCell>
+                  <TableCell className="font-mono font-bold text-brand-600">{inv.invoiceNumber}</TableCell>
                   <TableCell className="text-slate-500">{formatDate(inv.issueDate)}</TableCell>
                   <TableCell className="text-slate-700">{inv.depotName}</TableCell>
                   <TableCell align="right" className="font-mono font-bold text-slate-900">{formatUSD(inv.grandTotal)}</TableCell>

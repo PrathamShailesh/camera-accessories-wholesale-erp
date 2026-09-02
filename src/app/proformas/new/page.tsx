@@ -288,7 +288,7 @@ function ProformaBuilder() {
               <Button
                 size="sm"
                 onClick={() => setCurrentStep(Math.min(6, currentStep + 1))}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs"
+                className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs"
               >
                 Continue to Step {currentStep + 1} →
               </Button>
@@ -326,7 +326,7 @@ function ProformaBuilder() {
                 onClick={() => setCurrentStep(s.step)}
                 className={`flex items-center gap-2.5 p-2 rounded-md border text-left transition-colors ${
                   isCurrent
-                    ? 'border-indigo-500 bg-indigo-50/70 text-indigo-900 font-semibold'
+                    ? 'border-brand-500 bg-brand-50/70 text-brand-900 font-semibold'
                     : isCompleted
                       ? 'border-slate-200 bg-slate-50 text-slate-700'
                       : 'border-transparent text-slate-400 hover:bg-slate-50'
@@ -335,7 +335,7 @@ function ProformaBuilder() {
                 <div
                   className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                     isCurrent
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-brand-600 text-white'
                       : isCompleted
                         ? 'bg-emerald-600 text-white'
                         : 'bg-slate-200 text-slate-500'
@@ -364,7 +364,7 @@ function ProformaBuilder() {
             <Button
               variant="outline"
               size="sm"
-              iconLeft={<UserPlus className="h-3.5 w-3.5 text-indigo-600" />}
+              iconLeft={<UserPlus className="h-3.5 w-3.5 text-brand-600" />}
               onClick={() => setIsQuickAddOpen(true)}
             >
               + Quick Add Customer
@@ -391,7 +391,7 @@ function ProformaBuilder() {
                   onClick={() => setSelectedCustomerId(c.id)}
                   className={`p-3.5 rounded-lg border cursor-pointer transition-all ${
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50/60 shadow-xs'
+                      ? 'border-brand-500 bg-brand-50/60 shadow-xs'
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/80'
                   }`}
                 >
@@ -417,7 +417,7 @@ function ProformaBuilder() {
             <Button
               onClick={() => setCurrentStep(2)}
               disabled={!selectedCustomerId}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs"
+              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs"
             >
               Continue to Product Selection →
             </Button>
@@ -453,7 +453,7 @@ function ProformaBuilder() {
                 <div
                   key={p.id}
                   className={`p-3 rounded-lg border flex items-center gap-3 transition-colors ${
-                    inItems ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-200 bg-white hover:bg-slate-50'
+                    inItems ? 'border-brand-300 bg-brand-50/40' : 'border-slate-200 bg-white hover:bg-slate-50'
                   }`}
                 >
                   <div className="h-12 w-12 rounded bg-slate-100 overflow-hidden border border-slate-200 shrink-0 flex items-center justify-center">
@@ -536,7 +536,7 @@ function ProformaBuilder() {
             <Button variant="outline" onClick={() => setCurrentStep(1)}>
               ← Back to Customer
             </Button>
-            <Button onClick={() => setCurrentStep(3)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs">
+            <Button onClick={() => setCurrentStep(3)} className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs">
               Continue to Pricing & Discounts →
             </Button>
           </div>
@@ -624,7 +624,7 @@ function ProformaBuilder() {
             <Button variant="outline" onClick={() => setCurrentStep(2)}>
               ← Back to Products
             </Button>
-            <Button onClick={() => setCurrentStep(4)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs">
+            <Button onClick={() => setCurrentStep(4)} className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs">
               Continue to Depot Assignment →
             </Button>
           </div>
@@ -675,7 +675,7 @@ function ProformaBuilder() {
             <Button variant="outline" onClick={() => setCurrentStep(3)}>
               ← Back to Pricing
             </Button>
-            <Button onClick={() => setCurrentStep(5)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs">
+            <Button onClick={() => setCurrentStep(5)} className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs">
               Continue to Financial Review →
             </Button>
           </div>
@@ -722,7 +722,7 @@ function ProformaBuilder() {
             </div>
             <div className="flex justify-between text-sm font-bold text-slate-900 pt-3 border-t border-slate-200">
               <span>Grand Total (USD):</span>
-              <span className="text-indigo-600">{formatUSD(grandTotal)}</span>
+              <span className="text-brand-600">{formatUSD(grandTotal)}</span>
             </div>
           </div>
 
@@ -730,7 +730,7 @@ function ProformaBuilder() {
             <Button variant="outline" onClick={() => setCurrentStep(4)}>
               ← Back to Depot Assignment
             </Button>
-            <Button onClick={() => setCurrentStep(6)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs">
+            <Button onClick={() => setCurrentStep(6)} className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs">
               Proceed to Create & Send →
             </Button>
           </div>
@@ -761,7 +761,7 @@ function ProformaBuilder() {
             </div>
             <div className="flex justify-between text-slate-600">
               <span>Grand Total:</span>
-              <span className="font-mono font-bold text-indigo-600">{formatUSD(grandTotal)}</span>
+              <span className="font-mono font-bold text-brand-600">{formatUSD(grandTotal)}</span>
             </div>
           </div>
 
@@ -786,7 +786,7 @@ function ProformaBuilder() {
           <div className="relative w-full max-w-lg rounded-xl border border-slate-200 bg-white shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-indigo-600" />
+                <Users className="h-5 w-5 text-brand-600" />
                 <h3 className="text-sm font-bold text-slate-900">Quick Add Wholesale Customer</h3>
               </div>
               <button onClick={() => setIsQuickAddOpen(false)} className="text-slate-400 hover:text-slate-600">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { verifyAuthPayload } from '@/lib/auth-token';
 import {
   AuthSession,
@@ -60,28 +61,56 @@ export function publicUserView(user: AuthUser) {
   };
 }
 
+// In-memory cache for validated sessions to eliminate duplicate DB roundtrips across concurrent API requests
+const authUserCache = new Map<string, { user: AuthUser; expiresAt: number }>();
+const AUTH_CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+export function invalidateAuthUserCache(userId?: string) {
+  if (userId) {
+    authUserCache.delete(userId);
+  } else {
+    authUserCache.clear();
+  }
+}
+
 export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
   const token = req.cookies.get('erp_auth_token')?.value;
   const decoded = await verifyAuthPayload(token);
   if (!decoded?.userId) return null;
 
-  const user = await prisma.user.findUnique({
-    where: { id: decoded.userId },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      assignedDepotId: true,
-      assignedDepotName: true,
-      avatar: true,
-      phone: true,
-      status: true,
-    },
-  });
+  const now = Date.now();
+  const cached = authUserCache.get(decoded.userId);
+  if (cached && cached.expiresAt > now) {
+    return cached.user;
+  }
+
+  let user: any = null;
+  try {
+    user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        assignedDepotId: true,
+        assignedDepotName: true,
+        avatar: true,
+        phone: true,
+        status: true,
+      },
+    });
+  } catch (err) {
+    console.error('Error fetching auth user from DB, falling back to dataStore:', err);
+    user = dataStore.getUserById(decoded.userId);
+  }
 
   if (!user || user.status !== 'ACTIVE') return null;
-  return toAuthUser(user);
+  const authUser = toAuthUser(user);
+  if (authUser) {
+    authUserCache.set(decoded.userId, { user: authUser, expiresAt: now + AUTH_CACHE_TTL_MS });
+  }
+  return authUser;
 }
 
 type GuardOk = { ok: true; user: AuthUser };

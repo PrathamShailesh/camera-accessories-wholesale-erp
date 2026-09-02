@@ -29,7 +29,7 @@ import {
 import dataStore from '@/lib/data-store';
 import { User } from '@/types/erp';
 import { hasPermission, isDepotScoped, NAV_SECTIONS } from '@/lib/rbac';
-import { fetchCurrentUserCached } from '@/lib/client-cache';
+import { fetchCurrentUserCached, getCurrentUserCachedSync } from '@/lib/client-cache';
 import { cn } from '@/lib/utils';
 
 const iconMap: Record<string, any> = {
@@ -58,13 +58,12 @@ const COLLAPSE_KEY = 'erp_sidebar_collapsed';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [currentUser, setCurrentUser] = useState<User>(dataStore.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<User>(() => getCurrentUserCachedSync()?.user || dataStore.getCurrentUser());
   const [isMounted, setIsMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    setCurrentUser(dataStore.getCurrentUser());
     try {
       setCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1');
     } catch {}
@@ -135,14 +134,13 @@ export default function Sidebar() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/pdflogo.png"
-              alt="Logo"
+              alt="ARIB GLOBAL"
               className="h-8 w-auto object-contain shrink-0 max-h-9"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}
             />
             <div className="flex flex-col min-w-0">
-              <span className="font-extrabold text-sm text-slate-900 tracking-tight truncate">ARIB GLOBAL</span>
               <span className="text-[11px] text-slate-400 font-medium truncate">Camera & Cine OS</span>
             </div>
           </div>
