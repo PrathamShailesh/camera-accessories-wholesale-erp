@@ -60,12 +60,15 @@ const COLLAPSE_KEY = 'erp_sidebar_collapsed';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [currentUser, setCurrentUser] = useState<User>(() => getCurrentUserCachedSync()?.user || dataStore.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<User>(() => dataStore.getCurrentUser());
   const [isMounted, setIsMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
+    const syncUser = getCurrentUserCachedSync()?.user;
+    if (syncUser) setCurrentUser(syncUser);
+
     try {
       setCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1');
     } catch {}

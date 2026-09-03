@@ -86,8 +86,11 @@ function trendFor(pct: number | null, positiveIsGood = true) {
   };
 }
 
+import { useRouter } from 'next/navigation';
+
 export default function DashboardPage() {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => getCurrentUserCachedSync()?.user || null);
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -95,6 +98,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState('Last 30 days');
+  const [isMounted, setIsMounted] = useState(false);
 
   const loadData = async (isBackground = false) => {
     if (!isBackground && !overview) {
@@ -103,21 +107,38 @@ export default function DashboardPage() {
     try {
       // Parallel non-blocking requests using client-side cache
       const [userData, overviewData, invoicesData, shipmentsData] = await Promise.all([
-        fetchCurrentUserCached(),
-        fetchWithCache<OverviewData>('/api/dashboard/overview', undefined, 20000),
-        fetchWithCache<TaxInvoice[]>('/api/invoices?limit=6', undefined, 15000),
-        fetchWithCache<Shipment[]>('/api/shipments?limit=4', undefined, 15000),
+        fetchCurrentUserCached().catch(() => null),
+        fetchWithCache<OverviewData>('/api/dashboard/overview', undefined, 20000).catch((e: any) => {
+          if (e?.message?.includes('401')) {
+            router.push('/login?next=/dashboard');
+          }
+          return null;
+        }),
+        fetchWithCache<TaxInvoice[]>('/api/invoices?limit=6', undefined, 15000).catch(() => []),
+        fetchWithCache<Shipment[]>('/api/shipments?limit=4', undefined, 15000).catch(() => []),
       ]);
 
       if (userData?.authenticated && userData.user) {
         setCurrentUser(userData.user);
+      } else if (userData && userData.authenticated === false) {
+        router.push('/login?next=/dashboard');
+        return;
       }
 
-      if (overviewData) setOverview(overviewData);
+      if (overviewData) {
+        setOverview(overviewData);
+      } else if (!overview) {
+        setError('Unable to load overview metrics. Please try again.');
+      }
+
       if (Array.isArray(invoicesData)) setInvoices(invoicesData.slice(0, 6));
       if (Array.isArray(shipmentsData)) setShipments(shipmentsData.slice(0, 4));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading dashboard:', err);
+      if (err?.message?.includes('401')) {
+        router.push('/login?next=/dashboard');
+        return;
+      }
       if (!overview) {
         setError('Something went wrong while loading the dashboard.');
       }
@@ -127,11 +148,15 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    setIsMounted(true);
+    const syncUser = getCurrentUserCachedSync()?.user;
+    if (syncUser) setCurrentUser(syncUser);
     loadData();
   }, []);
 
-  const isDepotUser = currentUser?.role === 'DEPOT_USER';
-  const userName = currentUser?.name ? currentUser.name.split(' ')[0] : 'Administrator';
+  const isDepotUser = isMounted && currentUser?.role === 'DEPOT_USER';
+  const userName = isMounted && currentUser?.name ? currentUser.name.split(' ')[0] : 'Administrator';
+  const greeting = isMounted ? getGreeting() : 'Good day';
 
   if (loading) {
     return (
@@ -181,7 +206,7 @@ export default function DashboardPage() {
       {/* Executive Header */}
       <PageHeader
         eyebrow="01 / OVERVIEW"
-        title={`${getGreeting()}, ${userName}`}
+        title={`${greeting}, ${userName}`}
         description="Here's how ARIB GLOBAL is performing today."
         actions={
           <>

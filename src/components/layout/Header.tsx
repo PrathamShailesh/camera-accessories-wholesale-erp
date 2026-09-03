@@ -71,7 +71,7 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
-  const [currentUser, setCurrentUser] = useState<User>(() => getCurrentUserCachedSync()?.user || dataStore.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<User>(() => dataStore.getCurrentUser());
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -107,6 +107,8 @@ export default function Header() {
 
   useEffect(() => {
     setIsMounted(true);
+    const syncUser = getCurrentUserCachedSync()?.user;
+    if (syncUser) setCurrentUser(syncUser);
     reloadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
