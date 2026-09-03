@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, withDbTimeout } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { verifyAuthPayload } from '@/lib/auth-token';
 import {
@@ -86,22 +86,24 @@ export async function getAuthUser(req: NextRequest): Promise<AuthUser | null> {
 
   let user: any = null;
   try {
-    user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        assignedDepotId: true,
-        assignedDepotName: true,
-        avatar: true,
-        phone: true,
-        status: true,
-      },
-    });
+    user = await withDbTimeout(() =>
+      prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          assignedDepotId: true,
+          assignedDepotName: true,
+          avatar: true,
+          phone: true,
+          status: true,
+        },
+      })
+    );
   } catch (err) {
-    console.error('Error fetching auth user from DB, falling back to dataStore:', err);
+    // DB offline or timed out — fall back to dataStore instantly
     user = dataStore.getUserById(decoded.userId);
   }
 

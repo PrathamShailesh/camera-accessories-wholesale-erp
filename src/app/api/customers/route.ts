@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, withDbTimeout } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 import { parsePagination } from '@/lib/pagination';
@@ -10,11 +10,13 @@ export async function GET(req: NextRequest) {
 
   try {
     const { take, skip } = parsePagination(req);
-    const customers = await prisma.customer.findMany({
-      orderBy: { createdAt: 'desc' },
-      take,
-      skip,
-    });
+    const customers = await withDbTimeout(() =>
+      prisma.customer.findMany({
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+      })
+    );
     return NextResponse.json(customers);
   } catch (error) {
     console.error('Error fetching customers from DB, using fallback:', error);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, withDbTimeout } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 import { parsePagination } from '@/lib/pagination';
@@ -10,14 +10,13 @@ export async function GET(req: NextRequest) {
 
   try {
     const { take, skip } = parsePagination(req);
-    // customerCompany/customerName are denormalized onto Proforma itself —
-    // the list view doesn't touch the customer relation or line items, so
-    // no include/select is needed beyond the model's own scalar columns.
-    const proformas = await prisma.proforma.findMany({
-      orderBy: { createdAt: 'desc' },
-      take,
-      skip,
-    });
+    const proformas = await withDbTimeout(() =>
+      prisma.proforma.findMany({
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+      })
+    );
     return NextResponse.json(proformas);
   } catch (error) {
     console.error('Error fetching proformas from DB, using fallback:', error);

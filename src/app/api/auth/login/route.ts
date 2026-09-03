@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, withDbTimeout } from '@/lib/prisma';
 import { verifyPassword, signAuthPayload } from '@/lib/auth';
 import dataStore from '@/lib/data-store';
 
@@ -15,9 +15,11 @@ export async function POST(req: NextRequest) {
     const cleanEmail = email.trim().toLowerCase();
 
     // 1. Find user in database with passwordHash
-    const rawUsers = await prisma.$queryRawUnsafe<any[]>(
-      `SELECT id, name, email, avatar, role, "assignedDepotId", "assignedDepotName", phone, status, "passwordHash" FROM "User" WHERE LOWER(email) = LOWER($1) LIMIT 1`,
-      cleanEmail
+    const rawUsers = await withDbTimeout(() =>
+      prisma.$queryRawUnsafe<any[]>(
+        `SELECT id, name, email, avatar, role, "assignedDepotId", "assignedDepotName", phone, status, "passwordHash" FROM "User" WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+        cleanEmail
+      )
     ).catch(() => []);
 
     let user = rawUsers.length > 0 ? rawUsers[0] : null;

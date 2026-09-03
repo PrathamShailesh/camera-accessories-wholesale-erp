@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, withDbTimeout } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { getAuthUser, redactSettings } from '@/lib/api-auth';
 import { hasPermission } from '@/lib/rbac';
@@ -15,11 +15,13 @@ export async function GET(req: NextRequest) {
 
     if (!cachedSettingsData || now >= settingsCacheExpiresAt) {
       try {
-        cachedSettingsData = await prisma.companySettings.findUnique({
-          where: { id: 'global-settings' },
-        });
+        cachedSettingsData = await withDbTimeout(() =>
+          prisma.companySettings.findUnique({
+            where: { id: 'global-settings' },
+          })
+        );
       } catch (dbErr) {
-        console.warn('Prisma settings lookup failed, falling back to dataStore:', dbErr);
+        console.warn('Prisma settings lookup failed, falling back to dataStore');
       }
 
       if (!cachedSettingsData) {

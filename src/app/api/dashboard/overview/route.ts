@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, withDbTimeout } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi, depotIdFilter } from '@/lib/api-auth';
 
@@ -48,35 +48,37 @@ export async function GET(req: NextRequest) {
 
     const invoiceWhere = depotId ? { depotId, fulfilmentStatus: { not: 'CANCELLED' as const } } : { fulfilmentStatus: { not: 'CANCELLED' as const } };
 
-    const [invoices, products, proformaPending, shipmentsPending, depots, inventoryRows] = await Promise.all([
-      prisma.taxInvoice.findMany({
-        where: invoiceWhere,
-        select: {
-          createdAt: true,
-          grandTotal: true,
-          customerId: true,
-          customerName: true,
-          customerCompany: true,
-          depotId: true,
-          items: { select: { productId: true, quantity: true, totalPrice: true } },
-        },
-        orderBy: { createdAt: 'asc' },
-      }),
-      prisma.product.findMany({ select: { id: true, name: true, sku: true, brand: true, categoryName: true, purchasePrice: true } }),
-      prisma.proforma.count({
-        where: depotId
-          ? { items: { some: { selectedDepotId: depotId } }, status: { in: ['DRAFT', 'SENT', 'CONFIRMED'] } }
-          : { status: { in: ['DRAFT', 'SENT', 'CONFIRMED'] } },
-      }),
-      prisma.shipment.count({
-        where: depotId ? { depotId, status: { not: 'DELIVERED' } } : { status: { not: 'DELIVERED' } },
-      }),
-      isDepotScoped ? Promise.resolve([]) : prisma.depot.findMany({ select: { id: true, name: true } }),
-      prisma.depotInventory.findMany({
-        where: depotId ? { depotId } : undefined,
-        select: { depotId: true, quantity: true, productId: true },
-      }),
-    ]);
+    const [invoices, products, proformaPending, shipmentsPending, depots, inventoryRows] = await withDbTimeout(() =>
+      Promise.all([
+        prisma.taxInvoice.findMany({
+          where: invoiceWhere,
+          select: {
+            createdAt: true,
+            grandTotal: true,
+            customerId: true,
+            customerName: true,
+            customerCompany: true,
+            depotId: true,
+            items: { select: { productId: true, quantity: true, totalPrice: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        }),
+        prisma.product.findMany({ select: { id: true, name: true, sku: true, brand: true, categoryName: true, purchasePrice: true } }),
+        prisma.proforma.count({
+          where: depotId
+            ? { items: { some: { selectedDepotId: depotId } }, status: { in: ['DRAFT', 'SENT', 'CONFIRMED'] } }
+            : { status: { in: ['DRAFT', 'SENT', 'CONFIRMED'] } },
+        }),
+        prisma.shipment.count({
+          where: depotId ? { depotId, status: { not: 'DELIVERED' } } : { status: { not: 'DELIVERED' } },
+        }),
+        isDepotScoped ? Promise.resolve([]) : prisma.depot.findMany({ select: { id: true, name: true } }),
+        prisma.depotInventory.findMany({
+          where: depotId ? { depotId } : undefined,
+          select: { depotId: true, quantity: true, productId: true },
+        }),
+      ])
+    );
 
     const productById = new Map(products.map((p) => [p.id, p]));
 

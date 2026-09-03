@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, withDbTimeout } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi, depotIdFilter } from '@/lib/api-auth';
 import { parsePagination } from '@/lib/pagination';
@@ -12,14 +12,14 @@ export async function GET(req: NextRequest) {
   try {
     const depotFilter = depotIdFilter(auth.user);
     const { take, skip } = parsePagination(req, { defaultLimit: 50, maxLimit: 200 });
-    // customerName/customerCompany/depotName/invoiceNumber are denormalized
-    // onto Shipment itself — no relation include needed for the list view.
-    const shipments = await prisma.shipment.findMany({
-      where: depotFilter ? { depotId: depotFilter } : undefined,
-      orderBy: { createdAt: 'desc' },
-      take,
-      skip,
-    });
+    const shipments = await withDbTimeout(() =>
+      prisma.shipment.findMany({
+        where: depotFilter ? { depotId: depotFilter } : undefined,
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+      })
+    );
     return NextResponse.json(shipments, {
       headers: {
         'Cache-Control': 'private, max-age=10, stale-while-revalidate=30',

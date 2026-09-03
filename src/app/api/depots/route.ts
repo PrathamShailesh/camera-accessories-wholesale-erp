@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, withDbTimeout } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi, depotIdFilter } from '@/lib/api-auth';
 
@@ -11,24 +11,26 @@ export async function GET(req: NextRequest) {
     const scopedDepotId = depotIdFilter(auth.user);
     const whereClause = scopedDepotId ? { id: scopedDepotId } : undefined;
 
-    const depots = await prisma.depot.findMany({
-      where: whereClause,
-      include: {
-        inventories: {
-          include: {
-            product: true,
+    const depots = await withDbTimeout(() =>
+      prisma.depot.findMany({
+        where: whereClause,
+        include: {
+          inventories: {
+            include: {
+              product: true,
+            },
           },
-        },
-        taxInvoices: {
-          where: {
-            fulfilmentStatus: {
-              in: ['READY_FOR_PACKING', 'PROCESSING', 'PACKED'],
+          taxInvoices: {
+            where: {
+              fulfilmentStatus: {
+                in: ['READY_FOR_PACKING', 'PROCESSING', 'PACKED'],
+              },
             },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      })
+    );
 
     const enrichedDepots = depots.map((d) => {
       const totalUnits = d.inventories.reduce((sum, inv) => sum + (inv.quantity || 0), 0);
