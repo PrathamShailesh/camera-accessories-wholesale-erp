@@ -65,7 +65,7 @@ async function main() {
       bankName: 'Commercial Bank of Dubai, Sheikh Zayed Road Branch, Dubai, U.A.E.',
       accountName: 'Arib Global General Trading LLC',
       accountNumber: 'AE910230000001002416343',
-      swiftBic: 'CBOUAEADXXX',
+      swiftBic: 'CBDUAEADXXX',
       iban: 'AE91 0230 0000 0100 2416 343',
       routingCode: 'CBD-0230',
       invoicePrefix: 'INV-2026-',

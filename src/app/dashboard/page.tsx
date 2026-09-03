@@ -157,8 +157,24 @@ export default function DashboardPage() {
     );
   }
 
-  const t = overview!.totals;
-  const cm = overview!.currentMonth;
+  const t = overview?.totals || {
+    revenue: 0,
+    grossProfit: 0,
+    grossMarginPercent: 0,
+    orders: 0,
+    inventoryUnits: 0,
+    inventoryValue: 0,
+    pendingProformas: 0,
+    pendingShipments: 0,
+  };
+  const cm = overview?.currentMonth || {
+    revenue: 0,
+    profit: 0,
+    orders: 0,
+    revenueChangePct: null,
+    profitChangePct: null,
+    ordersChangePct: null,
+  };
 
   return (
     <div className="flex flex-col gap-6 pb-12">

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 
+const DEFAULT_PRODUCT_IMAGE = '/placeholder-product.svg';
+
 export async function POST(req: NextRequest) {
   const auth = await guardApi(req, 'products.write');
   if (!auth.ok) return auth.response;
@@ -19,18 +21,18 @@ export async function POST(req: NextRequest) {
     }
 
     const allDepots = await prisma.depot.findMany();
+    const primaryDepot = allDepots.find((d) => d.isCentralHub) || allDepots[0];
     const depotMap = new Map(allDepots.map((d) => [d.id, d]));
-    const depotCodeMap = new Map(allDepots.map((d) => [d.code.toLowerCase(), d]));
 
-    // Fetch existing SKUs and Barcodes to prevent duplicate collisions
+    // Fetch existing SKUs and Barcodes
     const existingProducts = await prisma.product.findMany({
-      select: { sku: true, barcode: true },
+      select: { id: true, sku: true, barcode: true },
     });
-    const existingSkus = new Set(existingProducts.map((p) => p.sku.toUpperCase()));
-    const existingBarcodes = new Set(existingProducts.map((p) => p.barcode));
+    const existingProductMap = new Map(existingProducts.map((p) => [p.sku.toUpperCase(), p]));
+    const existingBarcodes = new Set(existingProducts.map((p) => p.barcode).filter(Boolean));
 
     const processedSkusInBatch = new Set<string>();
-    const validProductsToInsert: any[] = [];
+    const validProductsToProcess: any[] = [];
     const failedRows: { row: number; sku?: string; name?: string; error: string }[] = [];
 
     // 1. Validation loop
@@ -38,17 +40,17 @@ export async function POST(req: NextRequest) {
       const p = products[index];
       const rowNum = index + 1;
 
-      const name = p.name?.toString().trim();
-      const rawSku = p.sku?.toString().trim();
-      const brand = p.brand?.toString().trim();
-      const categoryName = p.category?.toString().trim() || p.categoryName?.toString().trim() || 'General Optics';
+      const rawSku = (p.sku || p.SKU || p.ProductSku || p.product_sku || '')?.toString().trim();
+      const name = (p.name || p.Name || p.productName || p.title || '')?.toString().trim();
+      const brand = (p.brand || p.Brand || p.manufacturer || '')?.toString().trim();
+      const categoryName = (p.category || p.Category || p.categoryName || p.CategoryName || '')?.toString().trim() || 'General Optics';
 
-      if (!name) {
-        failedRows.push({ row: rowNum, sku: rawSku, name: name || 'Untitled', error: 'Product name is missing' });
+      if (!rawSku) {
+        failedRows.push({ row: rowNum, name: name || 'Untitled', error: 'Product SKU is missing' });
         continue;
       }
-      if (!rawSku) {
-        failedRows.push({ row: rowNum, name, error: 'Product SKU is missing' });
+      if (!name) {
+        failedRows.push({ row: rowNum, sku: rawSku, name: 'Untitled', error: 'Product name is missing' });
         continue;
       }
       if (!brand) {
@@ -58,19 +60,14 @@ export async function POST(req: NextRequest) {
 
       const cleanSku = rawSku.toUpperCase();
 
-      if (existingSkus.has(cleanSku)) {
-        failedRows.push({ row: rowNum, sku: cleanSku, name, error: `SKU "${cleanSku}" already exists in database` });
-        continue;
-      }
-
       if (processedSkusInBatch.has(cleanSku)) {
-        failedRows.push({ row: rowNum, sku: cleanSku, name, error: `Duplicate SKU "${cleanSku}" found within the same import file` });
+        failedRows.push({ row: rowNum, sku: cleanSku, name, error: `Duplicate SKU "${cleanSku}" found within the same import batch` });
         continue;
       }
 
-      const purchasePrice = parseFloat(p.purchasePrice) || 0;
-      const wholesalePrice = parseFloat(p.wholesalePrice) || 0;
-      const sellingPrice = parseFloat(p.sellingPrice) || 0;
+      const purchasePrice = parseFloat(p.purchasePrice || p.PurchasePrice || p.cost || p.costPrice || p.purchase_price) || 0;
+      const wholesalePrice = parseFloat(p.wholesalePrice || p.WholesalePrice || p.wholesale_price || p.price || p.Price) || purchasePrice;
+      const sellingPrice = parseFloat(p.sellingPrice || p.SellingPrice || p.selling_price || p.msrp || p.MSRP) || wholesalePrice;
 
       if (purchasePrice < 0 || wholesalePrice < 0 || sellingPrice < 0) {
         failedRows.push({ row: rowNum, sku: cleanSku, name, error: 'Pricing fields cannot be negative numbers' });
@@ -79,69 +76,109 @@ export async function POST(req: NextRequest) {
 
       processedSkusInBatch.add(cleanSku);
 
-      let barcode = p.barcode?.toString().trim();
+      let barcode = (p.barcode || p.Barcode || p.ean || p.upc)?.toString().trim();
       if (!barcode || existingBarcodes.has(barcode)) {
         barcode = `8809${Math.floor(10000000 + Math.random() * 90000000)}`;
       }
       existingBarcodes.add(barcode);
 
-      // Parse depot stock values
+      // Smart stock parsing across generic and depot-specific keys
       const depotBreakdown: Record<string, number> = {};
-      
-      // Check explicit depotBreakdown object or flattened depot columns
+      let hasSpecificDepotStock = false;
+
       allDepots.forEach((depot) => {
         const depotCodeLower = depot.code.toLowerCase().replace('dep-', '');
-        const directKeyVal = p.depotBreakdown?.[depot.id] ?? 
-                             p[`${depotCodeLower}Stock`] ?? 
-                             p[depot.id] ?? 
-                             p[depot.code] ?? 
-                             p[depot.name] ?? 
-                             0;
-        depotBreakdown[depot.id] = Math.max(0, parseInt(directKeyVal) || 0);
+        const depotNameClean = depot.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        const qtyVal =
+          p.depotBreakdown?.[depot.id] ??
+          p[`${depotCodeLower}Stock`] ??
+          p[`${depotCodeLower}_stock`] ??
+          p[`${depotNameClean}Stock`] ??
+          p[depot.id] ??
+          p[depot.code] ??
+          p[depot.name] ??
+          null;
+
+        if (qtyVal !== null && qtyVal !== undefined && qtyVal !== '') {
+          const parsed = Math.max(0, parseInt(qtyVal) || 0);
+          depotBreakdown[depot.id] = parsed;
+          hasSpecificDepotStock = true;
+        } else {
+          depotBreakdown[depot.id] = 0;
+        }
       });
+
+      // If no depot-specific column was supplied, check generic stock/quantity columns
+      if (!hasSpecificDepotStock && primaryDepot) {
+        const genericStock =
+          p.stock ??
+          p.Stock ??
+          p.STOCK ??
+          p.quantity ??
+          p.Quantity ??
+          p.qty ??
+          p.QTY ??
+          p.totalStock ??
+          p.total_stock ??
+          p.TotalStock ??
+          p.initialStock ??
+          p.initial_stock ??
+          p.units ??
+          null;
+
+        if (genericStock !== null && genericStock !== undefined && genericStock !== '') {
+          depotBreakdown[primaryDepot.id] = Math.max(0, parseInt(genericStock) || 0);
+        }
+      }
 
       const totalStock = Object.values(depotBreakdown).reduce((sum, q) => sum + q, 0);
 
-      const trackSerial = p.trackSerial === true || 
-                          p.trackSerial === 'true' || 
-                          p.trackSerial === 'TRUE' || 
-                          p.trackSerial === 1 || 
-                          p.trackSerial === '1' || 
-                          p.trackSerial === 'yes' || 
-                          p.trackSerial === 'YES';
+      const trackSerialRaw = (p.trackSerial ?? p.TrackSerial ?? p.track_serial ?? p.serialTracked)?.toString().toLowerCase().trim();
+      const trackSerial =
+        trackSerialRaw === 'true' ||
+        trackSerialRaw === 'yes' ||
+        trackSerialRaw === '1' ||
+        trackSerialRaw === '' ||
+        trackSerialRaw === undefined;
 
-      validProductsToInsert.push({
+      const isExisting = existingProductMap.has(cleanSku);
+      const existingProduct = existingProductMap.get(cleanSku);
+
+      validProductsToProcess.push({
         rowNum,
         cleanSku,
         name,
         brand,
-        model: p.model?.toString().trim() || '',
+        model: (p.model || p.Model || '').toString().trim(),
         categoryName,
-        description: p.description?.toString().trim() || '',
-        imageUrl: p.imageUrl?.toString().trim() || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+        description: (p.description || p.Description || '').toString().trim(),
+        imageUrl: (p.imageUrl || p.ImageUrl || p.image || '').toString().trim() || DEFAULT_PRODUCT_IMAGE,
         barcode,
         purchasePrice,
         wholesalePrice,
         sellingPrice,
-        taxRate: parseFloat(p.taxRate) || 5,
-        minStockLevel: parseInt(p.minStockLevel) || 10,
+        taxRate: parseFloat(p.taxRate || p.TaxRate || p.tax) || 5,
+        minStockLevel: parseInt(p.minStockLevel || p.MinStockLevel || p.reorder_level) || 10,
         trackSerial,
         depotBreakdown,
         totalStock,
+        isExisting,
+        existingId: existingProduct?.id,
       });
     }
 
-    // 2. Database Insertion Loop (with atomic category resolution & serial number generator)
-    let successfullyImportedCount = 0;
+    // 2. Database Insertion & Upsert Loop
+    let createdCount = 0;
+    let updatedCount = 0;
     const categoriesCache = new Map<string, string>();
 
-    // Fetch existing categories into cache
     const existingCategories = await prisma.category.findMany();
     existingCategories.forEach((c) => {
       categoriesCache.set(c.name.toLowerCase(), c.id);
     });
 
-    for (const item of validProductsToInsert) {
+    for (const item of validProductsToProcess) {
       try {
         const catKey = item.categoryName.toLowerCase();
         let categoryId = categoriesCache.get(catKey);
@@ -159,32 +196,61 @@ export async function POST(req: NextRequest) {
           categoriesCache.set(catKey, categoryId);
         }
 
-        const productId = `prod-${item.cleanSku.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+        let productId = item.existingId;
+        let productRecord: any;
 
-        const createdProduct = await prisma.product.create({
-          data: {
-            id: productId,
-            sku: item.cleanSku,
-            name: item.name,
-            brand: item.brand,
-            model: item.model,
-            categoryId,
-            categoryName: item.categoryName,
-            description: item.description,
-            imageUrl: item.imageUrl,
-            barcode: item.barcode,
-            trackSerial: item.trackSerial,
-            purchasePrice: item.purchasePrice,
-            wholesalePrice: item.wholesalePrice,
-            sellingPrice: item.sellingPrice,
-            taxRate: item.taxRate,
-            minStockLevel: item.minStockLevel,
-            status: 'ACTIVE',
-            totalStock: item.totalStock,
-          },
-        });
+        if (item.isExisting && productId) {
+          // UPDATE existing product
+          productRecord = await prisma.product.update({
+            where: { id: productId },
+            data: {
+              name: item.name,
+              brand: item.brand,
+              model: item.model,
+              categoryId,
+              categoryName: item.categoryName,
+              description: item.description,
+              imageUrl: item.imageUrl,
+              barcode: item.barcode,
+              trackSerial: item.trackSerial,
+              purchasePrice: item.purchasePrice,
+              wholesalePrice: item.wholesalePrice,
+              sellingPrice: item.sellingPrice,
+              taxRate: item.taxRate,
+              minStockLevel: item.minStockLevel,
+              totalStock: item.totalStock,
+            },
+          });
+          updatedCount++;
+        } else {
+          // CREATE new product
+          productId = `prod-${item.cleanSku.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+          productRecord = await prisma.product.create({
+            data: {
+              id: productId,
+              sku: item.cleanSku,
+              name: item.name,
+              brand: item.brand,
+              model: item.model,
+              categoryId,
+              categoryName: item.categoryName,
+              description: item.description,
+              imageUrl: item.imageUrl,
+              barcode: item.barcode,
+              trackSerial: item.trackSerial,
+              purchasePrice: item.purchasePrice,
+              wholesalePrice: item.wholesalePrice,
+              sellingPrice: item.sellingPrice,
+              taxRate: item.taxRate,
+              minStockLevel: item.minStockLevel,
+              status: 'ACTIVE',
+              totalStock: item.totalStock,
+            },
+          });
+          createdCount++;
+        }
 
-        // Insert depot inventories and serials
+        // Upsert depot inventories and create serial numbers
         const serialsToCreate: any[] = [];
         for (const [depotId, qty] of Object.entries(item.depotBreakdown)) {
           const quantity = qty as number;
@@ -193,12 +259,12 @@ export async function POST(req: NextRequest) {
             await prisma.depotInventory.upsert({
               where: {
                 productId_depotId: {
-                  productId: createdProduct.id,
+                  productId: productRecord.id,
                   depotId: depot.id,
                 },
               },
               create: {
-                productId: createdProduct.id,
+                productId: productRecord.id,
                 depotId: depot.id,
                 quantity,
                 allocatedQuantity: 0,
@@ -211,27 +277,35 @@ export async function POST(req: NextRequest) {
               },
             });
 
+            // Generate initial serial numbers if trackSerial is enabled and stock > 0
             if (item.trackSerial && quantity > 0) {
-              const depotCode = depot.code.replace('DEP-', '');
-              for (let i = 1; i <= Math.min(quantity, 50); i++) {
-                const randomCode = Math.floor(1000 + Math.random() * 9000);
-                serialsToCreate.push({
-                  productId: createdProduct.id,
-                  productSku: createdProduct.sku,
-                  productName: createdProduct.name,
-                  serialNumber: `SN-${item.cleanSku}-${depotCode}-${String(i).padStart(3, '0')}-${randomCode}`,
-                  depotId: depot.id,
-                  depotName: depot.name,
-                  status: 'IN_STOCK',
-                  historyJson: JSON.stringify([
-                    {
-                      action: 'BULK_IMPORT_INITIAL_STOCK',
-                      depot: depot.name,
-                      timestamp: new Date().toISOString(),
-                      notes: 'Imported via Excel/CSV batch process',
-                    },
-                  ]),
-                });
+              const existingSerialCount = await prisma.serialNumber.count({
+                where: { productId: productRecord.id, depotId: depot.id },
+              });
+
+              if (existingSerialCount < quantity) {
+                const countToCreate = Math.min(quantity - existingSerialCount, 50);
+                const depotCode = depot.code.replace('DEP-', '');
+                for (let i = 1; i <= countToCreate; i++) {
+                  const randomCode = Math.floor(1000 + Math.random() * 9000);
+                  serialsToCreate.push({
+                    productId: productRecord.id,
+                    productSku: productRecord.sku,
+                    productName: productRecord.name,
+                    serialNumber: `SN-${item.cleanSku}-${depotCode}-${String(existingSerialCount + i).padStart(3, '0')}-${randomCode}`,
+                    depotId: depot.id,
+                    depotName: depot.name,
+                    status: 'IN_STOCK',
+                    historyJson: JSON.stringify([
+                      {
+                        action: 'BULK_IMPORT_STOCK',
+                        depot: depot.name,
+                        timestamp: new Date().toISOString(),
+                        notes: 'Imported via CSV/Excel batch operation',
+                      },
+                    ]),
+                  });
+                }
               }
             }
           }
@@ -244,38 +318,36 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        // Sync with memory store
+        // Sync with data store
         try {
           dataStore.createProduct({
-            sku: createdProduct.sku,
-            name: createdProduct.name,
-            brand: createdProduct.brand,
-            model: createdProduct.model || '',
-            categoryId: createdProduct.categoryId,
-            categoryName: createdProduct.categoryName || item.categoryName,
-            description: createdProduct.description,
-            imageUrl: createdProduct.imageUrl,
-            barcode: createdProduct.barcode,
-            trackSerial: createdProduct.trackSerial,
-            purchasePrice: createdProduct.purchasePrice,
-            sellingPrice: createdProduct.sellingPrice,
-            wholesalePrice: createdProduct.wholesalePrice,
-            taxRate: createdProduct.taxRate,
-            minStockLevel: createdProduct.minStockLevel,
+            sku: productRecord.sku,
+            name: productRecord.name,
+            brand: productRecord.brand,
+            model: productRecord.model || '',
+            categoryId: productRecord.categoryId,
+            categoryName: productRecord.categoryName || item.categoryName,
+            description: productRecord.description,
+            imageUrl: productRecord.imageUrl,
+            barcode: productRecord.barcode,
+            trackSerial: productRecord.trackSerial,
+            purchasePrice: productRecord.purchasePrice,
+            sellingPrice: productRecord.sellingPrice,
+            wholesalePrice: productRecord.wholesalePrice,
+            taxRate: productRecord.taxRate,
+            minStockLevel: productRecord.minStockLevel,
             status: 'ACTIVE',
             depotBreakdown: item.depotBreakdown,
-            createdAt: createdProduct.createdAt instanceof Date ? createdProduct.createdAt.toISOString() : String(createdProduct.createdAt || new Date().toISOString()),
-            updatedAt: createdProduct.updatedAt instanceof Date ? createdProduct.updatedAt.toISOString() : String(createdProduct.updatedAt || new Date().toISOString()),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           });
         } catch {}
-
-        successfullyImportedCount++;
       } catch (insertError: any) {
         failedRows.push({
           row: item.rowNum,
           sku: item.cleanSku,
           name: item.name,
-          error: insertError.message || 'Database insertion error',
+          error: insertError.message || 'Database error processing product row',
         });
       }
     }
@@ -283,9 +355,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       totalSubmitted: products.length,
-      importedCount: successfullyImportedCount,
+      importedCount: createdCount + updatedCount,
+      createdCount,
+      updatedCount,
       failedCount: failedRows.length,
       errors: failedRows,
+      message: `Successfully processed ${createdCount + updatedCount} products (${createdCount} created, ${updatedCount} updated).`,
     });
   } catch (error: any) {
     console.error('Bulk product import error:', error);

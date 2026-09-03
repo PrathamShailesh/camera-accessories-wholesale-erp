@@ -68,6 +68,7 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('ALL');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [stockFilter, setStockFilter] = useState<'ALL' | 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK'>('ALL');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -171,7 +172,7 @@ export default function ProductsPage() {
         model: form.model.trim(),
         categoryName: form.categoryName.trim(),
         description: form.description.trim(),
-        imageUrl: form.imageUrl.trim(),
+        imageUrl: form.imageUrl.trim() || '/placeholder-product.svg',
         purchasePrice: Number(form.purchasePrice),
         wholesalePrice: Number(form.wholesalePrice),
         sellingPrice: Number(form.sellingPrice),
@@ -237,6 +238,10 @@ export default function ProductsPage() {
   const filteredProducts = products.filter((p) => {
     if (selectedBrand !== 'ALL' && p.brand !== selectedBrand) return false;
     if (selectedCategory !== 'ALL' && p.categoryName !== selectedCategory) return false;
+    const stock = p.totalStock ?? 0;
+    if (stockFilter === 'IN_STOCK' && stock <= 0) return false;
+    if (stockFilter === 'OUT_OF_STOCK' && stock > 0) return false;
+    if (stockFilter === 'LOW_STOCK' && (stock > (p.minStockLevel ?? 10) || stock === 0)) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
@@ -268,7 +273,7 @@ export default function ProductsPage() {
         actions={
           <>
             <Button variant="outline" iconLeft={<FileSpreadsheet className="h-4 w-4" />} onClick={() => setIsImportOpen(true)}>
-              Import
+              Import (CSV/Excel)
             </Button>
             <Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreate}>
               New Product
@@ -277,7 +282,7 @@ export default function ProductsPage() {
         }
       />
 
-      {/* Catalog metrics — thin bordered grid, not floating cards */}
+      {/* Catalog metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-lg divide-x divide-y lg:divide-y-0 divide-line bg-surface">
         <div className="p-4">
           <div className="text-xs uppercase tracking-wider text-muted">Catalog SKUs</div>
@@ -292,7 +297,7 @@ export default function ProductsPage() {
           <div className="text-2xl font-semibold text-ink mt-1.5">{formatUSD(totalValuation)}</div>
         </div>
         <div className="p-4">
-          <div className="text-xs uppercase tracking-wider text-muted">Low Stock</div>
+          <div className="text-xs uppercase tracking-wider text-muted">0 / Low Stock</div>
           <div className={`text-2xl font-semibold mt-1.5 ${lowStockCount > 0 ? 'text-warning' : 'text-ink'}`}>
             {lowStockCount}
           </div>
@@ -306,21 +311,32 @@ export default function ProductsPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
           wrapperClassName="w-full sm:w-80"
         />
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Select
             options={availableBrands.map((b) => ({ label: b === 'ALL' ? 'All brands' : b, value: b }))}
             value={selectedBrand}
             onChange={(e) => setSelectedBrand(e.target.value)}
-            wrapperClassName="w-40"
+            wrapperClassName="w-36"
           />
           <Select
             options={availableCategories.map((c) => ({ label: c === 'ALL' ? 'All categories' : c, value: c }))}
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            wrapperClassName="w-48"
+            wrapperClassName="w-44"
+          />
+          <Select
+            options={[
+              { label: 'All Stock (incl. 0)', value: 'ALL' },
+              { label: 'In Stock (>0)', value: 'IN_STOCK' },
+              { label: '0 in Stock', value: 'OUT_OF_STOCK' },
+              { label: 'Low Stock', value: 'LOW_STOCK' },
+            ]}
+            value={stockFilter}
+            onChange={(e) => setStockFilter(e.target.value as any)}
+            wrapperClassName="w-40"
           />
         </div>
-        <span className="text-xs text-muted sm:ml-auto">{filteredProducts.length} products</span>
+        <span className="text-xs text-muted sm:ml-auto font-mono">{filteredProducts.length} items</span>
       </div>
 
       {loading ? (

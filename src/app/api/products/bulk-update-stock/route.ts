@@ -5,11 +5,10 @@ import { guardApi } from '@/lib/api-auth';
 /**
  * PUT /api/products/bulk-update-stock
  *
- * Body: { products: [{ sku, blrStock, dxbStock, bomStock, sinStock }] }
+ * Body: { products: [{ sku, stock, quantity, depotBreakdown, ... }] }
  *
  * For each row: looks up the product by SKU, upserts DepotInventory
- * records, and recalculates totalStock. Skips rows where the SKU is
- * not found and reports them in the response.
+ * records across all depots, and recalculates totalStock.
  */
 export async function PUT(req: NextRequest) {
   const auth = await guardApi(req, 'products.write');
@@ -27,13 +26,14 @@ export async function PUT(req: NextRequest) {
     }
 
     const allDepots = await prisma.depot.findMany();
+    const primaryDepot = allDepots.find((d) => d.isCentralHub) || allDepots[0];
     const depotMap = new Map(allDepots.map((d) => [d.id, d]));
 
     const updatedRows: { sku: string; totalStock: number }[] = [];
     const skippedRows: { sku: string; reason: string }[] = [];
 
     for (const row of products) {
-      const rawSku = row.sku?.toString().trim().toUpperCase();
+      const rawSku = (row.sku || row.SKU || row.ProductSku || row.product_sku)?.toString().trim().toUpperCase();
       if (!rawSku) {
         skippedRows.push({ sku: '(empty)', reason: 'SKU is missing' });
         continue;
@@ -47,29 +47,51 @@ export async function PUT(req: NextRequest) {
 
       // Build depot breakdown from the row's stock columns
       const depotBreakdown: Record<string, number> = {};
+      let hasSpecificDepot = false;
+
       allDepots.forEach((depot) => {
         const codeKey = depot.code.toLowerCase().replace('dep-', '');
+        const nameClean = depot.name.toLowerCase().replace(/[^a-z0-9]/g, '');
         const qty =
           row.depotBreakdown?.[depot.id] ??
           row[`${codeKey}Stock`] ??
+          row[`${codeKey}_stock`] ??
+          row[`${nameClean}Stock`] ??
           row[depot.id] ??
           row[depot.code] ??
           row[depot.name] ??
           null;
 
-        if (qty !== null && qty !== undefined) {
+        if (qty !== null && qty !== undefined && qty !== '') {
           depotBreakdown[depot.id] = Math.max(0, parseInt(qty) || 0);
+          hasSpecificDepot = true;
         }
       });
 
+      // If no depot-specific column was found, check generic stock/quantity
+      if (!hasSpecificDepot && primaryDepot) {
+        const genericStock =
+          row.stock ??
+          row.Stock ??
+          row.quantity ??
+          row.Quantity ??
+          row.qty ??
+          row.QTY ??
+          row.totalStock ??
+          row.total_stock ??
+          null;
+
+        if (genericStock !== null && genericStock !== undefined && genericStock !== '') {
+          depotBreakdown[primaryDepot.id] = Math.max(0, parseInt(genericStock) || 0);
+        }
+      }
+
       if (Object.keys(depotBreakdown).length === 0) {
-        skippedRows.push({ sku: rawSku, reason: 'No depot stock columns found in row' });
+        skippedRows.push({ sku: rawSku, reason: 'No stock or quantity values found in row' });
         continue;
       }
 
       try {
-        // Upsert each depot inventory and recalculate total
-        let newTotal = 0;
         for (const [depotId, qty] of Object.entries(depotBreakdown)) {
           const depot = depotMap.get(depotId);
           if (!depot) continue;
@@ -86,10 +108,9 @@ export async function PUT(req: NextRequest) {
               minStockLevel: product.minStockLevel || 5,
             },
           });
-          newTotal += qty;
         }
 
-        // Recalculate total from ALL depot rows (not just the ones in this batch)
+        // Recalculate total from ALL depot rows
         const allInv = await prisma.depotInventory.findMany({ where: { productId: product.id } });
         const totalStock = allInv.reduce((sum, inv) => sum + inv.quantity, 0);
 
@@ -110,6 +131,7 @@ export async function PUT(req: NextRequest) {
       skippedCount: skippedRows.length,
       updated: updatedRows,
       skipped: skippedRows,
+      message: `Updated inventory stock for ${updatedRows.length} products.`,
     });
   } catch (error: any) {
     console.error('Bulk stock update error:', error);

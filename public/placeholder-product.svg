@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="lensGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle Grid Pattern -->
+  <g stroke="#334155" stroke-width="0.5" opacity="0.3">
+    <line x1="0" y1="50" x2="400" y2="50"/>
+    <line x1="0" y1="100" x2="400" y2="100"/>
+    <line x1="0" y1="150" x2="400" y2="150"/>
+    <line x1="0" y1="200" x2="400" y2="200"/>
+    <line x1="0" y1="250" x2="400" y2="250"/>
+    <line x1="50" y1="0" x2="50" y2="300"/>
+    <line x1="100" y1="0" x2="100" y2="300"/>
+    <line x1="150" y1="0" x2="150" y2="300"/>
+    <line x1="200" y1="0" x2="200" y2="300"/>
+    <line x1="250" y1="0" x2="250" y2="300"/>
+    <line x1="300" y1="0" x2="300" y2="300"/>
+    <line x1="350" y1="0" x2="350" y2="300"/>
+  </g>
+  
+  <!-- Camera & Optics Hardware Icon -->
+  <g transform="translate(130, 80)">
+    <!-- Camera Body Silhouette -->
+    <rect x="10" y="25" width="120" height="85" rx="12" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+    <!-- Viewfinder bump -->
+    <path d="M 45 25 L 55 12 L 85 12 L 95 25 Z" fill="#334155" stroke="#475569" stroke-width="1.5"/>
+    <!-- Shutter button & Dial -->
+    <rect x="25" y="18" width="12" height="7" rx="2" fill="#64748b"/>
+    <circle cx="115" cy="21" r="5" fill="#64748b"/>
+    
+    <!-- Outer Lens Ring -->
+    <circle cx="70" cy="68" r="34" fill="#0f172a" stroke="url(#accentGrad)" stroke-width="2.5"/>
+    <!-- Middle Lens Ring -->
+    <circle cx="70" cy="68" r="26" fill="#1e293b" stroke="#0284c7" stroke-width="1.5"/>
+    <!-- Inner Lens Glass Element -->
+    <circle cx="70" cy="68" r="18" fill="url(#lensGrad)"/>
+    <!-- Lens Reflection -->
+    <path d="M 58 58 Q 70 52 82 58" stroke="#ffffff" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6"/>
+    <circle cx="78" cy="62" r="3" fill="#ffffff" opacity="0.5"/>
+    
+    <!-- Sensor / Accessory Accent Dot -->
+    <circle cx="24" cy="38" r="3" fill="#ef4444"/>
+  </g>
+  
+  <!-- Universal Optics & Hardware Text -->
+  <text x="200" y="225" text-anchor="middle" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" letter-spacing="0.08em">CAMERA &amp; OPTICS EQUIPMENT</text>
+  <text x="200" y="244" text-anchor="middle" fill="#64748b" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="500">Official Catalog Hardware</text>
+</svg>
