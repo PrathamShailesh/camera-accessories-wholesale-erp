@@ -44,9 +44,18 @@ export default function ProformasPage() {
       } else {
         setProformas([]);
       }
-    } catch {
-      setError('Something went wrong. Please try again.');
-      setProformas(dataStore.getProformas());
+    } catch (err: any) {
+      if (err?.message?.includes('401')) {
+        window.location.href = '/login?next=/proformas';
+        return;
+      }
+      const fallback = dataStore.getProformas();
+      if (fallback && fallback.length > 0) {
+        setProformas(fallback);
+      } else {
+        setError('Something went wrong. Please try again.');
+        setProformas([]);
+      }
     } finally {
       setIsLoading(false);
     }

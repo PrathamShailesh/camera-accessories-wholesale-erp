@@ -104,8 +104,15 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error fetching products:', error);
-    return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+    console.error('Error fetching products from DB, using fallback:', error);
+    try {
+      const fallbackProducts = dataStore.getProducts().map((p) =>
+        sanitizeProductForRole(p as any, auth.user.role)
+      );
+      return NextResponse.json(fallbackProducts);
+    } catch {
+      return NextResponse.json([]);
+    }
   }
 }
 

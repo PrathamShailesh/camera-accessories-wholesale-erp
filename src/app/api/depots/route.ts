@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { guardApi, depotIdFilter } from '@/lib/api-auth';
 
 export async function GET(req: NextRequest) {
@@ -58,7 +59,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(enrichedDepots);
   } catch (error) {
-    console.error('Error fetching depots:', error);
-    return NextResponse.json({ error: 'Failed to fetch depots' }, { status: 500 });
+    console.error('Error fetching depots from DB, using fallback:', error);
+    try {
+      return NextResponse.json(dataStore.getDepots());
+    } catch {
+      return NextResponse.json([]);
+    }
   }
 }

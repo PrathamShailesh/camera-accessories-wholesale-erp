@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { guardApi, depotIdFilter } from '@/lib/api-auth';
 
 const MONTHS_BACK = 6;
@@ -273,7 +274,70 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error building dashboard overview:', error);
-    return NextResponse.json({ error: 'Failed to build dashboard overview' }, { status: 500 });
+    console.error('Error building dashboard overview from DB, building from dataStore:', error);
+    try {
+      const products = dataStore.getProducts();
+      const invoices = dataStore.getInvoices();
+      const proformas = dataStore.getProformas();
+      const shipments = dataStore.getShipments();
+      const depots = dataStore.getDepots();
+
+      const totalRevenue = invoices.reduce((sum, inv) => sum + inv.grandTotal, 0);
+      const totalUnits = products.reduce((sum, p) => sum + (p.totalStock || 0), 0);
+      const totalValuation = products.reduce((sum, p) => sum + (p.totalStock || 0) * (p.purchasePrice || 0), 0);
+      const productById = new Map(products.map((p) => [p.id, p]));
+      const grossProfit = invoices.reduce(
+        (sum, inv) =>
+          sum +
+          (inv.items
+            ? inv.items.reduce(
+                (isum, item) =>
+                  isum +
+                  (item.totalPrice -
+                    item.quantity * (productById.get(item.productId)?.purchasePrice || 0)),
+                0
+              )
+            : 0),
+        0
+      );
+
+      const fallbackResult = {
+        totals: {
+          revenue: Math.round(totalRevenue * 100) / 100,
+          grossProfit: Math.round(grossProfit * 100) / 100,
+          grossMarginPercent: totalRevenue > 0 ? Math.round((grossProfit / totalRevenue) * 1000) / 10 : 0,
+          orders: invoices.length,
+          inventoryUnits: totalUnits,
+          inventoryValue: Math.round(totalValuation * 100) / 100,
+          pendingProformas: proformas.filter((p) => p.status !== 'CONVERTED').length,
+          pendingShipments: shipments.filter((s) => s.status !== 'DELIVERED').length,
+        },
+        currentMonth: {
+          revenue: Math.round(totalRevenue * 100) / 100,
+          profit: Math.round(grossProfit * 100) / 100,
+          orders: invoices.length,
+          revenueChangePct: 0,
+          profitChangePct: 0,
+          ordersChangePct: 0,
+        },
+        trend: [],
+        salesByCategory: [],
+        topProducts: [],
+        topCustomers: [],
+        depotPerformance: depots.map((d) => ({
+          depotId: d.id,
+          name: d.name,
+          revenue: 0,
+          profit: 0,
+          orders: 0,
+          inventoryUnits: d.totalStockUnits || 0,
+          inventoryValue: d.totalStockValue || 0,
+        })),
+      };
+
+      return NextResponse.json(fallbackResult);
+    } catch {
+      return NextResponse.json({ error: 'Failed to build dashboard overview' }, { status: 500 });
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { depotIdFilter, guardApi } from '@/lib/api-auth';
 import { deductStockForInvoice } from '@/lib/inventory-service';
 import { parsePagination } from '@/lib/pagination';
@@ -57,8 +58,13 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching invoices:', error);
-    return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 });
+    console.error('Error fetching invoices from DB, using fallback:', error);
+    try {
+      const fallbackInvoices = dataStore.getInvoices();
+      return NextResponse.json(fallbackInvoices);
+    } catch {
+      return NextResponse.json([]);
+    }
   }
 }
 

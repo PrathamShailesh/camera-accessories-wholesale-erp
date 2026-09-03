@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 import { parsePagination } from '@/lib/pagination';
 
@@ -16,8 +17,12 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json(customers);
   } catch (error) {
-    console.error('Error fetching customers:', error);
-    return NextResponse.json({ error: 'Failed to fetch customers' }, { status: 500 });
+    console.error('Error fetching customers from DB, using fallback:', error);
+    try {
+      return NextResponse.json(dataStore.getCustomers());
+    } catch {
+      return NextResponse.json([]);
+    }
   }
 }
 

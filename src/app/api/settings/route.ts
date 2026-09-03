@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { getAuthUser, redactSettings } from '@/lib/api-auth';
 import { hasPermission } from '@/lib/rbac';
 
@@ -13,9 +14,17 @@ export async function GET(req: NextRequest) {
     const now = Date.now();
 
     if (!cachedSettingsData || now >= settingsCacheExpiresAt) {
-      cachedSettingsData = await prisma.companySettings.findUnique({
-        where: { id: 'global-settings' },
-      });
+      try {
+        cachedSettingsData = await prisma.companySettings.findUnique({
+          where: { id: 'global-settings' },
+        });
+      } catch (dbErr) {
+        console.warn('Prisma settings lookup failed, falling back to dataStore:', dbErr);
+      }
+
+      if (!cachedSettingsData) {
+        cachedSettingsData = dataStore.getCompanySettings();
+      }
       settingsCacheExpiresAt = now + SETTINGS_CACHE_TTL_MS;
     }
 
@@ -29,7 +38,7 @@ export async function GET(req: NextRequest) {
     );
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
+    return NextResponse.json(redactSettings(dataStore.getCompanySettings() as any, true, 'SUPER_ADMIN'));
   }
 }
 

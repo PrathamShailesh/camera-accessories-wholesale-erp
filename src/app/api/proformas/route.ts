@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 import { parsePagination } from '@/lib/pagination';
 
@@ -19,8 +20,12 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json(proformas);
   } catch (error) {
-    console.error('Error fetching proformas:', error);
-    return NextResponse.json({ error: 'Failed to fetch proformas' }, { status: 500 });
+    console.error('Error fetching proformas from DB, using fallback:', error);
+    try {
+      return NextResponse.json(dataStore.getProformas());
+    } catch {
+      return NextResponse.json([]);
+    }
   }
 }
 
