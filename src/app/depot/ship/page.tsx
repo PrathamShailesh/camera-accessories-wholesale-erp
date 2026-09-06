@@ -124,41 +124,55 @@ export default function DepotShipPage() {
     try {
       const reader = new FileReader();
       reader.onload = async (event) => {
-        const base64Data = event.target?.result as string;
+        try {
+          const base64Data = event.target?.result as string;
 
-        const res = await fetch('/api/cloudinary/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fileData: base64Data,
-            fileName: file.name,
-            category: 'AIRWAY_BILL',
-            relatedEntityType: 'SHIPMENT',
-            relatedEntityId: invoice.id,
-            relatedEntityLabel: `AWB Document for Invoice #${invoice.invoiceNumber}`,
-            title: `Airway Bill - Invoice #${invoice.invoiceNumber}`,
-          }),
-        });
+          const res = await fetch('/api/cloudinary/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileData: base64Data,
+              fileName: file.name,
+              category: 'AIRWAY_BILL',
+              relatedEntityType: 'SHIPMENT',
+              relatedEntityId: invoice.id,
+              relatedEntityLabel: `AWB Document for Invoice #${invoice.invoiceNumber}`,
+              title: `Airway Bill - Invoice #${invoice.invoiceNumber}`,
+            }),
+          });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to upload Airway Bill document');
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data?.error || 'Failed to upload Airway Bill document');
 
-        const uploadedUrl = data.cloudinary?.secure_url || data.document?.cloudinaryUrl || base64Data;
+          const uploadedUrl = data.cloudinary?.secure_url || data.document?.cloudinaryUrl || base64Data;
 
-        setAwbDocUrls((prev) => ({ ...prev, [invoice.id]: uploadedUrl }));
-        setAwbDocNames((prev) => ({ ...prev, [invoice.id]: file.name }));
-        setAwbDocSizes((prev) => ({ ...prev, [invoice.id]: fileSizeFormatted }));
+          setAwbDocUrls((prev) => ({ ...prev, [invoice.id]: uploadedUrl }));
+          setAwbDocNames((prev) => ({ ...prev, [invoice.id]: file.name }));
+          setAwbDocSizes((prev) => ({ ...prev, [invoice.id]: fileSizeFormatted }));
 
-        toast({
-          title: 'Airway Bill Uploaded',
-          description: `${file.name} uploaded successfully.`,
-          variant: 'success',
-        });
-        setIsUploadingAwb((prev) => ({ ...prev, [invoice.id]: false }));
+          toast({
+            title: 'Airway Bill Uploaded',
+            description: `${file.name} uploaded successfully.`,
+            variant: 'success',
+          });
+        } catch (uploadErr: any) {
+          toast({
+            title: 'Upload Failed',
+            description: uploadErr.message || 'Failed to upload Airway Bill document',
+            variant: 'error',
+          });
+        } finally {
+          setIsUploadingAwb((prev) => ({ ...prev, [invoice.id]: false }));
+        }
       };
 
       reader.onerror = () => {
-        throw new Error('Failed to read file contents');
+        toast({
+          title: 'Upload Failed',
+          description: 'Failed to read file contents',
+          variant: 'error',
+        });
+        setIsUploadingAwb((prev) => ({ ...prev, [invoice.id]: false }));
       };
 
       reader.readAsDataURL(file);

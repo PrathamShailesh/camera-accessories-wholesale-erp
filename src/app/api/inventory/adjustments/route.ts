@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { guardApi, assertDepotAccess } from '@/lib/api-auth';
 import { parsePagination } from '@/lib/pagination';
 
@@ -12,8 +13,11 @@ export async function GET(req: NextRequest) {
     const adjustments = await prisma.stockAdjustment.findMany({ orderBy: { createdAt: 'desc' }, take, skip });
     return NextResponse.json(adjustments);
   } catch (error: any) {
-    console.error('Error fetching stock adjustments:', error);
-    return NextResponse.json({ error: 'Failed to fetch adjustments' }, { status: 500 });
+    try {
+      return NextResponse.json(dataStore.getAdjustments());
+    } catch {
+      return NextResponse.json([]);
+    }
   }
 }
 
@@ -35,14 +39,94 @@ export async function POST(req: NextRequest) {
     const denied = assertDepotAccess(auth.user, depotId);
     if (denied) return denied;
 
-    const inventory = await prisma.depotInventory.findUnique({ where: { productId_depotId: { productId, depotId } }, include: { product: true, depot: true } });
-    if (!inventory) return NextResponse.json({ error: 'Inventory record not found' }, { status: 404 });
     const delta = Number(deltaQty);
-    if (!Number.isFinite(delta) || inventory.quantity + delta < 0 || inventory.availableQuantity + delta < 0) return NextResponse.json({ error: 'Adjustment would make stock negative' }, { status: 400 });
-    const adjustment = await prisma.$transaction(async (tx) => {
-      const updated = await tx.depotInventory.update({ where: { id: inventory.id }, data: { quantity: { increment: delta }, availableQuantity: { increment: delta } } });
-      await tx.product.update({ where: { id: productId }, data: { totalStock: { increment: delta } } });
-      return tx.stockAdjustment.create({ data: { productId, productSku: inventory.product.sku, productName: inventory.product.name, depotId, depotName: inventory.depot.name, deltaQty: delta, previousQty: inventory.quantity, newQty: updated.quantity, reason, user: auth.user.name, notes } });
+    if (!Number.isFinite(delta)) {
+      return NextResponse.json({ error: 'deltaQty must be a valid number' }, { status: 400 });
+    }
+
+    let inventory: any = null;
+    try {
+      inventory = await prisma.depotInventory.findUnique({
+        where: { productId_depotId: { productId, depotId } },
+        include: { product: true, depot: true },
+      });
+    } catch {}
+
+    if (inventory) {
+      if (inventory.quantity + delta < 0 || inventory.availableQuantity + delta < 0) {
+        return NextResponse.json({ error: 'Adjustment would make stock negative' }, { status: 400 });
+      }
+
+      try {
+        const adjustment = await prisma.$transaction(async (tx) => {
+          const updated = await tx.depotInventory.update({
+            where: { id: inventory.id },
+            data: { quantity: { increment: delta }, availableQuantity: { increment: delta } },
+          });
+          await tx.product.update({
+            where: { id: productId },
+            data: { totalStock: { increment: delta } },
+          });
+          return tx.stockAdjustment.create({
+            data: {
+              productId,
+              productSku: inventory.product.sku,
+              productName: inventory.product.name,
+              depotId,
+              depotName: inventory.depot.name,
+              deltaQty: delta,
+              previousQty: inventory.quantity,
+              newQty: updated.quantity,
+              reason,
+              user: auth.user.name,
+              notes,
+            },
+          });
+        });
+
+        dataStore.createAdjustment({
+          productId,
+          productSku: inventory.product.sku,
+          productName: inventory.product.name,
+          depotId,
+          depotName: inventory.depot.name,
+          deltaQty: delta,
+          previousQty: inventory.quantity,
+          newQty: inventory.quantity + delta,
+          reason,
+          user: auth.user.name,
+          notes,
+        });
+
+        return NextResponse.json({ success: true, adjustment }, { status: 201 });
+      } catch {}
+    }
+
+    // Fallback to dataStore
+    const product = dataStore.getProductById(productId);
+    if (!product) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+    const depot = dataStore.getDepotById(depotId);
+    const depotName = depot?.name || 'Central Depot';
+    const previousQty = product.depotBreakdown?.[depotId] || 0;
+
+    if (previousQty + delta < 0) {
+      return NextResponse.json({ error: 'Adjustment would make stock negative' }, { status: 400 });
+    }
+
+    const adjustment = dataStore.createAdjustment({
+      productId,
+      productSku: product.sku,
+      productName: product.name,
+      depotId,
+      depotName,
+      deltaQty: delta,
+      previousQty,
+      newQty: previousQty + delta,
+      reason,
+      user: auth.user.name,
+      notes,
     });
 
     return NextResponse.json({ success: true, adjustment }, { status: 201 });

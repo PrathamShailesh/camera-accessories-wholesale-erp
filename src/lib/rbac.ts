@@ -208,6 +208,7 @@ const PAGE_PERMISSIONS: Array<{ prefix: string; permission: Permission }> = [
   { prefix: '/invoices', permission: 'invoices.read' },
   { prefix: '/orders', permission: 'orders.read' },
   { prefix: '/customers', permission: 'customers.read' },
+  { prefix: '/suppliers', permission: 'customers.read' },
   { prefix: '/products', permission: 'products.read' },
   { prefix: '/depots', permission: 'depots.directory' },
   { prefix: '/shipments', permission: 'shipments.read' },
@@ -282,6 +283,8 @@ const API_RULES: ApiRule[] = [
 
   { methods: ['GET'], test: (p) => p === '/api/customers' || p.startsWith('/api/customers/'), permission: 'customers.read' },
   { methods: ['POST', 'PUT', 'PATCH', 'DELETE'], test: (p) => p === '/api/customers' || p.startsWith('/api/customers/'), permission: 'customers.write' },
+  { methods: ['GET'], test: (p) => p === '/api/suppliers' || p.startsWith('/api/suppliers/'), permission: 'customers.read' },
+  { methods: ['POST', 'PUT', 'PATCH', 'DELETE'], test: (p) => p === '/api/suppliers' || p.startsWith('/api/suppliers/'), permission: 'customers.write' },
 
   { methods: ['POST'], test: (p) => p === '/api/products/bulk', permission: 'products.write' },
   { methods: ['GET'], test: (p) => p === '/api/products' || p.startsWith('/api/products/'), permission: 'products.read' },
@@ -339,6 +342,7 @@ export const NAV_SECTIONS: Array<{
       { name: 'Service Invoices', href: '/service-invoices', permission: 'invoices.read', icon: 'FileText' },
       { name: 'Order Pipeline', href: '/orders', permission: 'orders.read', icon: 'ShoppingCart' },
       { name: 'Customers', href: '/customers', permission: 'customers.read', icon: 'Users' },
+      { name: 'Suppliers', href: '/suppliers', permission: 'customers.read', icon: 'Building2' },
     ],
   },
   {
@@ -366,18 +370,16 @@ export const NAV_SECTIONS: Array<{
   {
     title: 'ANALYTICS',
     items: [
-      { name: 'Reports', href: '/reports', permission: 'reports.sales', icon: 'BarChart3' },
+      { name: 'Sales Reports', href: '/reports/sales', permission: 'reports.sales', icon: 'BarChart3' },
       { name: 'Profitability', href: '/reports/profit', permission: 'reports.profit', icon: 'TrendingUp' },
       { name: 'Inventory Reports', href: '/reports/inventory', permission: 'reports.inventory', icon: 'Boxes' },
-      { name: 'Sales Reports', href: '/reports/sales', permission: 'reports.sales', icon: 'BarChart3' },
       { name: 'Audit Logs', href: '/audit-logs', permission: 'audit.read', icon: 'ScrollText' },
     ],
   },
   {
     title: 'ADMINISTRATION',
     items: [
-      { name: 'Users', href: '/users', permission: 'users.read', icon: 'Users' },
-      { name: 'Roles & Permissions', href: '/users', permission: 'users.read', icon: 'ShieldAlert' },
+      { name: 'Users & Roles', href: '/users', permission: 'users.read', icon: 'Users' },
       { name: 'Settings', href: '/settings', permission: 'settings.read', icon: 'Settings' },
     ],
   },

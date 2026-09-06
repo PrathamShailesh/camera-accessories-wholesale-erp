@@ -19,15 +19,22 @@ import {
   Clock,
   Printer,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
-import { fetchCurrentUserCached } from '@/lib/client-cache';
+import { fetchCurrentUserCached, getCurrentUserCachedSync } from '@/lib/client-cache';
 import { formatDate, formatUSD } from '@/lib/utils';
 import { TaxInvoice, User, Depot } from '@/types/erp';
 import CloudinaryUploadModal from '@/components/documents/CloudinaryUploadModal';
 import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
 
 export default function DepotMobilePage() {
-  const [currentUser, setCurrentUser] = useState<User>(dataStore.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<User>(
+    () => (getCurrentUserCachedSync()?.user as User) || ({
+      id: 'usr-admin',
+      name: 'Super Admin',
+      role: 'SUPER_ADMIN',
+      email: 'admin@arib.com',
+      status: 'ACTIVE',
+    } as User)
+  );
   const [depots, setDepots] = useState<Depot[]>([]);
   const [selectedDepotId, setSelectedDepotId] = useState<string>('');
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
@@ -41,7 +48,7 @@ export default function DepotMobilePage() {
   const [busyInvoiceId, setBusyInvoiceId] = useState<string | null>(null);
 
   const loadData = async () => {
-    let user = dataStore.getCurrentUser();
+    let user = currentUser;
 
     try {
       const userData = await fetchCurrentUserCached();
@@ -57,18 +64,20 @@ export default function DepotMobilePage() {
       }
     } catch {}
 
-    let allDepots = dataStore.getDepots();
+    let allDepots: Depot[] = [];
     try {
       const depotsRes = await fetch('/api/depots');
       if (depotsRes.ok) {
         const databaseDepots = await depotsRes.json();
-        if (Array.isArray(databaseDepots)) allDepots = databaseDepots;
+        if (Array.isArray(databaseDepots)) {
+          allDepots = databaseDepots;
+          setDepots(allDepots);
+        }
       }
     } catch {}
-    setDepots(allDepots);
 
-    const activeDepot = selectedDepotId || user.assignedDepotId || allDepots[0]?.id || 'dep-dxb';
-    if (!selectedDepotId) {
+    const activeDepot = selectedDepotId || user?.assignedDepotId || allDepots[0]?.id || 'dep-dxb';
+    if (!selectedDepotId && activeDepot) {
       setSelectedDepotId(activeDepot);
     }
 
@@ -76,13 +85,15 @@ export default function DepotMobilePage() {
       const res = await fetch('/api/invoices');
       if (res.ok) {
         const allInvoices = await res.json();
-        const filtered = allInvoices.filter((inv: any) => !activeDepot || inv.depotId === activeDepot);
+        const filtered = Array.isArray(allInvoices)
+          ? allInvoices.filter((inv: any) => !activeDepot || inv.depotId === activeDepot)
+          : [];
         setInvoices(filtered);
       } else {
-        setInvoices(dataStore.getInvoices({ depotId: activeDepot }));
+        setInvoices([]);
       }
     } catch {
-      setInvoices(dataStore.getInvoices({ depotId: activeDepot }));
+      setInvoices([]);
     }
   };
 

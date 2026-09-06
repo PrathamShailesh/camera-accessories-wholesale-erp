@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendProformaEmail } from '@/lib/email-service';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 import { broadcastSystemEvent } from '@/lib/events-emitter';
 
@@ -17,10 +18,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'A proformaId or proformaNumber is required.' }, { status: 400 });
     }
 
-    const proforma = await prisma.proforma.findFirst({
-      where: { OR: [{ id: identifier }, { proformaNumber: identifier }] },
-      select: { id: true, proformaNumber: true, status: true },
-    });
+    let proforma: any = null;
+    try {
+      proforma = await prisma.proforma.findFirst({
+        where: { OR: [{ id: identifier }, { proformaNumber: identifier }] },
+        select: { id: true, proformaNumber: true, status: true },
+      });
+    } catch {}
+
+    if (!proforma) {
+      proforma = dataStore.getProformaById(identifier);
+    }
 
     if (!proforma) {
       return NextResponse.json({ error: 'Proforma not found' }, { status: 404 });
@@ -39,24 +47,25 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Line items and totals are read from the database inside sendProformaEmail,
-    // so the email can never disagree with the stored document.
     const result = await sendProformaEmail(proforma.id, appUrl);
 
     if (!result.success) {
       return NextResponse.json({ error: result.message }, { status: 502 });
     }
 
-    // Only advance DRAFT -> SENT. Re-sending a confirmed quotation must not drag
-    // it backwards, so this checks the current status directly rather than using
-    // canTransition (which intentionally permits CONFIRMED -> SENT as a manual
-    // correction, but that must never happen as a side effect of emailing).
     let updatedProforma = null;
     if (proforma.status === 'DRAFT') {
-      updatedProforma = await prisma.proforma.update({
-        where: { id: proforma.id },
-        data: { status: 'SENT' },
-      });
+      try {
+        updatedProforma = await prisma.proforma.update({
+          where: { id: proforma.id },
+          data: { status: 'SENT' },
+        });
+      } catch {}
+
+      dataStore.updateProforma(proforma.id, { status: 'SENT' });
+      if (!updatedProforma) {
+        updatedProforma = dataStore.getProformaById(proforma.id);
+      }
 
       try {
         broadcastSystemEvent({

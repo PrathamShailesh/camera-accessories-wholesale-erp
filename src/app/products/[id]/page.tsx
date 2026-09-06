@@ -1,40 +1,176 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   Barcode,
   Building2,
   Boxes,
   ArrowLeftRight,
+  SlidersHorizontal,
   Image as ImageIcon,
+  Edit,
+  ArrowLeft,
+  CheckCircle2,
+  Hash,
+  Trash2,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
 import { formatUSD } from '@/lib/utils';
-import { Product, SerialNumber } from '@/types/erp';
+import { Product, SerialNumber, Depot } from '@/types/erp';
 import { Card } from '@/components/ui/Card';
 import { Button, LinkButton } from '@/components/ui/Button';
-import { MarginBadge } from '@/components/ui/Badge';
+import { MarginBadge, StatusBadge } from '@/components/ui/Badge';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Drawer, ConfirmDialog } from '@/components/ui/Modal';
+import { Input, Textarea } from '@/components/ui/Input';
+import { useToast } from '@/components/ui/Toast';
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
+  const { toast } = useToast();
   const id = params.id as string;
 
   const [product, setProduct] = useState<Product | null>(null);
   const [serials, setSerials] = useState<SerialNumber[]>([]);
+  const [depots, setDepots] = useState<Depot[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const loadData = () => {
-    const p = dataStore.getProductById(id);
-    if (p) {
-      setProduct(p);
-      setSerials(dataStore.getSerialNumbers(p.id));
+  // Edit Drawer state
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    brand: '',
+    model: '',
+    categoryName: '',
+    description: '',
+    purchasePrice: 0,
+    wholesalePrice: 0,
+    sellingPrice: 0,
+    taxRate: 5,
+    minStockLevel: 5,
+    depotBreakdown: {} as Record<string, number>,
+  });
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [prodRes, serialsRes, depotsRes] = await Promise.all([
+        fetch(`/api/products/${id}`),
+        fetch(`/api/inventory/serials?productId=${id}`),
+        fetch('/api/depots'),
+      ]);
+
+      if (prodRes.ok) {
+        const prodData = await prodRes.json();
+        setProduct(prodData);
+        setEditForm({
+          name: prodData.name || '',
+          brand: prodData.brand || '',
+          model: prodData.model || '',
+          categoryName: prodData.categoryName || '',
+          description: prodData.description || '',
+          purchasePrice: prodData.purchasePrice || 0,
+          wholesalePrice: prodData.wholesalePrice || 0,
+          sellingPrice: prodData.sellingPrice || 0,
+          taxRate: prodData.taxRate ?? 5,
+          minStockLevel: prodData.minStockLevel ?? 5,
+          depotBreakdown: prodData.depotBreakdown || {},
+        });
+      } else {
+        setProduct(null);
+      }
+
+      if (serialsRes.ok) {
+        const sData = await serialsRes.json();
+        setSerials(sData.serials || (Array.isArray(sData) ? sData : []));
+      }
+
+      if (depotsRes.ok) {
+        const depData = await depotsRes.json();
+        setDepots(Array.isArray(depData) ? depData : []);
+      }
+    } catch (err) {
+      console.error('Error loading product detail:', err);
+      setProduct(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
   }, [id]);
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!product) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/products/${product.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editForm.name.trim(),
+          brand: editForm.brand.trim(),
+          model: editForm.model.trim(),
+          categoryName: editForm.categoryName.trim(),
+          description: editForm.description.trim(),
+          purchasePrice: Number(editForm.purchasePrice),
+          wholesalePrice: Number(editForm.wholesalePrice),
+          sellingPrice: Number(editForm.sellingPrice),
+          taxRate: Number(editForm.taxRate),
+          minStockLevel: Number(editForm.minStockLevel),
+          depotBreakdown: editForm.depotBreakdown,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to update product');
+      }
+
+      const updated = await res.json();
+      setProduct((prev) => (prev ? { ...prev, ...updated } : updated));
+      toast({ title: 'Product updated successfully', variant: 'success' });
+      setIsEditOpen(false);
+      loadData();
+    } catch (err: any) {
+      toast({ title: 'Update failed', description: err.message, variant: 'error' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!product) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/products/${product.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to delete product');
+      }
+      toast({ title: 'Product deleted', variant: 'success' });
+      router.push('/products');
+    } catch (err: any) {
+      toast({ title: 'Delete failed', description: err.message, variant: 'error' });
+      setIsDeleting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="py-24 text-center space-y-4">
+        <div className="text-slate-500 text-xs font-medium animate-pulse">
+          Loading product specifications and inventory telemetry...
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -48,7 +184,7 @@ export default function ProductDetailPage() {
   }
 
   const marginVal = product.sellingPrice - product.purchasePrice;
-  const marginPct = Number(((marginVal / product.sellingPrice) * 100).toFixed(1));
+  const marginPct = product.sellingPrice > 0 ? Number(((marginVal / product.sellingPrice) * 100).toFixed(1)) : 0;
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-16">
@@ -64,23 +200,57 @@ export default function ProductDetailPage() {
             </span>
           </span>
         }
-        description={`Brand: ${product.brand} · Category: ${product.categoryName} · Barcode: ${product.barcode}`}
+        description={`Brand: ${product.brand} · Category: ${product.categoryName || 'General Optics'} · Barcode: ${product.barcode || 'N/A'}`}
         actions={
-          <LinkButton href="/inventory/transfers" iconLeft={<ArrowLeftRight className="h-4 w-4" />} size="sm">
-            Transfer Stock
-          </LinkButton>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              iconLeft={<Edit className="h-4 w-4" />}
+              onClick={() => setIsEditOpen(true)}
+            >
+              Edit Product
+            </Button>
+            <LinkButton
+              href={`/inventory/transfers?productId=${product.id}`}
+              iconLeft={<ArrowLeftRight className="h-4 w-4" />}
+              size="sm"
+            >
+              Transfer Stock
+            </LinkButton>
+            <LinkButton
+              href={`/inventory/adjustments?productId=${product.id}`}
+              iconLeft={<SlidersHorizontal className="h-4 w-4" />}
+              variant="secondary"
+              size="sm"
+            >
+              Adjust
+            </LinkButton>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              iconLeft={<Trash2 className="h-4 w-4" />}
+              onClick={() => setIsDeleteOpen(true)}
+            >
+              Delete
+            </Button>
+          </div>
         }
       />
 
       {/* Main Specs & Image */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-1 overflow-hidden h-64 flex items-center justify-center bg-slate-50">
-          {product.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
-          ) : (
-            <ImageIcon className="h-10 w-10 text-slate-400" />
-          )}
+        <Card className="md:col-span-1 overflow-hidden h-64 flex items-center justify-center bg-slate-50 p-6">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/placeholder-product.svg"
+            alt={product.name}
+            className="h-full w-full object-contain"
+            onError={(e) => {
+              e.currentTarget.src = '/placeholder-product.svg';
+            }}
+          />
         </Card>
 
         <Card className="md:col-span-2 p-6 flex flex-col justify-between space-y-4">
@@ -88,7 +258,9 @@ export default function ProductDetailPage() {
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Product Record & Technical Specifications
             </h3>
-            <p className="text-xs text-slate-700 mt-2 leading-relaxed">{product.description}</p>
+            <p className="text-xs text-slate-700 mt-2 leading-relaxed">
+              {product.description || 'No detailed specifications recorded for this SKU.'}
+            </p>
           </div>
 
           <div className="grid grid-cols-3 gap-3 p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono">
@@ -110,25 +282,216 @@ export default function ProductDetailPage() {
 
       {/* Depot Distribution Grid */}
       <Card className="p-6 space-y-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-          Inventory Distribution Across Depots
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Inventory Distribution Across Depots
+          </h3>
+          <span className="font-mono text-xs font-bold text-slate-700">
+            Total Available: {product.totalStock ?? 0} Units
+          </span>
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono">
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-center">
-            <span className="text-xs text-slate-500 font-sans">Central Depot Stock</span>
-            <div className="text-xl font-bold text-slate-900 mt-1">
-              {product.depotBreakdown?.['dep-central'] ?? product.totalStock ?? 0} Units
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-mono">
+          {depots.length > 0 ? (
+            depots.map((d) => {
+              const qty = product.depotBreakdown?.[d.id] ?? 0;
+              return (
+                <div key={d.id} className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                  <span className="text-xs text-slate-500 font-sans block truncate">{d.name}</span>
+                  <div className="text-lg font-bold text-slate-900 mt-1">
+                    {qty} <span className="text-xs font-normal text-slate-500">Units</span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-center col-span-full">
+              <span className="text-xs text-slate-500 font-sans">Total Stock</span>
+              <div className="text-xl font-bold text-slate-900 mt-1">
+                {product.totalStock ?? 0} Units
+              </div>
             </div>
-          </div>
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-center">
-            <span className="text-xs text-slate-500 font-sans">Total Available Stock</span>
-            <div className="text-xl font-bold text-primary mt-1">
-              {product.totalStock ?? 0} Units
-            </div>
-          </div>
+          )}
         </div>
       </Card>
+
+      {/* Serial Numbers Table */}
+      <Card className="p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Hash className="h-4 w-4 text-brand-600" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+              Tracked Serial Numbers ({serials.length})
+            </h3>
+          </div>
+          <LinkButton
+            href={`/inventory/serials?productId=${product.id}`}
+            variant="ghost"
+            size="sm"
+            className="text-xs text-brand-600"
+          >
+            Manage Serials
+          </LinkButton>
+        </div>
+
+        {serials.length === 0 ? (
+          <div className="py-8 text-center text-slate-400 text-xs bg-slate-50/50 rounded-lg border border-dashed border-slate-200">
+            No tracked serial numbers registered for this product model yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <table className="w-full text-xs text-left">
+              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                <tr>
+                  <th className="p-2.5">Serial Number</th>
+                  <th className="p-2.5">Depot</th>
+                  <th className="p-2.5">Status</th>
+                  <th className="p-2.5">Allocated Invoice</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                {serials.map((s) => (
+                  <tr key={s.id} className="hover:bg-slate-50/50">
+                    <td className="p-2.5 font-bold text-slate-900">{s.serialNumber}</td>
+                    <td className="p-2.5 text-slate-600">{s.depotId}</td>
+                    <td className="p-2.5">
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          s.status === 'IN_STOCK'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : s.status === 'ALLOCATED'
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            : 'bg-slate-100 text-slate-600 border border-slate-200'
+                        }`}
+                      >
+                        {s.status}
+                      </span>
+                    </td>
+                    <td className="p-2.5 text-slate-500">{s.invoiceNumber || s.invoiceId || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* Edit Product Drawer */}
+      <Drawer
+        open={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        title={`Edit ${product.name}`}
+        description="Update pricing, technical specifications, or inventory distribution."
+        width="lg"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" onClick={() => setIsEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button loading={isSaving} onClick={handleEditSubmit}>
+              Save Changes
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleEditSubmit} className="space-y-4 text-xs">
+          <Input
+            label="Product Name"
+            value={editForm.name}
+            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            required
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Brand"
+              value={editForm.brand}
+              onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })}
+              required
+            />
+            <Input
+              label="Model"
+              value={editForm.model}
+              onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
+            />
+          </div>
+          <Input
+            label="Category"
+            value={editForm.categoryName}
+            onChange={(e) => setEditForm({ ...editForm, categoryName: e.target.value })}
+          />
+          <Textarea
+            label="Description / Specs"
+            value={editForm.description}
+            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+            rows={3}
+          />
+          <div className="grid grid-cols-3 gap-3">
+            <Input
+              label="Cost Price ($)"
+              type="number"
+              min="0"
+              step="0.01"
+              value={editForm.purchasePrice}
+              onChange={(e) => setEditForm({ ...editForm, purchasePrice: Number(e.target.value) })}
+              required
+            />
+            <Input
+              label="Wholesale Price ($)"
+              type="number"
+              min="0"
+              step="0.01"
+              value={editForm.wholesalePrice}
+              onChange={(e) => setEditForm({ ...editForm, wholesalePrice: Number(e.target.value) })}
+              required
+            />
+            <Input
+              label="Selling Price ($)"
+              type="number"
+              min="0"
+              step="0.01"
+              value={editForm.sellingPrice}
+              onChange={(e) => setEditForm({ ...editForm, sellingPrice: Number(e.target.value) })}
+              required
+            />
+          </div>
+
+          <div className="border-t border-slate-200 pt-3">
+            <h4 className="font-semibold text-slate-700 mb-2">Depot Stock Allocations</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {depots.map((d) => (
+                <div key={d.id}>
+                  <Input
+                    label={d.name}
+                    type="number"
+                    min="0"
+                    value={editForm.depotBreakdown[d.id] ?? 0}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        depotBreakdown: {
+                          ...editForm.depotBreakdown,
+                          [d.id]: Math.max(0, parseInt(e.target.value) || 0),
+                        },
+                      })
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </form>
+      </Drawer>
+
+      <ConfirmDialog
+        open={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={handleDeleteProduct}
+        title={`Delete ${product.name}?`}
+        description="This will permanently delete this product and its associated records from the catalog. This cannot be undone."
+        confirmLabel="Delete Product"
+        destructive
+        loading={isDeleting}
+      />
     </div>
   );
 }

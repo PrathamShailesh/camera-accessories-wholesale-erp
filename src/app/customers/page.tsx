@@ -7,7 +7,9 @@ import {
   Plus,
   ArrowRight,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { formatUSD } from '@/lib/utils';
 import { Customer, PaymentTerms } from '@/types/erp';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -16,10 +18,11 @@ import { StatusBadge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { SearchInput, Input, Select, Textarea } from '@/components/ui/Input';
-import { Drawer } from '@/components/ui/Modal';
+import { Drawer, ConfirmDialog } from '@/components/ui/Modal';
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
+import { fetchWithCache } from '@/lib/client-cache';
 
 const PAYMENT_TERMS_OPTIONS = [
   { label: 'NET 15 Days', value: 'NET_15' },
@@ -69,35 +72,42 @@ export default function CustomersPage() {
   const { toast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | null>(null);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [form, setForm] = useState<CustomerFormState>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const loadData = async () => {
+  const loadData = async (query = '', activeRef?: { current: boolean }) => {
     setError(null);
     try {
-      const response = await fetch('/api/customers');
-      if (response.ok) {
-        const data = await response.json();
-        setCustomers(Array.isArray(data) ? data : []);
-      } else {
-        setError('Unable to load customer accounts.');
-      }
+      const url = query ? `/api/customers?q=${encodeURIComponent(query)}` : '/api/customers';
+      const data = await fetchWithCache<Customer[]>(url, undefined, 3000);
+      if (activeRef && !activeRef.current) return;
+      setCustomers(Array.isArray(data) ? data : []);
     } catch {
+      if (activeRef && !activeRef.current) return;
       setError('Something went wrong. Please try again.');
     } finally {
-      setLoading(false);
+      if (!activeRef || activeRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const activeRef = { current: true };
+    loadData(debouncedSearch, activeRef);
+    return () => {
+      activeRef.current = false;
+    };
+  }, [debouncedSearch]);
 
   const openCreate = () => {
     setForm(EMPTY_FORM);
@@ -172,12 +182,31 @@ export default function CustomersPage() {
       }
 
       toast({ title: isEdit ? 'Customer updated' : 'Customer created', variant: 'success' });
-      await loadData();
+      await loadData(debouncedSearch);
       closeDrawer();
     } catch (err: any) {
       setFormError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingCustomer) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/customers/${deletingCustomer.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to delete customer');
+      }
+      toast({ title: 'Customer deleted', variant: 'success' });
+      setDeletingCustomer(null);
+      await loadData(debouncedSearch);
+    } catch (err: any) {
+      toast({ title: err.message || 'Failed to delete customer', variant: 'error' });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -219,7 +248,7 @@ export default function CustomersPage() {
       {loading ? (
         <SkeletonTable rows={6} cols={7} />
       ) : error ? (
-        <ErrorState description={error} action={<Button onClick={loadData}>Try Again</Button>} />
+        <ErrorState description={error} action={<Button onClick={() => loadData()}>Try Again</Button>} />
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -267,13 +296,22 @@ export default function CustomersPage() {
                     <StatusBadge status={c.status} />
                   </TableCell>
                   <TableCell align="right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1.5">
                       <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
                         Edit
                       </Button>
                       <LinkButton href={`/customers/${c.id}`} size="sm" variant="secondary" iconRight={<ArrowRight className="h-3.5 w-3.5" />}>
                         View
                       </LinkButton>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2"
+                        onClick={() => setDeletingCustomer(c)}
+                        title="Delete Customer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -409,6 +447,17 @@ export default function CustomersPage() {
           </div>
         </form>
       </Drawer>
+
+      <ConfirmDialog
+        open={deletingCustomer !== null}
+        onClose={() => setDeletingCustomer(null)}
+        onConfirm={confirmDelete}
+        title={`Delete ${deletingCustomer?.companyName || 'customer'}?`}
+        description="Are you sure you want to delete this customer account? This will permanently remove their records."
+        confirmLabel="Delete Customer"
+        destructive
+        loading={isDeleting}
+      />
     </div>
   );
 }

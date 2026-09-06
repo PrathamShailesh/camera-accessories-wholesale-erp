@@ -8,10 +8,11 @@ import {
   FileSpreadsheet,
   Image as ImageIcon,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { formatUSD, cloudinaryThumb } from '@/lib/utils';
 import { Product, Depot } from '@/types/erp';
-import ImageUploadField from '@/components/ui/ImageUploadField';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button, LinkButton } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -22,6 +23,7 @@ import { Drawer, ConfirmDialog } from '@/components/ui/Modal';
 import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
+import { fetchWithCache } from '@/lib/client-cache';
 
 const BulkProductImportModal = dynamic(() => import('@/components/products/BulkProductImportModal'), { ssr: false });
 
@@ -81,30 +83,44 @@ export default function ProductsPage() {
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const loadData = async () => {
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  const loadData = async (query = '', activeRef?: { current: boolean }) => {
     setError(null);
     try {
-      const [productsRes, depotsRes] = await Promise.all([fetch('/api/products'), fetch('/api/depots')]);
-      if (productsRes.ok) {
-        const productsData = await productsRes.json();
-        setProducts(Array.isArray(productsData) ? productsData : []);
+      const prodUrl = query ? `/api/products?q=${encodeURIComponent(query)}` : '/api/products';
+      const [productsData, depotsData] = await Promise.all([
+        fetchWithCache<Product[]>(prodUrl, undefined, 3000),
+        fetchWithCache<Depot[]>('/api/depots', undefined, 60000),
+      ]);
+
+      if (activeRef && !activeRef.current) return;
+
+      if (Array.isArray(productsData)) {
+        setProducts(productsData);
       } else {
         setError('Unable to load the product catalog.');
       }
-      if (depotsRes.ok) {
-        const depotsData = await depotsRes.json();
-        setDepots(Array.isArray(depotsData) ? depotsData : []);
+      if (Array.isArray(depotsData)) {
+        setDepots(depotsData);
       }
     } catch {
+      if (activeRef && !activeRef.current) return;
       setError('Something went wrong. Please try again.');
     } finally {
-      setLoading(false);
+      if (!activeRef || activeRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const activeRef = { current: true };
+    loadData(debouncedSearch, activeRef);
+    return () => {
+      activeRef.current = false;
+    };
+  }, [debouncedSearch]);
 
   const emptyDepotBreakdown = () =>
     depots.reduce<Record<string, number>>((acc, d) => {
@@ -172,7 +188,7 @@ export default function ProductsPage() {
         model: form.model.trim(),
         categoryName: form.categoryName.trim(),
         description: form.description.trim(),
-        imageUrl: form.imageUrl.trim() || '/placeholder-product.svg',
+        imageUrl: '/placeholder-product.svg',
         purchasePrice: Number(form.purchasePrice),
         wholesalePrice: Number(form.wholesalePrice),
         sellingPrice: Number(form.sellingPrice),
@@ -201,12 +217,31 @@ export default function ProductsPage() {
       if (!res.ok) throw new Error(data.error || `Failed to ${isEdit ? 'update' : 'create'} product`);
 
       toast({ title: isEdit ? 'Product updated' : 'Product created', variant: 'success' });
-      await loadData();
+      await loadData(debouncedSearch);
       closeDrawer();
     } catch (err: any) {
       setFormError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingProduct) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/products/${deletingProduct.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to delete product');
+      }
+      toast({ title: 'Product deleted', variant: 'success' });
+      setDeletingProduct(null);
+      await loadData(debouncedSearch);
+    } catch (err: any) {
+      toast({ title: err.message || 'Failed to delete product', variant: 'error' });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -342,7 +377,7 @@ export default function ProductsPage() {
       {loading ? (
         <SkeletonTable rows={6} cols={7} />
       ) : error ? (
-        <ErrorState description={error} action={<Button onClick={loadData}>Try Again</Button>} />
+        <ErrorState description={error} action={<Button onClick={() => loadData()}>Try Again</Button>} />
       ) : filteredProducts.length === 0 ? (
         <EmptyState
           icon={Package}
@@ -381,13 +416,17 @@ export default function ProductsPage() {
                   <TableRow key={p.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 shrink-0 rounded-md border border-line bg-surface-muted overflow-hidden flex items-center justify-center">
-                          {thumb ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={thumb} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
-                          ) : (
-                            <ImageIcon className="h-4 w-4 text-muted" />
-                          )}
+                        <div className="h-9 w-9 shrink-0 rounded-md border border-line bg-surface-muted overflow-hidden flex items-center justify-center p-0.5">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src="/placeholder-product.svg"
+                            alt={p.name}
+                            loading="lazy"
+                            className="h-full w-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.src = '/placeholder-product.svg';
+                            }}
+                          />
                         </div>
                         <div className="min-w-0">
                           <div className="font-semibold text-ink truncate">{p.name}</div>
@@ -408,13 +447,22 @@ export default function ProductsPage() {
                       <MarginBadge marginPercent={Number(marginFor(p).toFixed(1))} />
                     </TableCell>
                     <TableCell align="right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
                         <Button variant="ghost" size="sm" onClick={() => openEdit(p)}>
                           Edit
                         </Button>
                         <LinkButton href={`/products/${p.id}`} size="sm" variant="secondary">
                           View
                         </LinkButton>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2"
+                          onClick={() => setDeletingProduct(p)}
+                          title="Delete Product"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -515,11 +563,6 @@ export default function ProductsPage() {
               rows={2}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-            <ImageUploadField
-              label="Product Image"
-              value={form.imageUrl}
-              onChange={(url) => setForm({ ...form, imageUrl: url })}
             />
           </div>
 

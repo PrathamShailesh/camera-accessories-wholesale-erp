@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendProformaEmail } from '@/lib/email-service';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 import { broadcastSystemEvent } from '@/lib/events-emitter';
 
@@ -11,10 +12,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { id } = params;
 
   try {
-    const proforma = await prisma.proforma.findFirst({
-      where: { OR: [{ id }, { proformaNumber: id }] },
-      select: { id: true, proformaNumber: true, status: true },
-    });
+    let proforma: any = null;
+    try {
+      proforma = await prisma.proforma.findFirst({
+        where: { OR: [{ id }, { proformaNumber: id }] },
+        select: { id: true, proformaNumber: true, status: true },
+      });
+    } catch {}
+
+    if (!proforma) {
+      proforma = dataStore.getProformaById(id);
+    }
 
     if (!proforma) {
       return NextResponse.json({ error: 'Proforma quotation not found' }, { status: 404 });
@@ -36,10 +44,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     let updatedProforma = null;
     if (proforma.status === 'DRAFT') {
-      updatedProforma = await prisma.proforma.update({
-        where: { id: proforma.id },
-        data: { status: 'SENT' },
-      });
+      try {
+        updatedProforma = await prisma.proforma.update({
+          where: { id: proforma.id },
+          data: { status: 'SENT' },
+        });
+      } catch {}
+
+      dataStore.updateProforma(proforma.id, { status: 'SENT' });
+      if (!updatedProforma) {
+        updatedProforma = dataStore.getProformaById(proforma.id);
+      }
 
       try {
         broadcastSystemEvent({

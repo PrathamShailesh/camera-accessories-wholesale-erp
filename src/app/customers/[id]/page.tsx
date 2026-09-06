@@ -1,30 +1,37 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   Users,
   Building2,
   MapPin,
   Plus,
+  Trash2,
 } from 'lucide-react';
 import { formatUSD, formatDate } from '@/lib/utils';
-import { Customer, TaxInvoice, Proforma, CloudDocument } from '@/types/erp';
+import { Customer, TaxInvoice, Proforma } from '@/types/erp';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { KPICard } from '@/components/ui/KPICard';
 import { Button, LinkButton } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { ConfirmDialog } from '@/components/ui/Modal';
+import { useToast } from '@/components/ui/Toast';
 
 export default function CustomerDetailPage() {
   const params = useParams();
+  const router = useRouter();
+  const { toast } = useToast();
   const id = params.id as string;
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
   const [proformas, setProformas] = useState<Proforma[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadData = async () => {
     try {
@@ -47,6 +54,23 @@ export default function CustomerDetailPage() {
   useEffect(() => {
     loadData();
   }, [id]);
+
+  const handleDelete = async () => {
+    if (!customer) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/customers/${customer.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to delete customer');
+      }
+      toast({ title: 'Customer deleted', variant: 'success' });
+      router.push('/customers');
+    } catch (err: any) {
+      toast({ title: err.message || 'Failed to delete customer', variant: 'error' });
+      setIsDeleting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -86,17 +110,28 @@ export default function CustomerDetailPage() {
         }
         description={`Contact: ${customer.contactPerson} · ${customer.email} · ${customer.country}`}
         actions={
-          <LinkButton
-            href={`/proformas/new?customerId=${customer.id}`}
-            iconLeft={<Plus className="h-4 w-4" />}
-            size="sm"
-          >
-            Create Proforma
-          </LinkButton>
+          <div className="flex items-center gap-2">
+            <LinkButton
+              href={`/proformas/new?customerId=${customer.id}`}
+              iconLeft={<Plus className="h-4 w-4" />}
+              size="sm"
+            >
+              Create Proforma
+            </LinkButton>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              iconLeft={<Trash2 className="h-4 w-4" />}
+              onClick={() => setIsDeleteOpen(true)}
+            >
+              Delete
+            </Button>
+          </div>
         }
       />
 
-      {/* Section 23 Metrics Row */}
+      {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <KPICard
           label="Total Revenue"
@@ -184,6 +219,17 @@ export default function CustomerDetailPage() {
           </TableBody>
         </Table>
       </Card>
+
+      <ConfirmDialog
+        open={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={handleDelete}
+        title={`Delete ${customer.companyName}?`}
+        description="Are you sure you want to permanently delete this customer account? This cannot be undone."
+        confirmLabel="Delete Customer"
+        destructive
+        loading={isDeleting}
+      />
     </div>
   );
 }

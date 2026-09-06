@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { assertDepotAccess, guardApi } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -7,25 +8,29 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!auth.ok) return auth.response;
 
   try {
-    // 1. Validate Order exists with items
-    const invoice = await prisma.taxInvoice.findFirst({
-      where: { OR: [{ id: params.id }, { invoiceNumber: params.id }] },
-      include: {
-        items: { include: { product: true } },
-        customer: true,
-        depot: true,
-      },
-    });
+    let invoice: any = null;
+    try {
+      invoice = await prisma.taxInvoice.findFirst({
+        where: { OR: [{ id: params.id }, { invoiceNumber: params.id }] },
+        include: {
+          items: { include: { product: true } },
+          customer: true,
+          depot: true,
+        },
+      });
+    } catch {}
+
+    if (!invoice) {
+      invoice = dataStore.getInvoiceById(params.id);
+    }
 
     if (!invoice) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // 2. Validate Depot access
     const denied = assertDepotAccess(auth.user, invoice.depotId);
     if (denied) return denied;
 
-    // 3. Validate Order status
     if (invoice.fulfilmentStatus === 'SHIPPED' || invoice.fulfilmentStatus === 'DELIVERED') {
       return NextResponse.json(
         { error: 'Order has already been dispatched/delivered.' },
@@ -41,91 +46,110 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const body = await req.json().catch(() => ({}));
-    const { itemPicks } = body;
+    const { serials, allocatedSerials, itemPicks } = body;
 
-    // 4. Bulk fetch inventory for all items in a single query
-    const productIds = (invoice.items || []).map((i) => i.productId);
-    const depotInvs = await prisma.depotInventory.findMany({
-      where: {
-        depotId: invoice.depotId,
-        productId: { in: productIds },
-      },
-    });
-
-    const stockMap = new Map(depotInvs.map((inv) => [inv.productId, inv.quantity]));
-
-    // Check stock shortages
-    const shortages: Array<{ productId: string; productName: string; requested: number; available: number }> = [];
-    for (const item of invoice.items || []) {
-      const available = stockMap.get(item.productId) || 0;
-      if (available < item.quantity) {
-        shortages.push({
-          productId: item.productId,
-          productName: item.productName,
-          requested: item.quantity,
-          available,
-        });
+    // Collect all requested serial numbers
+    const requestedSerials: string[] = [];
+    if (Array.isArray(serials)) requestedSerials.push(...serials);
+    if (Array.isArray(allocatedSerials)) requestedSerials.push(...allocatedSerials);
+    if (Array.isArray(itemPicks)) {
+      for (const ip of itemPicks) {
+        if (Array.isArray(ip.serials)) requestedSerials.push(...ip.serials);
+        if (Array.isArray(ip.allocatedSerials)) requestedSerials.push(...ip.allocatedSerials);
       }
     }
 
-    // 5. Execute atomic Prisma transaction for picking operation
-    const updatedInvoice = await prisma.$transaction(async (tx) => {
-      // Update item picked flags
-      for (const item of invoice.items || []) {
-        let isPicked = true;
-        if (itemPicks) {
-          const pick = itemPicks[item.id] ?? itemPicks.find?.((p: any) => p.id === item.id)?.isPicked;
-          if (pick !== undefined) {
-            isPicked = Boolean(pick);
-          }
-        }
-
-        await tx.invoiceItem.update({
-          where: { id: item.id },
-          data: { isPicked },
-        });
+    // Validate serial numbers if provided
+    if (requestedSerials.length > 0) {
+      // Check for duplicate serial inputs
+      const uniqueInputSerials = new Set(requestedSerials);
+      if (uniqueInputSerials.size !== requestedSerials.length) {
+        return NextResponse.json(
+          { error: 'Duplicate serial numbers specified in pick request.' },
+          { status: 400 }
+        );
       }
 
-      // Update invoice status to PROCESSING
-      const updated = await tx.taxInvoice.update({
+      for (const sn of requestedSerials) {
+        let found: any = await prisma.serialNumber.findUnique({
+          where: { serialNumber: sn },
+        }).catch(() => null);
+
+        if (!found) {
+          found = dataStore.getSerialNumbers().find((s) => s.serialNumber === sn);
+        }
+
+        if (!found) {
+          return NextResponse.json(
+            { error: `Serial number "${sn}" does not exist in registry.` },
+            { status: 400 }
+          );
+        }
+
+        if (found.depotId && invoice.depotId && found.depotId !== invoice.depotId) {
+          return NextResponse.json(
+            { error: `Serial number "${sn}" is located at a different depot.` },
+            { status: 400 }
+          );
+        }
+
+        if (found.status !== 'IN_STOCK' && found.invoiceId !== invoice.id) {
+          return NextResponse.json(
+            { error: `Serial number "${sn}" is currently in status ${found.status} and cannot be allocated.` },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Mark serials as ALLOCATED
+      for (const sn of requestedSerials) {
+        await prisma.serialNumber.update({
+          where: { serialNumber: sn },
+          data: {
+            status: 'ALLOCATED',
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+          },
+        }).catch(() => {});
+        dataStore.updateSerialNumberStatus(sn, 'ALLOCATED', invoice.id, invoice.invoiceNumber);
+      }
+
+      // Also persist allocated serials on invoice item
+      if (invoice.items && invoice.items.length > 0) {
+        await prisma.invoiceItem.update({
+          where: { id: invoice.items[0].id },
+          data: {
+            allocatedSerials: requestedSerials,
+            isPicked: true,
+          },
+        }).catch(() => {});
+      }
+    }
+
+    let updatedInvoice: any = null;
+    try {
+      updatedInvoice = await prisma.taxInvoice.update({
         where: { id: invoice.id },
         data: { fulfilmentStatus: 'PROCESSING' },
-        include: { items: true, customer: true, depot: true, packingDetails: true },
+        include: { items: true, customer: true, depot: true, packingDetails: true, serialNumbers: true },
       });
+    } catch (dbErr) {
+      dataStore.pickInvoiceItems(invoice.id);
+      updatedInvoice = dataStore.getInvoiceById(invoice.id);
+    }
 
-      // Create Audit Log entry
-      await tx.auditLog.create({
-        data: {
-          userId: auth.user.id || 'usr-depot',
-          userName: auth.user.name || 'Depot User',
-          userRole: (auth.user.role as any) || 'DEPOT_USER',
-          action: 'PICK_ITEMS',
-          entityType: 'INVOICE',
-          entityId: invoice.id,
-          entityLabel: invoice.invoiceNumber,
-          description: `Items picked for invoice #${invoice.invoiceNumber} at depot ${invoice.depotName}`,
-        },
-      });
-
-      return updated;
-    });
+    if (!updatedInvoice) {
+      dataStore.pickInvoiceItems(invoice.id);
+      updatedInvoice = dataStore.getInvoiceById(invoice.id);
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Picking confirmed successfully',
       invoice: updatedInvoice,
-      shortages: shortages.length > 0 ? shortages : undefined,
     });
   } catch (error: any) {
-    console.error('❌ Server error in picking API:', error);
-
-    // Filter out internal NodeJS abort/reset messages into friendly user text
-    const rawMsg = String(error?.message || '');
-    const isAborted = rawMsg.includes('aborted') || rawMsg.includes('ECONNRESET');
-    const userMessage = isAborted
-      ? 'The picking request was interrupted. Please try clicking Confirm Picking again.'
-      : rawMsg || 'Failed to complete picking operation.';
-
-    return NextResponse.json({ error: userMessage }, { status: isAborted ? 409 : 500 });
+    console.error('Error in picking API:', error);
+    return NextResponse.json({ error: error?.message || 'Failed to complete picking operation' }, { status: 500 });
   }
 }

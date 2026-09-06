@@ -368,6 +368,7 @@ export class DbService {
       companyName: settings.companyName,
       tradingName: settings.tradingName,
       logoUrl: settings.logoUrl,
+      sealUrl: (settings as any).sealUrl || '/arib-seal.png',
       taxRegistrationNumber: settings.taxRegistrationNumber,
       vatGstNumber: settings.vatGstNumber,
       companyAddress: settings.companyAddress,

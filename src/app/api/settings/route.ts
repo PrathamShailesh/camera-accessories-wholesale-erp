@@ -20,9 +20,7 @@ export async function GET(req: NextRequest) {
             where: { id: 'global-settings' },
           })
         );
-      } catch (dbErr) {
-        console.warn('Prisma settings lookup failed, falling back to dataStore');
-      }
+      } catch (dbErr: any) {}
 
       if (!cachedSettingsData) {
         cachedSettingsData = dataStore.getCompanySettings();
@@ -34,13 +32,13 @@ export async function GET(req: NextRequest) {
       redactSettings(cachedSettingsData as any, Boolean(user), user?.role),
       {
         headers: {
-          'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
         },
       }
     );
   } catch (error) {
-    console.error('Error fetching settings:', error);
-    return NextResponse.json(redactSettings(dataStore.getCompanySettings() as any, true, 'SUPER_ADMIN'));
+    console.error('Settings API Error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -56,10 +54,20 @@ export async function PATCH(req: NextRequest) {
 
     const body = await req.json();
     cachedSettingsData = null;
-    const settings = await prisma.companySettings.update({
-      where: { id: 'global-settings' },
-      data: body,
-    });
+
+    let settings: any = null;
+    try {
+      settings = await prisma.companySettings.update({
+        where: { id: 'global-settings' },
+        data: body,
+      });
+    } catch (dbErr) {
+      settings = dataStore.updateCompanySettings(body);
+    }
+
+    if (!settings) {
+      settings = dataStore.updateCompanySettings(body);
+    }
 
     return NextResponse.json(redactSettings(settings as any, true, user.role));
   } catch (error) {

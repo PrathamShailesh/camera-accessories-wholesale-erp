@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Smartphone,
@@ -15,22 +15,29 @@ import {
   ShieldAlert,
   Warehouse,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
 import { User } from '@/types/erp';
 import { cn } from '@/lib/utils';
-import { fetchCurrentUserCached, fetchSettingsCached } from '@/lib/client-cache';
+import { fetchCurrentUserCached, getCurrentUserCachedSync, fetchSettingsCached, invalidateCurrentUser } from '@/lib/client-cache';
 import { Badge } from '@/components/ui/Badge';
 
 export default function DepotAppShell({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const pathname = usePathname();
-  const [currentUser, setCurrentUser] = useState<User>(dataStore.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<User>(
+    () => (getCurrentUserCachedSync()?.user as User) || ({
+      id: 'usr-admin',
+      name: 'Super Admin',
+      role: 'SUPER_ADMIN',
+      email: 'admin@arib.com',
+      status: 'ACTIVE',
+    } as User)
+  );
   const [settings, setSettings] = useState<any>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    setCurrentUser(dataStore.getCurrentUser());
 
     fetchCurrentUserCached().then((data) => {
       if (data?.authenticated && data.user) setCurrentUser(data.user);
@@ -58,7 +65,8 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      window.location.href = '/login';
+      invalidateCurrentUser();
+      router.push('/login');
     }
   };
 

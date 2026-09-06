@@ -315,29 +315,55 @@ export default function PrintableDocumentModal({
               </div>
             </div>
 
+            {/* Remarks Section */}
+            {data.notes && (
+              <div className="mt-4 text-xs text-black">
+                <span className="font-bold">Remarks:</span>
+                <span className="ml-2 font-normal">{data.notes}</span>
+              </div>
+            )}
+
             {/* Payments To Be Made To Reminder */}
-            <div className="text-xs text-black mt-4 mb-6">
+            <div className="text-xs text-black mt-4 mb-4">
               <div className="font-bold">Payments to be made to:</div>
               <div className="font-semibold uppercase">{settings.companyName || 'ARIB GLOBAL'}</div>
-              <div>Contact: {settings.phone || '+91 62827 59863'}</div>
+              <div>Contact: {settings.phone || '+971 4 800 0100'}</div>
             </div>
 
-            {/* Sign-off & Computer Generated Notice */}
-            <div className="flex justify-between items-end text-xs text-black pt-4">
-              <div>
-                <div className="font-bold uppercase">For {settings.companyName || 'ARIB GLOBAL'}</div>
-                <div className="mt-0.5">Contact: {settings.phone || '+91 62827 59863'}</div>
+            {/* Sign-off, Official Company Seal & Computer Generated Notice */}
+            <div className="flex justify-between items-end text-xs text-black pt-4 border-t border-slate-200 mt-4">
+              <div className="space-y-1">
+                <div className="font-bold uppercase tracking-wide text-slate-900">
+                  For {settings.companyName || 'ARIB GLOBAL GENERAL TRADING L.L.C'}
+                </div>
+                <div className="text-[11px] text-slate-600">Contact: {settings.phone || '+971 4 800 0100'}</div>
+                <div className="text-[10px] text-slate-500 font-mono">TRN: {settings.vatGstNumber || '100889218200001'}</div>
+                <div className="text-[9px] italic text-slate-600 pt-2 font-sans tracking-wide">
+                  <div>THIS IS A COMPUTER GENERATED DOCUMENT</div>
+                  <div>DIGITALLY AUTHENTICATED WITH OFFICIAL COMPANY SEAL</div>
+                </div>
               </div>
-              <div className="text-right text-[9px] italic text-slate-700 font-sans tracking-wide">
-                <div>THIS IS A COMPUTER GENERATED DOCUMENT</div>
-                <div>AND DOES NOT REQUIRE A SIGNATURE.</div>
-              </div>
-            </div>
 
-            {/* Remarks Section */}
-            <div className="mt-6 text-xs text-black">
-              <span className="font-bold">Remarks:</span>
-              {data.notes && <span className="ml-2 font-normal">{data.notes}</span>}
+              {/* Official Seal & Authorized Signatory */}
+              <div className="flex flex-col items-center justify-end text-center shrink-0">
+                <div className="relative flex items-center justify-center p-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={settings.sealUrl || '/arib-seal.png'}
+                    alt="ARIB GLOBAL Official Company Seal"
+                    className="h-28 w-28 object-contain shrink-0 select-none print:h-28 print:w-28"
+                    style={{ aspectRatio: '1 / 1' }}
+                  />
+                </div>
+                <div className="border-t border-slate-400 pt-1 w-36 text-center">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-900">
+                    Official Company Seal
+                  </div>
+                  <div className="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
+                    Authorized Signatory
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

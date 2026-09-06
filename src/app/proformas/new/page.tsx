@@ -20,7 +20,10 @@ import {
   Check,
   Building,
   Image as ImageIcon,
+  Sparkles,
 } from 'lucide-react';
+import AzurePdfExtractionModal from '@/components/documents/AzurePdfExtractionModal';
+import { ExtractedDocumentData } from '@/lib/azure-document-intelligence';
 import { formatUSD } from '@/lib/utils';
 import { Customer, Product, Depot, PaymentTerms } from '@/types/erp';
 import { Button, LinkButton } from '@/components/ui/Button';
@@ -51,6 +54,7 @@ function ProformaBuilder() {
   // Customer search & modal
   const [customerSearch, setCustomerSearch] = useState('');
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [newCustCompany, setNewCustCompany] = useState('');
   const [newCustContact, setNewCustContact] = useState('');
   const [newCustEmail, setNewCustEmail] = useState('');
@@ -116,6 +120,45 @@ function ProformaBuilder() {
     } catch (error) {
       console.error('Error loading proforma data:', error);
     }
+  };
+
+  const handleApplyAiExtraction = (data: ExtractedDocumentData) => {
+    // 1. Match customer
+    if (data.companyName || data.customerName || data.email) {
+      const match = customers.find(
+        (c) =>
+          (data.companyName && c.companyName.toLowerCase().includes(data.companyName.toLowerCase())) ||
+          (data.customerName && c.contactPerson.toLowerCase().includes(data.customerName.toLowerCase())) ||
+          (data.email && c.email.toLowerCase() === data.email.toLowerCase())
+      );
+      if (match) {
+        setSelectedCustomerId(match.id);
+      }
+    }
+
+    // 2. Populate line items
+    if (data.lineItems && data.lineItems.length > 0) {
+      const mapped = data.lineItems.map((item) => {
+        const prod =
+          products.find((p) => p.sku?.toLowerCase() === item.sku?.toLowerCase()) ||
+          products[0];
+        return {
+          productId: prod?.id || 'prod-custom',
+          quantity: item.quantity || 1,
+          unitPrice: item.unitPrice || prod?.sellingPrice || 100,
+          discountPercent: item.discount || 0,
+          selectedDepotId: depots[0]?.id || 'dep-dxb',
+        };
+      });
+      setItems(mapped);
+    }
+
+    if (data.shippingCharges) setShippingCost(data.shippingCharges);
+    if (data.paymentTerms) setPaymentTerms(data.paymentTerms);
+    if (data.notes) setNotes(data.notes);
+
+    // Jump to review step
+    setCurrentStep(5);
   };
 
   useEffect(() => {
@@ -281,6 +324,14 @@ function ProformaBuilder() {
         description="Multi-step wholesale quotation builder — from customer to send."
         actions={
           <>
+            <Button
+              variant="outline"
+              size="sm"
+              iconLeft={<Sparkles className="h-3.5 w-3.5 text-primary" />}
+              onClick={() => setIsAiModalOpen(true)}
+            >
+              Extract from PDF
+            </Button>
             <LinkButton href="/proformas" variant="outline" size="sm">
               Cancel
             </LinkButton>
@@ -361,14 +412,24 @@ function ProformaBuilder() {
               <h2 className="text-sm font-bold text-slate-900">Step 1: Select Wholesale Customer</h2>
               <p className="text-xs text-slate-500 mt-0.5">Choose an active client profile or register a new customer account</p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              iconLeft={<UserPlus className="h-3.5 w-3.5 text-brand-600" />}
-              onClick={() => setIsQuickAddOpen(true)}
-            >
-              + Quick Add Customer
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                iconLeft={<Sparkles className="h-3.5 w-3.5 text-primary" />}
+                onClick={() => setIsAiModalOpen(true)}
+              >
+                Extract from PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                iconLeft={<UserPlus className="h-3.5 w-3.5 text-brand-600" />}
+                onClick={() => setIsQuickAddOpen(true)}
+              >
+                + Quick Add Customer
+              </Button>
+            </div>
           </div>
 
           <div className="relative">
@@ -456,14 +517,17 @@ function ProformaBuilder() {
                     inItems ? 'border-brand-300 bg-brand-50/40' : 'border-slate-200 bg-white hover:bg-slate-50'
                   }`}
                 >
-                  <div className="h-12 w-12 rounded bg-slate-100 overflow-hidden border border-slate-200 shrink-0 flex items-center justify-center">
-                    {p.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <ImageIcon className="h-5 w-5 text-slate-400" />
-                    )}
-                  </div>
+                    <div className="h-12 w-12 rounded bg-slate-100 overflow-hidden border border-slate-200 shrink-0 flex items-center justify-center p-1">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/placeholder-product.svg"
+                        alt={p.name}
+                        className="h-full w-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder-product.svg';
+                        }}
+                      />
+                    </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-xs font-bold text-slate-900 truncate">{p.name}</div>
                     <div className="text-[11px] font-mono text-slate-500">{p.sku}</div>
@@ -492,13 +556,16 @@ function ProformaBuilder() {
                 const prod = products.find((p) => p.id === item.productId);
                 return (
                   <div key={idx} className="flex items-center gap-3 p-2.5 rounded-md border border-slate-200 bg-slate-50/50 text-xs">
-                    <div className="h-9 w-9 rounded bg-white overflow-hidden border border-slate-200 shrink-0 flex items-center justify-center">
-                      {prod?.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={prod.imageUrl} alt={prod.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <ImageIcon className="h-4 w-4 text-slate-400" />
-                      )}
+                    <div className="h-9 w-9 rounded bg-white overflow-hidden border border-slate-200 shrink-0 flex items-center justify-center p-0.5">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/placeholder-product.svg"
+                        alt={prod?.name || 'Product'}
+                        className="h-full w-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder-product.svg';
+                        }}
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-slate-900 truncate">{prod?.name || 'Select equipment'}</div>
@@ -842,6 +909,17 @@ function ProformaBuilder() {
           </div>
         </div>
       )}
+
+      <AzurePdfExtractionModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onApplyToProforma={handleApplyAiExtraction}
+        onSuccess={(result) => {
+          if (result?.redirectUrl) {
+            router.push(result.redirectUrl);
+          }
+        }}
+      />
     </div>
   );
 }

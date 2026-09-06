@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guardApi, depotIdFilter } from '@/lib/api-auth';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'dashboard.view');
@@ -9,30 +10,43 @@ export async function GET(req: NextRequest) {
   try {
     const depotId = depotIdFilter(auth.user);
     const invoiceWhere = depotId ? { depotId, fulfilmentStatus: { not: 'CANCELLED' as const } } : { fulfilmentStatus: { not: 'CANCELLED' as const } };
-    const [invoices, serviceInvoices, products, inventory] = await Promise.all([
-      prisma.taxInvoice.findMany({
-        where: invoiceWhere,
-        select: { grandTotal: true, items: { select: { productId: true, quantity: true, unitPrice: true } } },
-      }),
-      (prisma as any).serviceInvoice.findMany({
-        where: { status: { not: 'CANCELLED' } },
-        select: { grandTotal: true },
-      }),
-      prisma.product.findMany({
-        select: { id: true, name: true, sku: true, brand: true, categoryName: true, purchasePrice: true, sellingPrice: true },
-      }),
-      prisma.depotInventory.findMany({ where: depotId ? { depotId } : undefined, select: { quantity: true } }),
-    ]);
+    
+    let invoices: any[] = [];
+    let serviceInvoices: any[] = [];
+    let products: any[] = [];
+    let inventory: any[] = [];
 
-    const productRevenue = invoices.reduce((s, i) => s + i.grandTotal, 0);
+    try {
+      [invoices, serviceInvoices, products, inventory] = await Promise.all([
+        prisma.taxInvoice.findMany({
+          where: invoiceWhere,
+          select: { grandTotal: true, items: { select: { productId: true, quantity: true, unitPrice: true } } },
+        }),
+        (prisma as any).serviceInvoice.findMany({
+          where: { status: { not: 'CANCELLED' } },
+          select: { grandTotal: true },
+        }),
+        prisma.product.findMany({
+          select: { id: true, name: true, sku: true, brand: true, categoryName: true, purchasePrice: true, sellingPrice: true },
+        }),
+        prisma.depotInventory.findMany({ where: depotId ? { depotId } : undefined, select: { quantity: true } }),
+      ]);
+    } catch {
+      invoices = dataStore.getInvoices(depotId ? { depotId } : undefined);
+      serviceInvoices = dataStore.getServiceInvoices();
+      products = dataStore.getProducts();
+      inventory = products.map((p) => ({ quantity: p.totalStock || 0 }));
+    }
+
+    const productRevenue = invoices.reduce((s, i) => s + (i.grandTotal || 0), 0);
     const serviceRevenue = serviceInvoices.reduce((s: number, i: any) => s + (i.grandTotal || 0), 0);
     const revenue = productRevenue + serviceRevenue;
-    const units = inventory.reduce((s, i) => s + i.quantity, 0);
+    const units = inventory.reduce((s, i) => s + (i.quantity || 0), 0);
 
     const productById = new Map(products.map((p) => [p.id, p]));
     const itemsByProduct = new Map<string, { quantity: number; unitPrice: number }[]>();
     for (const inv of invoices) {
-      for (const item of inv.items) {
+      for (const item of inv.items || []) {
         const bucket = itemsByProduct.get(item.productId);
         if (bucket) bucket.push(item);
         else itemsByProduct.set(item.productId, [item]);
@@ -42,7 +56,7 @@ export async function GET(req: NextRequest) {
     const cost = invoices.reduce(
       (s, i) =>
         s +
-        i.items.reduce((x, item) => x + item.quantity * (productById.get(item.productId)?.purchasePrice || 0), 0),
+        (i.items || []).reduce((x: number, item: any) => x + (item.quantity || 0) * (productById.get(item.productId)?.purchasePrice || 0), 0),
       0
     );
     const stats = {
@@ -56,11 +70,24 @@ export async function GET(req: NextRequest) {
     const insights: any[] = [];
     const profitability = products.map((p) => {
       const sold = itemsByProduct.get(p.id) || [];
-      const unitsSold = sold.reduce((sum, item) => sum + item.quantity, 0);
-      const totalRevenue = sold.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-      const totalCost = unitsSold * p.purchasePrice;
+      const unitsSold = sold.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      const totalRevenue = sold.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
+      const totalCost = unitsSold * (p.purchasePrice || 0);
       const grossProfit = totalRevenue - totalCost;
-      return { productId: p.id, productName: p.name, sku: p.sku, brand: p.brand, categoryName: p.categoryName || 'General', unitsSold, totalRevenue, totalCost, grossProfit, grossMarginPercent: totalRevenue ? Number(((grossProfit / totalRevenue) * 100).toFixed(1)) : 0, averageSellingPrice: unitsSold ? totalRevenue / unitsSold : p.sellingPrice, averagePurchasePrice: p.purchasePrice };
+      return {
+        productId: p.id,
+        productName: p.name,
+        sku: p.sku,
+        brand: p.brand,
+        categoryName: p.categoryName || 'General',
+        unitsSold,
+        totalRevenue,
+        totalCost,
+        grossProfit,
+        grossMarginPercent: totalRevenue ? Number(((grossProfit / totalRevenue) * 100).toFixed(1)) : 0,
+        averageSellingPrice: unitsSold ? totalRevenue / unitsSold : p.sellingPrice || 0,
+        averagePurchasePrice: p.purchasePrice || 0,
+      };
     });
 
     return NextResponse.json({
@@ -70,6 +97,6 @@ export async function GET(req: NextRequest) {
       profitability,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to fetch stats' }, { status: 500 });
   }
 }

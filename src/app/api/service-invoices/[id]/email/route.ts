@@ -116,7 +116,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
       return NextResponse.json({
         success: true,
-        message: `Service Invoice sent successfully to ${recipient}`,
+        simulated: !transporter.isConfigured,
+        message: transporter.isConfigured
+          ? `Service Invoice sent successfully to ${recipient}`
+          : `SMTP is not configured, so the email was logged but not delivered. Add SMTP credentials in Settings.`,
       });
     } catch (sendErr: any) {
       await (prisma as any).serviceInvoice.update({

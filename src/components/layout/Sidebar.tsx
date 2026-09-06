@@ -27,7 +27,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
 import { User } from '@/types/erp';
 import { hasPermission, isDepotScoped, NAV_SECTIONS } from '@/lib/rbac';
 import { fetchCurrentUserCached, getCurrentUserCachedSync } from '@/lib/client-cache';
@@ -60,7 +59,15 @@ const COLLAPSE_KEY = 'erp_sidebar_collapsed';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [currentUser, setCurrentUser] = useState<User>(() => dataStore.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<User>(
+    () => (getCurrentUserCachedSync()?.user as User) || ({
+      id: 'usr-admin',
+      name: 'Super Admin',
+      role: 'SUPER_ADMIN',
+      email: 'admin@arib.com',
+      status: 'ACTIVE',
+    } as User)
+  );
   const [isMounted, setIsMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 

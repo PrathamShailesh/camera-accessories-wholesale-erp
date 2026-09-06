@@ -9,9 +9,25 @@ export async function GET(req: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
+    const q = req.nextUrl.searchParams.get('q')?.trim();
     const { take, skip } = parsePagination(req);
+
+    const where = q
+      ? {
+          OR: [
+            { companyName: { contains: q, mode: 'insensitive' as const } },
+            { contactPerson: { contains: q, mode: 'insensitive' as const } },
+            { customerCode: { contains: q, mode: 'insensitive' as const } },
+            { email: { contains: q, mode: 'insensitive' as const } },
+            { phone: { contains: q, mode: 'insensitive' as const } },
+            { country: { contains: q, mode: 'insensitive' as const } },
+          ],
+        }
+      : undefined;
+
     const customers = await withDbTimeout(() =>
       prisma.customer.findMany({
+        where,
         orderBy: { createdAt: 'desc' },
         take,
         skip,
@@ -19,9 +35,21 @@ export async function GET(req: NextRequest) {
     );
     return NextResponse.json(customers);
   } catch (error) {
-    console.error('Error fetching customers from DB, using fallback:', error);
     try {
-      return NextResponse.json(dataStore.getCustomers());
+      const q = req.nextUrl.searchParams.get('q')?.trim()?.toLowerCase();
+      let list = dataStore.getCustomers();
+      if (q) {
+        list = list.filter(
+          (c) =>
+            c.companyName.toLowerCase().includes(q) ||
+            c.contactPerson.toLowerCase().includes(q) ||
+            c.customerCode.toLowerCase().includes(q) ||
+            c.email.toLowerCase().includes(q) ||
+            (c.phone && c.phone.toLowerCase().includes(q)) ||
+            (c.country && c.country.toLowerCase().includes(q))
+        );
+      }
+      return NextResponse.json(list);
     } catch {
       return NextResponse.json([]);
     }
@@ -34,24 +62,84 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    
-    // Generate customer code
-    const lastCustomer = await prisma.customer.findFirst({
-      orderBy: { createdAt: 'desc' },
-    });
-    const lastNumber = lastCustomer ? parseInt(lastCustomer.customerCode.split('-')[2]) : 0;
-    const customerCode = `CUST-${body.country.substring(0, 3).toUpperCase()}-${String(lastNumber + 1).padStart(3, '0')}`;
+    const cleanEmail = body.email?.trim().toLowerCase();
+    if (!cleanEmail) {
+      return NextResponse.json({ error: 'Customer email is required' }, { status: 400 });
+    }
+    if (!body.companyName?.trim()) {
+      return NextResponse.json({ error: 'Company name is required' }, { status: 400 });
+    }
 
-    const customer = await prisma.customer.create({
-      data: {
+    // Duplicate email check
+    try {
+      const existingCustomer = await prisma.customer.findFirst({
+        where: { email: { equals: cleanEmail, mode: 'insensitive' } },
+      });
+      if (existingCustomer) {
+        return NextResponse.json({ error: `Customer with email "${cleanEmail}" already exists` }, { status: 409 });
+      }
+    } catch {
+      const storeExisting = dataStore.getCustomers().find((c) => c.email.toLowerCase() === cleanEmail);
+      if (storeExisting) {
+        return NextResponse.json({ error: `Customer with email "${cleanEmail}" already exists` }, { status: 409 });
+      }
+    }
+    
+    // Attempt DB creation
+    let customer;
+    try {
+      // Generate customer code
+      const lastCustomer = await prisma.customer.findFirst({
+        orderBy: { createdAt: 'desc' },
+      });
+      const lastNumber = lastCustomer && lastCustomer.customerCode?.split('-')?.[2] ? parseInt(lastCustomer.customerCode.split('-')[2]) : 0;
+      const customerCode = `CUST-${(body.country || 'UAE').substring(0, 3).toUpperCase()}-${String((isNaN(lastNumber) ? 0 : lastNumber) + 1).padStart(3, '0')}`;
+
+      customer = await prisma.customer.create({
+        data: {
+          companyName: body.companyName.trim(),
+          contactPerson: body.contactPerson?.trim() || body.companyName.trim(),
+          email: cleanEmail,
+          phone: body.phone?.trim() || null,
+          billingAddress: body.billingAddress?.trim() || 'Dubai, UAE',
+          shippingAddress: body.shippingAddress?.trim() || body.billingAddress?.trim() || 'Dubai, UAE',
+          country: body.country?.trim() || 'United Arab Emirates',
+          taxNumber: body.taxNumber?.trim() || 'TAX-PENDING',
+          paymentTerms: body.paymentTerms || 'NET_30',
+          creditLimit: Number(body.creditLimit) || 50000,
+          currentBalance: 0,
+          notes: body.notes?.trim() || null,
+          status: body.status || 'ACTIVE',
+          customerCode,
+          totalOrders: 0,
+          totalSpent: 0,
+        },
+      });
+      dataStore.createCustomer({
+        ...customer,
+      });
+    } catch (dbError) {
+      console.error('Customer DB error:', dbError);
+      const customers = dataStore.getCustomers();
+      const lastCustomer = customers[0];
+      const lastNumber = lastCustomer && lastCustomer.customerCode?.split('-')?.[2] ? parseInt(lastCustomer.customerCode.split('-')[2]) : customers.length;
+      const customerCode = `CUST-${(body.country || 'UAE').substring(0, 3).toUpperCase()}-${String((isNaN(lastNumber) ? customers.length : lastNumber) + 1).padStart(3, '0')}`;
+      
+      customer = dataStore.createCustomer({
         ...body,
         customerCode,
-        currentBalance: 0,
-        status: 'ACTIVE',
-        totalOrders: 0,
-        totalSpent: 0,
-      },
-    });
+      });
+
+      try {
+        dataStore.addAuditLog({
+          action: 'USER_PERMISSION_CHANGE' as any,
+          entityType: 'CUSTOMER',
+          entityId: customer.id,
+          entityLabel: customer.companyName,
+          description: `Created customer account for ${customer.companyName}`,
+        });
+      } catch {}
+    }
 
     return NextResponse.json(customer, { status: 201 });
   } catch (error) {

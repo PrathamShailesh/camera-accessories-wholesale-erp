@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   FileCheck2,
   PlusCircle,
@@ -9,11 +10,15 @@ import {
   Printer,
   Receipt,
   CheckCircle,
-  AlertCircle,
   FileText,
   Plus,
+  Trash2,
+  XCircle,
+  AlertCircle,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/ui/Modal';
 import { formatUSD, formatDate } from '@/lib/utils';
 import { Proforma } from '@/types/erp';
 import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
@@ -26,44 +31,59 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { fetchWithCache } from '@/lib/client-cache';
 
 export default function ProformasPage() {
+  const router = useRouter();
+  const { toast } = useToast();
   const [proformas, setProformas] = useState<Proforma[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [selectedDoc, setSelectedDoc] = useState<Proforma | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [deletingProforma, setDeletingProforma] = useState<Proforma | null>(null);
+  const [cancellingProforma, setCancellingProforma] = useState<Proforma | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const loadData = async (force = false) => {
+  const loadData = async (force = false, activeRef?: { current: boolean }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await fetchWithCache<Proforma[]>('/api/proformas', undefined, force ? 0 : 15000);
+      const qParams = new URLSearchParams();
+      if (debouncedSearch) qParams.set('q', debouncedSearch);
+      if (filterStatus && filterStatus !== 'ALL') qParams.set('status', filterStatus);
+      const url = `/api/proformas${qParams.toString() ? `?${qParams.toString()}` : ''}`;
+      const data = await fetchWithCache<Proforma[]>(url, undefined, force ? 0 : 5000);
+      if (activeRef && !activeRef.current) return;
       if (Array.isArray(data)) {
         setProformas(data);
       } else {
         setProformas([]);
       }
     } catch (err: any) {
+      if (activeRef && !activeRef.current) return;
       if (err?.message?.includes('401')) {
-        window.location.href = '/login?next=/proformas';
+        router.push('/login?next=/proformas');
         return;
       }
-      const fallback = dataStore.getProformas();
-      if (fallback && fallback.length > 0) {
-        setProformas(fallback);
-      } else {
-        setError('Something went wrong. Please try again.');
-        setProformas([]);
-      }
+      setError(err?.message || 'Something went wrong. Please try again.');
+      setProformas([]);
     } finally {
-      setIsLoading(false);
+      if (!activeRef || activeRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    loadData();
+    const activeRef = { current: true };
+    loadData(true, activeRef);
+    return () => {
+      activeRef.current = false;
+    };
+  }, [debouncedSearch, filterStatus]);
 
+  useEffect(() => {
     let eventSource: EventSource | null = null;
     try {
       eventSource = new EventSource('/api/events');
@@ -91,6 +111,7 @@ export default function ProformasPage() {
         body: JSON.stringify({ status: 'CONFIRMED' }),
       });
       if (res.ok) {
+        toast({ title: 'Proforma approved', variant: 'success' });
         loadData(true);
       }
     } catch (err) {
@@ -100,14 +121,56 @@ export default function ProformasPage() {
     }
   };
 
+  const confirmCancel = async () => {
+    if (!cancellingProforma) return;
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`/api/proformas/${cancellingProforma.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'CANCELLED' }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to cancel proforma');
+      }
+      toast({ title: 'Proforma quotation cancelled', variant: 'success' });
+      setCancellingProforma(null);
+      loadData(true);
+    } catch (err: any) {
+      toast({ title: err.message || 'Could not cancel proforma', variant: 'error' });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingProforma) return;
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`/api/proformas/${deletingProforma.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to delete proforma');
+      }
+      toast({ title: 'Proforma deleted', variant: 'success' });
+      setDeletingProforma(null);
+      loadData(true);
+    } catch (err: any) {
+      toast({ title: err.message || 'Could not delete proforma', variant: 'error' });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const filteredProformas = proformas.filter((pf) => {
     if (filterStatus !== 'ALL' && pf.status !== filterStatus) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const match =
-        pf.proformaNumber.toLowerCase().includes(q) ||
-        pf.customerCompany.toLowerCase().includes(q) ||
-        pf.customerName.toLowerCase().includes(q);
+        (pf.proformaNumber || '').toLowerCase().includes(q) ||
+        (pf.customerCompany || '').toLowerCase().includes(q) ||
+        (pf.customerName || '').toLowerCase().includes(q);
       if (!match) return false;
     }
     return true;
@@ -270,6 +333,28 @@ export default function ProformasPage() {
                       <LinkButton href={`/proformas/${pf.id}`} size="sm" variant="secondary">
                         View
                       </LinkButton>
+
+                      {pf.status !== 'CONVERTED' && pf.status !== 'CANCELLED' && (
+                        <button
+                          type="button"
+                          onClick={() => setCancellingProforma(pf)}
+                          className="p-1.5 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                          title="Cancel Proforma"
+                        >
+                          <XCircle className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+
+                      {(pf.status === 'DRAFT' || pf.status === 'CANCELLED') && (
+                        <button
+                          type="button"
+                          onClick={() => setDeletingProforma(pf)}
+                          className="p-1.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          title="Delete Proforma"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -282,12 +367,34 @@ export default function ProformasPage() {
       {/* Printable Modal */}
       {selectedDoc && (
         <PrintableDocumentModal
-          isOpen={true}
+          isOpen={!!selectedDoc}
           onClose={() => setSelectedDoc(null)}
           documentType="PROFORMA"
           data={selectedDoc}
         />
       )}
+
+      <ConfirmDialog
+        open={cancellingProforma !== null}
+        onClose={() => setCancellingProforma(null)}
+        onConfirm={confirmCancel}
+        title={`Cancel Proforma ${cancellingProforma?.proformaNumber}?`}
+        description="This will mark the proforma as CANCELLED. It can no longer be converted to a Tax Invoice."
+        confirmLabel="Cancel Quotation"
+        destructive
+        loading={isProcessing}
+      />
+
+      <ConfirmDialog
+        open={deletingProforma !== null}
+        onClose={() => setDeletingProforma(null)}
+        onConfirm={confirmDelete}
+        title={`Delete Proforma ${deletingProforma?.proformaNumber}?`}
+        description="Are you sure you want to permanently delete this quotation record? This action cannot be undone."
+        confirmLabel="Delete Proforma"
+        destructive
+        loading={isProcessing}
+      />
     </div>
   );
 }

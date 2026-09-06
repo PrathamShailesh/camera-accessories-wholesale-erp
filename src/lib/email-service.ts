@@ -547,10 +547,17 @@ export async function sendProformaEmail(
   proformaId: string,
   appUrl?: string
 ): Promise<SendProformaEmailResult> {
-  const proforma = await prisma.proforma.findFirst({
-    where: { OR: [{ id: proformaId }, { proformaNumber: proformaId }] },
-    include: { items: true },
-  });
+  let proforma: any = null;
+  try {
+    proforma = await prisma.proforma.findFirst({
+      where: { OR: [{ id: proformaId }, { proformaNumber: proformaId }] },
+      include: { items: true },
+    });
+  } catch {}
+
+  if (!proforma) {
+    proforma = dataStore.getProformaById(proformaId);
+  }
 
   if (!proforma) {
     return { success: false, message: 'Proforma not found.' };

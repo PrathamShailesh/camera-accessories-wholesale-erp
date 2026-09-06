@@ -11,7 +11,6 @@ import {
   ArrowRight,
   AlertCircle,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
 import { formatUSD } from '@/lib/utils';
 import { Depot } from '@/types/erp';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -34,11 +33,9 @@ export default function DepotsPage() {
         setDepots(Array.isArray(data) ? data : []);
       } else {
         setError('Failed to load depots');
-        setDepots(dataStore.getDepots());
       }
     } catch {
       setError('Something went wrong. Please try again.');
-      setDepots(dataStore.getDepots());
     } finally {
       setIsLoading(false);
     }

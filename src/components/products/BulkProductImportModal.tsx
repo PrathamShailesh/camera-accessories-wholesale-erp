@@ -115,7 +115,6 @@ export default function BulkProductImportModal({
             'stock',
             'minStockLevel',
             'trackSerial',
-            'imageUrl',
           ];
 
     const sampleRows =
@@ -141,7 +140,6 @@ export default function BulkProductImportModal({
               stock: 25,
               minStockLevel: 10,
               trackSerial: 'TRUE',
-              imageUrl: '',
             },
             {
               sku: 'CANON-RF-50-12',
@@ -158,7 +156,6 @@ export default function BulkProductImportModal({
               stock: 15,
               minStockLevel: 5,
               trackSerial: 'TRUE',
-              imageUrl: '',
             },
             {
               sku: 'DJI-RONIN-RS3-PRO',
@@ -175,7 +172,6 @@ export default function BulkProductImportModal({
               stock: 30,
               minStockLevel: 8,
               trackSerial: 'TRUE',
-              imageUrl: '',
             },
           ];
 
@@ -283,7 +279,6 @@ export default function BulkProductImportModal({
             }
           });
 
-          // Check generic stock / quantity columns
           const genericStockVal = getVal(
             'stock',
             'quantity',
@@ -301,7 +296,12 @@ export default function BulkProductImportModal({
             depotBreakdown[primaryDepot.id] = genericStock;
           }
 
-          const totalStock = Object.values(depotBreakdown).reduce((sum, q) => sum + q, 0);
+          // If depotBreakdown is empty (e.g. depots didn't load), preserve the generic stock 
+          // so the backend can assign it to its own primary depot.
+          let totalStock = Object.values(depotBreakdown).reduce((sum, q) => sum + q, 0);
+          if (totalStock === 0 && genericStock > 0 && Object.keys(depotBreakdown).length === 0) {
+            totalStock = genericStock;
+          }
 
           // Create-mode specific fields
           const name = importMode === 'CREATE' ? getVal('name', 'productName', 'title', 'item_name') : sku;
@@ -313,7 +313,7 @@ export default function BulkProductImportModal({
           const model = getVal('model', 'model_number', 'series');
           const description = getVal('description', 'details', 'specs');
           const barcode = getVal('barcode', 'ean', 'upc');
-          const imageUrl = getVal('imageUrl', 'image', 'photoUrl', 'photo_url') || '/placeholder-product.svg';
+          const imageUrl = '/placeholder-product.svg';
 
           const purchasePrice = parseFloat(getVal('purchasePrice', 'cost', 'costPrice', 'purchase_price')) || 0;
           const wholesalePrice = parseFloat(getVal('wholesalePrice', 'wholesale_price', 'price', 'wholesale')) || purchasePrice;
@@ -388,7 +388,7 @@ export default function BulkProductImportModal({
         taxRate: r.taxRate,
         minStockLevel: r.minStockLevel,
         trackSerial: r.trackSerial,
-        imageUrl: r.imageUrl || '/placeholder-product.svg',
+        imageUrl: '/placeholder-product.svg',
         stock: r.stock,
         depotBreakdown: r.depotBreakdown,
       }));

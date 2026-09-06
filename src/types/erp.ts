@@ -505,6 +505,7 @@ export interface CompanySettings {
   companyName: string;
   tradingName: string;
   logoUrl: string;
+  sealUrl?: string;
   taxRegistrationNumber: string;
   vatGstNumber: string;
   companyAddress: string;

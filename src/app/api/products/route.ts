@@ -11,9 +11,23 @@ export async function GET(req: NextRequest) {
   try {
     const depotFilter = depotIdFilter(auth.user);
     const { take, skip } = parsePagination(req, { defaultLimit: 50, maxLimit: 200 });
+    const q = req.nextUrl.searchParams.get('q')?.trim();
+
+    const where: any = {};
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { sku: { contains: q, mode: 'insensitive' } },
+        { brand: { contains: q, mode: 'insensitive' } },
+        { model: { contains: q, mode: 'insensitive' } },
+        { barcode: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
     const [products, depots] = await withDbTimeout(() =>
       Promise.all([
         prisma.product.findMany({
+          where: Object.keys(where).length > 0 ? where : undefined,
           select: {
             id: true,
             sku: true,
@@ -81,7 +95,7 @@ export async function GET(req: NextRequest) {
         categoryName: product.category?.name || product.categoryName || 'General Optics',
         subcategory: product.subcategory || '',
         description: product.description || '',
-        imageUrl: product.imageUrl || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800',
+        imageUrl: '/placeholder-product.svg',
         barcode: product.barcode,
         trackSerial: product.trackSerial,
         purchasePrice: product.purchasePrice,
@@ -108,7 +122,18 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching products from DB, using fallback:', error);
     try {
-      const fallbackProducts = dataStore.getProducts().map((p) =>
+      const q = req.nextUrl.searchParams.get('q')?.trim()?.toLowerCase();
+      let list = dataStore.getProducts();
+      if (q) {
+        list = list.filter((p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.sku.toLowerCase().includes(q) ||
+          p.brand.toLowerCase().includes(q) ||
+          (p.model && p.model.toLowerCase().includes(q)) ||
+          (p.barcode && p.barcode.toLowerCase().includes(q))
+        );
+      }
+      const fallbackProducts = list.map((p) =>
         sanitizeProductForRole(p as any, auth.user.role)
       );
       return NextResponse.json(fallbackProducts);
@@ -213,7 +238,7 @@ export async function POST(req: NextRequest) {
           categoryId: category?.id || 'cat-1',
           categoryName: category?.name || catName,
           description: description?.trim() || '',
-          imageUrl: imageUrl?.trim() || '',
+          imageUrl: '/placeholder-product.svg',
           barcode: cleanBarcode,
           trackSerial: Boolean(trackSerial),
           purchasePrice: Number(purchasePrice) || 0,
@@ -305,7 +330,7 @@ export async function POST(req: NextRequest) {
       categoryId: category?.id || 'cat-1',
       categoryName: category?.name || catName,
       description: description?.trim() || '',
-      imageUrl: imageUrl?.trim() || '',
+      imageUrl: '/placeholder-product.svg',
       barcode: cleanBarcode,
       trackSerial: Boolean(trackSerial),
       purchasePrice: Number(purchasePrice) || 0,

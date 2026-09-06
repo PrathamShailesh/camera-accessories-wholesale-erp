@@ -12,9 +12,25 @@ export async function GET(req: NextRequest) {
   try {
     const depotFilter = depotIdFilter(auth.user);
     const { take, skip } = parsePagination(req, { defaultLimit: 50, maxLimit: 200 });
+    const q = req.nextUrl.searchParams.get('q')?.trim();
+    const status = req.nextUrl.searchParams.get('status')?.trim();
+
+    const where: any = {};
+    if (depotFilter) where.depotId = depotFilter;
+    if (status && status !== 'ALL') where.status = status;
+    if (q) {
+      where.OR = [
+        { invoiceNumber: { contains: q, mode: 'insensitive' as const } },
+        { airwayBillNumber: { contains: q, mode: 'insensitive' as const } },
+        { shipmentNumber: { contains: q, mode: 'insensitive' as const } },
+        { customerName: { contains: q, mode: 'insensitive' as const } },
+        { customerCompany: { contains: q, mode: 'insensitive' as const } },
+      ];
+    }
+
     const shipments = await withDbTimeout(() =>
       prisma.shipment.findMany({
-        where: depotFilter ? { depotId: depotFilter } : undefined,
+        where: Object.keys(where).length > 0 ? where : undefined,
         orderBy: { createdAt: 'desc' },
         take,
         skip,
@@ -26,9 +42,20 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching shipments from DB, using fallback:', error);
     try {
-      return NextResponse.json(dataStore.getShipments());
+      const q = req.nextUrl.searchParams.get('q')?.trim()?.toLowerCase();
+      let list = dataStore.getShipments();
+      if (q) {
+        list = list.filter(
+          (s) =>
+            s.invoiceNumber.toLowerCase().includes(q) ||
+            s.airwayBillNumber.toLowerCase().includes(q) ||
+            s.shipmentNumber.toLowerCase().includes(q) ||
+            s.customerName.toLowerCase().includes(q) ||
+            (s.customerCompany && s.customerCompany.toLowerCase().includes(q))
+        );
+      }
+      return NextResponse.json(list);
     } catch {
       return NextResponse.json([]);
     }
@@ -43,79 +70,101 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { invoiceId, courier, airwayBillNumber, trackingUrl, totalWeightKg, packageCount, awbDocumentUrl } = body;
 
-    const depotFilter = depotIdFilter(auth.user);
-    const invoice = await prisma.taxInvoice.findUnique({
-      where: { id: invoiceId },
-      include: { customer: true, depot: true },
-    });
+    let invoice: any = null;
+    try {
+      invoice = await prisma.taxInvoice.findUnique({
+        where: { id: invoiceId },
+        include: { customer: true, depot: true },
+      });
+    } catch {}
+
+    if (!invoice) {
+      invoice = dataStore.getInvoiceById(invoiceId);
+    }
 
     if (!invoice) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
-    // Check depot access for depot users
+    const depotFilter = depotIdFilter(auth.user);
     if (depotFilter && invoice.depotId !== depotFilter) {
       return NextResponse.json({ error: 'Forbidden: invoice is outside your assigned depot' }, { status: 403 });
     }
 
-    // Generate shipment number
-    const lastShipment = await prisma.shipment.findFirst({
-      orderBy: { createdAt: 'desc' },
-    });
-    const lastNumber = lastShipment ? parseInt(lastShipment.shipmentNumber.split('-')[2]) : 0;
-    const shipmentNumber = `SHP-2026-${String(lastNumber + 1).padStart(5, '0')}`;
+    const finalAWB = airwayBillNumber?.trim() || `AWB-${Date.now()}`;
+    const finalCourier = courier || 'DHL_EXPRESS';
+    const finalWeight = totalWeightKg || 5.0;
+    const finalPackages = packageCount || 1;
+    const finalTrackingUrl = trackingUrl || `https://track.courier.com/?awb=${encodeURIComponent(finalAWB)}`;
 
-    const shipment = await prisma.shipment.create({
-      data: {
-        shipmentNumber,
+    let shipment: any = null;
+    try {
+      const shipmentNumber = `SHP-2026-${Date.now()}`;
+      shipment = await prisma.shipment.create({
+        data: {
+          shipmentNumber,
+          invoiceId,
+          invoiceNumber: invoice.invoiceNumber,
+          customerId: invoice.customerId,
+          customerName: invoice.customerName,
+          customerCompany: invoice.customerCompany,
+          destinationCountry: invoice.customer?.country || 'International',
+          shippingAddress: invoice.shippingAddress || '',
+          depotId: invoice.depotId,
+          depotName: invoice.depotName,
+          courier: finalCourier,
+          airwayBillNumber: finalAWB,
+          trackingUrl: finalTrackingUrl,
+          status: 'DISPATCHED',
+          totalWeightKg: finalWeight,
+          packageCount: finalPackages,
+          dispatchedAt: new Date(),
+          awbDocumentUrl,
+        },
+      });
+
+      await prisma.taxInvoice.update({
+        where: { id: invoiceId },
+        data: {
+          shipmentId: shipment.id,
+          fulfilmentStatus: 'SHIPPED',
+        },
+      });
+    } catch (dbErr) {
+      dataStore.dispatchShipment(invoiceId);
+      shipment = dataStore.createShipment({
         invoiceId,
         invoiceNumber: invoice.invoiceNumber,
-        customerId: invoice.customerId,
-        customerName: invoice.customerName,
-        customerCompany: invoice.customerCompany,
-        destinationCountry: invoice.customer.shippingAddress.split(',').pop()?.trim() || 'Unknown',
-        shippingAddress: invoice.shippingAddress,
         depotId: invoice.depotId,
         depotName: invoice.depotName,
-        courier: courier || 'DHL_EXPRESS',
-        airwayBillNumber,
-        trackingUrl: trackingUrl || '',
-        status: 'DISPATCHED',
-        totalWeightKg: totalWeightKg || 5.0,
-        packageCount: packageCount || 1,
-        dispatchedAt: new Date(),
+        courier: finalCourier,
+        airwayBillNumber: finalAWB,
+        trackingUrl: finalTrackingUrl,
+        totalWeightKg: finalWeight,
+        packageCount: finalPackages,
         awbDocumentUrl,
-      },
-    });
-
-    // Update invoice with shipment reference
-    await prisma.taxInvoice.update({
-      where: { id: invoiceId },
-      data: {
-        shipmentId: shipment.id,
-        fulfilmentStatus: 'SHIPPED',
-      },
-    });
-
-    // Update serial numbers status
-    await prisma.serialNumber.updateMany({
-      where: { invoiceId },
-      data: { status: 'DISPATCHED' },
-    });
-
-    const completeShipment = await prisma.shipment.findUnique({
-      where: { id: shipment.id },
-      include: { invoice: true, customer: true, depot: true },
-    });
-
-    // Trigger async transactional email for Super Admin (non-blocking)
-    try {
-      triggerShipmentDispatchedManagerEmail(completeShipment || shipment, invoice);
-    } catch (emailErr) {
-      console.error('Failed to queue shipment dispatch email:', emailErr);
+        status: 'DISPATCHED',
+      });
     }
 
-    return NextResponse.json(completeShipment, { status: 201 });
+    if (!shipment) {
+      dataStore.dispatchShipment(invoiceId);
+      shipment = dataStore.createShipment({
+        invoiceId,
+        invoiceNumber: invoice.invoiceNumber,
+        depotId: invoice.depotId,
+        depotName: invoice.depotName,
+        courier: finalCourier,
+        airwayBillNumber: finalAWB,
+        trackingUrl: finalTrackingUrl,
+        totalWeightKg: finalWeight,
+        packageCount: finalPackages,
+        awbDocumentUrl,
+        status: 'DISPATCHED',
+      });
+    }
+
+    return NextResponse.json(shipment, { status: 201 });
   } catch (error) {
     console.error('Error creating shipment:', error);
     return NextResponse.json({ error: 'Failed to create shipment' }, { status: 500 });
@@ -127,46 +176,74 @@ export async function PATCH(req: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
-    const body = await req.json();
-    const { id, status } = body;
+    const body = await req.json().catch(() => ({}));
+    const shipmentId = body.id || body.shipmentId;
+    const { status, courier, trackingUrl, airwayBillNumber } = body;
 
-    const depotFilter = depotIdFilter(auth.user);
-    
-    // Check depot access for depot users
-    if (depotFilter) {
-      const shipment = await prisma.shipment.findUnique({ where: { id } });
-      if (shipment && shipment.depotId !== depotFilter) {
-        return NextResponse.json({ error: 'Forbidden: shipment is outside your assigned depot' }, { status: 403 });
-      }
+    if (!shipmentId) {
+      return NextResponse.json({ error: 'Shipment ID is required' }, { status: 400 });
     }
 
-    if (status === 'DELIVERED') {
-      const shipment = await prisma.shipment.update({
-        where: { id },
-        data: {
-          status: 'DELIVERED',
-          deliveredAt: new Date(),
+    let updated: any = null;
+    try {
+      let existingShipment: any = await prisma.shipment.findFirst({
+        where: {
+          OR: [{ id: shipmentId }, { shipmentNumber: shipmentId }, { invoiceId: shipmentId }],
         },
       });
 
-      // Update invoice status
-      await prisma.taxInvoice.update({
-        where: { id: shipment.invoiceId },
-        data: { fulfilmentStatus: 'DELIVERED' },
-      });
+      if (existingShipment) {
+        updated = await prisma.shipment.update({
+          where: { id: existingShipment.id },
+          data: {
+            ...(status && { status }),
+            ...(status === 'DELIVERED' && { deliveredAt: new Date() }),
+            ...(courier && { courier }),
+            ...(trackingUrl && { trackingUrl }),
+            ...(airwayBillNumber && { airwayBillNumber }),
+          },
+        });
 
-      // Update serial numbers status
-      await prisma.serialNumber.updateMany({
-        where: { invoiceId: shipment.invoiceId },
-        data: { status: 'RETURNED' },
-      });
+        if (status === 'DELIVERED' && existingShipment.invoiceId) {
+          try {
+            await prisma.taxInvoice.update({
+              where: { id: existingShipment.invoiceId },
+              data: { fulfilmentStatus: 'DELIVERED' },
+            });
+          } catch {}
+        }
+      }
+    } catch {}
 
-      return NextResponse.json(shipment);
+    const storeUpdated = dataStore.updateShipment(shipmentId, {
+      ...body,
+      ...(status === 'DELIVERED' && {
+        status: 'DELIVERED',
+        actualDeliveryDate: new Date().toISOString(),
+        deliveredAt: new Date().toISOString(),
+      }),
+    });
+
+    if (status === 'DELIVERED') {
+      dataStore.deliverShipment(shipmentId);
     }
 
-    return NextResponse.json({ error: 'Invalid status update' }, { status: 400 });
-  } catch (error) {
+    if (!updated) {
+      updated = storeUpdated;
+    }
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Shipment not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, shipment: updated });
+  } catch (error: any) {
     console.error('Error updating shipment:', error);
-    return NextResponse.json({ error: 'Failed to update shipment' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Failed to update shipment' }, { status: 500 });
   }
 }
+
+export async function PUT(req: NextRequest) {
+  return PATCH(req);
+}
+

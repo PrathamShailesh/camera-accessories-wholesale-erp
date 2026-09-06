@@ -15,18 +15,21 @@ import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import { fetchWithCache, invalidateApiCache } from '@/lib/client-cache';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function ShipmentsPage() {
   const { toast } = useToast();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const loadData = async (query = '') => {
     try {
-      const data = await fetchWithCache<Shipment[]>('/api/shipments', undefined, 10000);
+      const url = query ? `/api/shipments?q=${encodeURIComponent(query)}` : '/api/shipments';
+      const data = await fetchWithCache<Shipment[]>(url, undefined, 5000);
       setShipments(Array.isArray(data) ? data : []);
       setError(null);
     } catch {
@@ -37,8 +40,8 @@ export default function ShipmentsPage() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(debouncedSearch);
+  }, [debouncedSearch]);
 
   const handleMarkDelivered = async (shipmentId: string) => {
     setUpdatingId(shipmentId);
@@ -112,7 +115,7 @@ export default function ShipmentsPage() {
       {isLoading ? (
         <SkeletonTable rows={6} cols={7} />
       ) : error ? (
-        <ErrorState description={error} action={<Button onClick={loadData}>Try Again</Button>} />
+        <ErrorState description={error} action={<Button onClick={() => loadData()}>Try Again</Button>} />
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Truck}

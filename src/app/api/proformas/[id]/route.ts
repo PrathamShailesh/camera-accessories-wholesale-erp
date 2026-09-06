@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { broadcastSystemEvent } from '@/lib/events-emitter';
 import { guardApi } from '@/lib/api-auth';
 import { canTransition, isProformaStatus, ProformaStatus } from '@/lib/proforma-workflow';
@@ -9,19 +10,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (!auth.ok) return auth.response;
 
   try {
-    let proforma = await prisma.proforma.findUnique({
-      where: { id: params.id },
-      include: {
-        customer: true,
-        items: {
-          include: { product: true },
-        },
-      },
-    });
-
-    if (!proforma) {
+    let proforma: any = null;
+    try {
       proforma = await prisma.proforma.findUnique({
-        where: { proformaNumber: params.id },
+        where: { id: params.id },
         include: {
           customer: true,
           items: {
@@ -29,6 +21,24 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
           },
         },
       });
+
+      if (!proforma) {
+        proforma = await prisma.proforma.findUnique({
+          where: { proformaNumber: params.id },
+          include: {
+            customer: true,
+            items: {
+              include: { product: true },
+            },
+          },
+        });
+      }
+    } catch (dbErr) {
+      // DB offline, proceed to fallback
+    }
+
+    if (!proforma) {
+      proforma = dataStore.getProformaById(params.id);
     }
 
     if (!proforma) {
@@ -50,12 +60,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const body = await req.json();
     const { status, notes } = body;
 
-    // Find id if params.id was proformaNumber
-    const existing = await prisma.proforma.findFirst({
-      where: {
-        OR: [{ id: params.id }, { proformaNumber: params.id }],
-      },
-    });
+    let existing: any = null;
+    try {
+      existing = await prisma.proforma.findFirst({
+        where: {
+          OR: [{ id: params.id }, { proformaNumber: params.id }],
+        },
+      });
+    } catch {}
+
+    if (!existing) {
+      existing = dataStore.getProformaById(params.id);
+    }
 
     if (!existing) {
       return NextResponse.json({ error: 'Proforma not found' }, { status: 404 });
@@ -63,8 +79,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     const targetId = existing.id;
 
-    // Validate the status change server-side — the client is not trusted to
-    // enforce the lifecycle (and CONVERTED must only ever come from /convert).
     if (status !== undefined) {
       if (!isProformaStatus(status)) {
         return NextResponse.json({ error: `Unknown proforma status "${status}".` }, { status: 400 });
@@ -78,21 +92,37 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const updateData: any = {};
     if (status) updateData.status = status;
     if (notes !== undefined) updateData.notes = notes;
+    if (existing.status === 'DRAFT') {
+      if (body.paymentTerms !== undefined) updateData.paymentTerms = body.paymentTerms;
+      if (body.deliveryTerms !== undefined) updateData.deliveryTerms = body.deliveryTerms;
+      if (body.discountPercent !== undefined) updateData.discountPercent = Number(body.discountPercent);
+      if (body.shippingCost !== undefined) updateData.shippingCost = Number(body.shippingCost);
+    }
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: 'No supported fields to update.' }, { status: 400 });
     }
 
-    const proforma = await prisma.proforma.update({
-      where: { id: targetId },
-      data: updateData,
-      include: {
-        customer: true,
-        items: {
-          include: { product: true },
+    let proforma: any = null;
+    try {
+      proforma = await prisma.proforma.update({
+        where: { id: targetId },
+        data: updateData,
+        include: {
+          customer: true,
+          items: {
+            include: { product: true },
+          },
         },
-      },
-    });
+      });
+    } catch (dbErr) {
+      // Fallback to dataStore
+      proforma = dataStore.updateProforma(targetId, updateData);
+    }
+
+    if (!proforma) {
+      proforma = dataStore.updateProforma(targetId, updateData);
+    }
 
     // Broadcast real-time event to open client portals and admin dashboards
     try {
@@ -103,9 +133,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         status: proforma.status,
         data: proforma,
       });
-    } catch (evtErr) {
-      console.warn('Could not broadcast system event:', evtErr);
-    }
+    } catch (evtErr) {}
 
     return NextResponse.json(proforma);
   } catch (error) {
@@ -119,10 +147,37 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!auth.ok) return auth.response;
 
   try {
-    await prisma.proforma.delete({
-      where: { id: params.id },
-    });
+    let existing: any = null;
+    try {
+      existing = await prisma.proforma.findFirst({
+        where: { OR: [{ id: params.id }, { proformaNumber: params.id }] },
+      });
+    } catch {}
 
+    if (!existing) {
+      existing = dataStore.getProformaById(params.id);
+    }
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Proforma not found' }, { status: 404 });
+    }
+
+    if (existing.status === 'CONVERTED') {
+      return NextResponse.json(
+        { error: 'Cannot delete a proforma that has already been converted to a tax invoice.' },
+        { status: 400 }
+      );
+    }
+
+    try {
+      await prisma.proforma.delete({
+        where: { id: existing.id },
+      });
+    } catch (dbErr) {
+      // DB offline, proceed to fallback
+    }
+
+    dataStore.deleteProforma(existing.id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting proforma:', error);

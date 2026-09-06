@@ -223,14 +223,13 @@ export default function DepotInventoryPage() {
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <img
-                            src={cloudinaryThumb(product.imageUrl, 80) || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=80&q=75&auto=format'}
+                            src="/placeholder-product.svg"
                             alt={product.name}
                             loading="lazy"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=80&q=75&auto=format';
+                              (e.target as HTMLImageElement).src = '/placeholder-product.svg';
                             }}
-                            className="h-10 w-10 rounded-xl object-cover border border-[#E5E7EB] bg-[#F8FAFC] shrink-0"
+                            className="h-10 w-10 rounded-xl object-contain p-0.5 border border-[#E5E7EB] bg-[#F8FAFC] shrink-0"
                           />
                           <div>
                             <p className="font-semibold text-[#111827] line-clamp-1">{product.name}</p>

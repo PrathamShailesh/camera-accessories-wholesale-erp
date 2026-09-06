@@ -300,7 +300,7 @@ export default function DashboardPage() {
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Revenue & Profit</CardTitle>
-              <Link href="/reports/sales" className="text-xs text-brand-600 font-medium hover:underline shrink-0">
+              <Link href="/reports/sales" prefetch={false} className="text-xs text-brand-600 font-medium hover:underline shrink-0">
                 Full analytics
               </Link>
             </CardHeader>
@@ -334,7 +334,7 @@ export default function DashboardPage() {
           <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle>Top Products</CardTitle>
-              <Link href="/reports/profit" className="text-xs text-brand-600 font-medium hover:underline shrink-0">
+              <Link href="/reports/profit" prefetch={false} className="text-xs text-brand-600 font-medium hover:underline shrink-0">
                 View catalog
               </Link>
             </CardHeader>
@@ -370,7 +370,7 @@ export default function DashboardPage() {
           <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle>Top Customers</CardTitle>
-              <Link href="/customers" className="text-xs text-brand-600 font-medium hover:underline shrink-0">
+              <Link href="/customers" prefetch={false} className="text-xs text-brand-600 font-medium hover:underline shrink-0">
                 View all
               </Link>
             </CardHeader>
@@ -407,7 +407,7 @@ export default function DashboardPage() {
         <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>Depot Performance</CardTitle>
-            <Link href="/depots" className="text-xs text-brand-600 font-medium hover:underline shrink-0">
+            <Link href="/depots" prefetch={false} className="text-xs text-brand-600 font-medium hover:underline shrink-0">
               Manage hubs
             </Link>
           </CardHeader>
@@ -443,7 +443,7 @@ export default function DashboardPage() {
           <SectionHeader
             title="Tax Invoices & Fulfilment Queue"
             actions={
-              <Link href="/invoices" className="text-xs text-brand-600 font-medium hover:underline">
+              <Link href="/invoices" prefetch={false} className="text-xs text-brand-600 font-medium hover:underline">
                 View all invoices
               </Link>
             }
@@ -474,7 +474,7 @@ export default function DashboardPage() {
                   {invoices.map((inv) => (
                     <TableRow key={inv.id}>
                       <TableCell>
-                        <Link href={`/invoices/${inv.id}`} className="font-mono font-semibold text-brand-600 hover:underline text-xs">
+                        <Link href={`/invoices/${inv.id}`} prefetch={false} className="font-mono font-semibold text-brand-600 hover:underline text-xs">
                           {inv.invoiceNumber}
                         </Link>
                         {inv.proformaNumber && <div className="text-[10px] text-slate-400 font-mono">From: {inv.proformaNumber}</div>}
@@ -517,7 +517,7 @@ export default function DashboardPage() {
           <SectionHeader
             title="Recent Activity & Dispatches"
             actions={
-              <Link href="/shipments" className="text-xs text-brand-600 font-medium hover:underline">
+              <Link href="/shipments" prefetch={false} className="text-xs text-brand-600 font-medium hover:underline">
                 All AWBs
               </Link>
             }

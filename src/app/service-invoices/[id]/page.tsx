@@ -15,7 +15,9 @@ import {
   Clock,
   DollarSign,
   Share2,
+  Trash2,
 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/Modal';
 import { ServiceInvoice } from '@/types/erp';
 import { formatUSD, formatDate } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
@@ -27,6 +29,8 @@ export default function ServiceInvoiceDetailPage({ params }: { params: { id: str
   const [isLoading, setIsLoading] = useState(true);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchInvoice = async () => {
     setIsLoading(true);
@@ -58,10 +62,15 @@ export default function ServiceInvoiceDetailPage({ params }: { params: { id: str
       const data = await res.json();
 
       if (res.ok) {
+        const isSimulated = Boolean(data.simulated);
         toast({
-          title: 'Service Invoice Emailed',
-          description: `Invoice emailed successfully to ${invoice.customerEmail}`,
-          variant: 'success',
+          title: isSimulated ? 'Email Logged (SMTP not configured)' : 'Service Invoice Emailed',
+          description:
+            data.message ||
+            (isSimulated
+              ? 'SMTP is not configured, so the email was logged but not delivered. Add SMTP credentials in Settings.'
+              : `Invoice emailed successfully to ${invoice.customerEmail}`),
+          variant: isSimulated ? 'warning' : 'success',
         });
         setInvoice((prev) => (prev ? { ...prev, emailStatus: 'SENT', status: prev.status === 'DRAFT' ? 'SENT' : prev.status } : null));
       } else {
@@ -109,6 +118,23 @@ export default function ServiceInvoiceDetailPage({ params }: { params: { id: str
       });
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!invoice) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/service-invoices/${invoice.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to delete service invoice');
+      }
+      toast({ title: 'Service invoice deleted', variant: 'success' });
+      router.push('/service-invoices');
+    } catch (err: any) {
+      toast({ title: err.message || 'Delete failed', variant: 'error' });
+      setIsDeleting(false);
     }
   };
 
@@ -191,6 +217,18 @@ export default function ServiceInvoiceDetailPage({ params }: { params: { id: str
             )}
             <span>Email Customer</span>
           </button>
+
+          {(invoice.status === 'DRAFT' || invoice.status === 'CANCELLED') && (
+            <button
+              type="button"
+              onClick={() => setIsDeleteOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold shadow-xs transition-all"
+              title="Delete Service Invoice"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Delete</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -322,7 +360,52 @@ export default function ServiceInvoiceDetailPage({ params }: { params: { id: str
             </div>
           </div>
         </div>
+
+        {/* Sign-off & Official Company Seal */}
+        <div className="flex flex-col sm:flex-row justify-between items-end gap-6 pt-6 border-t border-[#E5E7EB] mt-6">
+          <div className="space-y-1 text-xs text-[#6B7280]">
+            <div className="font-bold uppercase tracking-wider text-[#111827]">
+              For ARIB GLOBAL GENERAL TRADING L.L.C
+            </div>
+            <div>Corporate Services & Wholesale Division</div>
+            <div className="font-mono text-[10px]">TRN: 100889218200001 • Dubai, United Arab Emirates</div>
+            <div className="text-[10px] italic text-[#9CA3AF] pt-2">
+              THIS IS A COMPUTER GENERATED SERVICE INVOICE • OFFICIALLY AUTHENTICATED
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-end text-center shrink-0">
+            <div className="relative flex items-center justify-center mb-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/arib-seal.png"
+                alt="ARIB GLOBAL Official Company Seal"
+                className="h-28 w-28 object-contain shrink-0 select-none print:h-28 print:w-28"
+                style={{ aspectRatio: '1 / 1' }}
+              />
+            </div>
+            <div className="border-t border-[#9CA3AF] pt-1 w-36 text-center">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-[#111827]">
+                Official Company Seal
+              </div>
+              <div className="text-[9px] text-[#6B7280] uppercase tracking-widest font-mono">
+                Authorized Signatory
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <ConfirmDialog
+        open={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={handleDelete}
+        title={`Delete Service Invoice #${invoice.invoiceNumber}?`}
+        description="Are you sure you want to permanently delete this service invoice? This cannot be undone."
+        confirmLabel="Delete Invoice"
+        destructive
+        loading={isDeleting}
+      />
     </div>
   );
 }

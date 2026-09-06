@@ -18,7 +18,7 @@ export const PROFORMA_STATUSES: ProformaStatus[] = ['DRAFT', 'SENT', 'CONFIRMED'
 
 /** Transitions a user may perform via a manual status change. */
 const MANUAL_TRANSITIONS: Record<ProformaStatus, ProformaStatus[]> = {
-  DRAFT: ['SENT', 'CANCELLED'],
+  DRAFT: ['SENT', 'CONFIRMED', 'CANCELLED'],
   SENT: ['CONFIRMED', 'DRAFT', 'CANCELLED'],
   CONFIRMED: ['SENT', 'CANCELLED'],
   // Terminal: a converted proforma is locked to protect the issued tax invoice.

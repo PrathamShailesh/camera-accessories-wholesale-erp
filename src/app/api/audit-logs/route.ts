@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 
 export async function GET(req: NextRequest) {
@@ -16,7 +17,10 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json(auditLogs);
   } catch (error) {
-    console.error('Error fetching audit logs:', error);
-    return NextResponse.json({ error: 'Failed to fetch audit logs' }, { status: 500 });
+    try {
+      return NextResponse.json(dataStore.getAuditLogs());
+    } catch {
+      return NextResponse.json([]);
+    }
   }
 }

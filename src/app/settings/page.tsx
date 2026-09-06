@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Building2, CreditCard, FileText, Mail, Save } from 'lucide-react';
+import { Building2, CreditCard, FileText, Mail, Save, Cpu, Sparkles } from 'lucide-react';
 import ImageUploadField from '@/components/ui/ImageUploadField';
 import { fetchSettingsCached, invalidateSettings } from '@/lib/client-cache';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Badge } from '@/components/ui/Badge';
 import { ErrorState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
@@ -16,6 +17,7 @@ interface CompanySettings {
   companyName: string;
   tradingName: string;
   logoUrl: string;
+  sealUrl?: string;
   taxRegistrationNumber: string;
   vatGstNumber: string;
   companyAddress: string;
@@ -73,6 +75,7 @@ function Section({
 export default function SettingsPage() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<CompanySettings | null>(null);
+  const [azureStatus, setAzureStatus] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -80,9 +83,17 @@ export default function SettingsPage() {
   const loadSettings = async () => {
     setLoadError(false);
     try {
-      const data = await fetchSettingsCached(true);
+      const [data, azRes] = await Promise.all([
+        fetchSettingsCached(true),
+        fetch('/api/ai/azure-status').catch(() => null),
+      ]);
       if (data) setSettings(data);
       else setLoadError(true);
+
+      if (azRes && azRes.ok) {
+        const azData = await azRes.json();
+        setAzureStatus(azData);
+      }
     } catch {
       setLoadError(true);
     } finally {
@@ -193,6 +204,34 @@ export default function SettingsPage() {
               placeholder="Paste a logo URL, or upload a PNG/SVG"
             />
           </div>
+
+          <div className="sm:col-span-2 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+            <div className="flex items-start gap-4">
+              <div className="p-2.5 rounded-2xl bg-white border border-slate-200 shrink-0 shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={settings.sealUrl || '/arib-seal.png'}
+                  alt="ARIB GLOBAL Official Company Seal"
+                  className="h-20 w-20 object-contain"
+                  style={{ aspectRatio: '1 / 1' }}
+                />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    Official Company Seal
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    Active on Invoices & Documents
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Used officially on Tax Invoices, Service Invoices, Proformas, and packing documentation. Features the registered company stamp: <strong className="text-slate-200">ARIB GLOBAL GENERAL TRADING L.L.C • DUBAI - U.A.E.</strong> with full transparency and sharp vector-grade resolution.
+                </p>
+                <div className="text-[11px] text-slate-500 font-mono">Asset: public/arib-seal.png (1024×1024 Hi-Res Transparent PNG)</div>
+              </div>
+            </div>
+          </div>
         </div>
       </Section>
 
@@ -268,6 +307,54 @@ export default function SettingsPage() {
             value={settings.smtpFromEmail}
             onChange={(e) => set({ smtpFromEmail: e.target.value })}
           />
+        </div>
+      </Section>
+
+      <Section
+        icon={Cpu}
+        title="Azure AI Document Intelligence"
+        description="Cognitive OCR service for extracting invoice and quotation data directly from PDF files."
+      >
+        <div className="p-4 rounded-xl border border-line bg-surface-muted/30 flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <div>
+                <div className="text-sm font-semibold text-ink">Azure Form Recognizer / Prebuilt-Invoice Model</div>
+                <div className="text-xs text-muted">
+                  Supports digital PDFs and high-resolution scanned OCR documents.
+                </div>
+              </div>
+            </div>
+            {azureStatus?.isConfigured ? (
+              <Badge tone="success">
+                Live Azure Cloud Connected
+              </Badge>
+            ) : (
+              <Badge tone="warning">
+                Fallback Demonstration Mode Active
+              </Badge>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="p-3 rounded-lg border border-line bg-surface">
+              <span className="text-muted block text-[11px] font-semibold">Configured Endpoint</span>
+              <span className="font-mono text-ink font-medium truncate block mt-0.5">
+                {azureStatus?.endpoint || 'AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT'}
+              </span>
+            </div>
+            <div className="p-3 rounded-lg border border-line bg-surface">
+              <span className="text-muted block text-[11px] font-semibold">API Key Status</span>
+              <span className="text-ink font-medium block mt-0.5">
+                {azureStatus?.hasKey ? '✓ Key securely stored in environment' : 'Not set in .env (Mock fallback active)'}
+              </span>
+            </div>
+          </div>
+
+          <div className="text-xs text-muted leading-relaxed">
+            <span className="font-semibold text-ink">Setup Instructions:</span> To connect live Azure Document Intelligence, set <code className="bg-surface-muted px-1.5 py-0.5 rounded text-ink font-mono">AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT</code> and <code className="bg-surface-muted px-1.5 py-0.5 rounded text-ink font-mono">AZURE_DOCUMENT_INTELLIGENCE_KEY</code> in your <code className="bg-surface-muted px-1.5 py-0.5 rounded text-ink font-mono">.env</code> file. No code changes required.
+          </div>
         </div>
       </Section>
 

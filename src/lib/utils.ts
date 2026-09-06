@@ -5,18 +5,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export const DEFAULT_PRODUCT_IMAGE = '/placeholder-product.svg';
+
 // Client-safe Image thumbnail helper — inserts auto-quality/format and dimension transforms
-// so list views, inventory tables, and avatars download tiny (~5-15KB) webp thumbnails
-// instead of full-resolution multi-megabyte originals.
+// so list views, inventory tables, and avatars download tiny (~5-15KB) webp thumbnails.
+// For products and external unsplash links, returns the unified local SVG placeholder.
 export function cloudinaryThumb(url: string | undefined | null, size = 120): string | undefined | null {
   if (!url) return url;
+  if (url.includes('images.unsplash.com')) return DEFAULT_PRODUCT_IMAGE;
   if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
     if (url.includes('/upload/w_') || url.includes('/upload/c_')) return url;
     const transform = `w_${size},h_${size},c_fill,g_auto,q_auto,f_auto`;
     return url.replace('/upload/', `/upload/${transform}/`);
-  }
-  if (url.includes('images.unsplash.com')) {
-    return url.replace(/w=\d+/, `w=${size}`).replace(/q=\d+/, 'q=75') + (url.includes('w=') ? '' : `&w=${size}&q=75&auto=format`);
   }
   return url;
 }

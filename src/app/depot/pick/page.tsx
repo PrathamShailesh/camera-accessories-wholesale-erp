@@ -23,15 +23,15 @@ import { User, TaxInvoice } from '@/types/erp';
 import { fetchCurrentUserCached, getCurrentUserCachedSync, fetchWithCache } from '@/lib/client-cache';
 import { formatUSD, formatDate } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
+import { useDebounce } from '@/hooks/useDebounce';
 
 function DepotPickContent() {
   const { toast } = useToast();
-  const searchParams = useSearchParams();
-  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<User | null>(() => getCurrentUserCachedSync()?.user || null);
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
-  const [searchQuery, setSearchQuery] = useState(searchParams?.get('invoiceId') || searchParams?.get('search') || '');
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   // Batch Multi-Select
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<string>>(new Set());
@@ -41,7 +41,7 @@ function DepotPickContent() {
   // Item-level check states (invoiceId-itemId -> boolean)
   const [pickedItems, setPickedItems] = useState<Record<string, boolean>>({});
 
-  const loadData = async () => {
+  const loadData = async (query = '') => {
     let user: User | null = currentUser;
 
     try {
@@ -53,7 +53,10 @@ function DepotPickContent() {
     } catch {}
 
     try {
-      const allInvoices = await fetchWithCache<TaxInvoice[]>('/api/invoices', undefined, 10000);
+      const qParams = new URLSearchParams();
+      qParams.set('fulfilmentStatus', 'READY_FOR_PACKING');
+      if (query.trim()) qParams.set('q', query.trim());
+      const allInvoices = await fetchWithCache<TaxInvoice[]>(`/api/invoices?${qParams.toString()}`, undefined, 5000);
       if (Array.isArray(allInvoices)) {
         const filtered = allInvoices.filter(
           (inv: any) =>
@@ -68,8 +71,8 @@ function DepotPickContent() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(debouncedSearch);
+  }, [debouncedSearch]);
 
   // Filtered Orders
   const filteredInvoices = invoices.filter((inv) => {
@@ -213,7 +216,7 @@ function DepotPickContent() {
         </div>
 
         <button
-          onClick={loadData}
+          onClick={() => loadData()}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white text-[#4B5563] hover:text-[#111827] text-xs hover:bg-[#F8FAFC] self-start sm:self-auto transition-colors shadow-xs"
         >
           <RefreshCw className="h-3.5 w-3.5" />

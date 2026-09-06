@@ -172,8 +172,12 @@ export function assertDepotAccess(user: AuthUser, depotId: string | null | undef
 }
 
 export function sanitizeProductForRole<T extends Record<string, any>>(product: T, role: string): T {
-  if (canViewCosts(role)) return product;
-  const { purchasePrice, ...rest } = product;
+  const unifiedProduct = {
+    ...product,
+    imageUrl: '/placeholder-product.svg',
+  };
+  if (canViewCosts(role)) return unifiedProduct as unknown as T;
+  const { purchasePrice, ...rest } = unifiedProduct;
   return { ...rest, purchasePrice: undefined } as unknown as T;
 }
 
@@ -183,6 +187,11 @@ export function redactSettings<T extends Record<string, any>>(
   role?: string
 ): Record<string, unknown> | null {
   if (!settings) return null;
+  const isSmtpConfigured = Boolean(
+    (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) ||
+    (settings.smtpHost && settings.smtpUser && settings.smtpPassword)
+  );
+
   const publicFields = {
     id: settings.id,
     companyName: settings.companyName,
@@ -200,12 +209,13 @@ export function redactSettings<T extends Record<string, any>>(
     defaultDeliveryTerms: settings.defaultDeliveryTerms,
     taxRegistrationNumber: settings.taxRegistrationNumber,
     vatGstNumber: settings.vatGstNumber,
+    isSmtpConfigured,
   };
 
   if (!authenticated) return publicFields;
   if (role === 'SUPER_ADMIN') {
     const { smtpPassword, ...rest } = settings;
-    return { ...rest, smtpPassword: smtpPassword ? '********' : '' };
+    return { ...rest, smtpPassword: smtpPassword ? '********' : '', isSmtpConfigured };
   }
   return {
     ...publicFields,

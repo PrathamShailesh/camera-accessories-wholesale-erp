@@ -13,6 +13,7 @@ import {
   Building2,
   Send,
   AlertCircle,
+  AlertTriangle,
   Sparkles,
   ArrowRight,
   ExternalLink,
@@ -21,18 +22,22 @@ import {
   Download,
   Truck,
   Check,
+  Trash2,
+  Edit2,
 } from 'lucide-react';
 const fireConfetti = (opts: Record<string, unknown>) => {
   import('canvas-confetti').then((m) => m.default(opts as any)).catch(() => {});
 };
 import { formatUSD, formatDate } from '@/lib/utils';
 import { Proforma, Depot } from '@/types/erp';
+import { fetchSettingsCached } from '@/lib/client-cache';
 import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
 import { Button, LinkButton } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
-import { ConfirmDialog } from '@/components/ui/Modal';
+import { ConfirmDialog, Drawer } from '@/components/ui/Modal';
+import { Input, Textarea } from '@/components/ui/Input';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -58,13 +63,29 @@ export default function ProformaDetailPage() {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [emailSentSuccess, setEmailSentSuccess] = useState(false);
+  const [emailResult, setEmailResult] = useState<{
+    simulated: boolean;
+    message: string;
+    recipient?: string;
+  } | null>(null);
+  const [isSmtpConfigured, setIsSmtpConfigured] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [liveNotification, setLiveNotification] = useState<string | null>(null);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
   const [conversionSuccess, setConversionSuccess] = useState(false);
   const [generatedInvoice, setGeneratedInvoice] = useState<{ id: string; number: string } | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editTerms, setEditTerms] = useState({
+    paymentTerms: '',
+    deliveryTerms: '',
+    discountPercent: 0,
+    shippingCost: 0,
+    notes: '',
+  });
 
   const prevStatusRef = useRef<string | null>(null);
 
@@ -95,6 +116,13 @@ export default function ProformaDetailPage() {
       prevStatusRef.current = data.status;
 
       setProforma(data);
+      setEditTerms({
+        paymentTerms: data.paymentTerms || '',
+        deliveryTerms: data.deliveryTerms || '',
+        discountPercent: data.discountPercent || 0,
+        shippingCost: data.shippingCost || 0,
+        notes: data.notes || '',
+      });
 
       const depsRes = await fetch('/api/depots');
       if (depsRes.ok) {
@@ -104,6 +132,14 @@ export default function ProformaDetailPage() {
           setSelectedDepotId(data.items[0]?.selectedDepotId || allDepots[0]?.id || 'dep-dxb');
         }
       }
+
+      fetchSettingsCached()
+        .then((s: any) => {
+          if (s && typeof s.isSmtpConfigured === 'boolean') {
+            setIsSmtpConfigured(s.isSmtpConfigured);
+          }
+        })
+        .catch(() => {});
     } catch (error) {
       if (!silent) {
         console.error('Error loading proforma:', error);
@@ -193,6 +229,45 @@ export default function ProformaDetailPage() {
   // transitions the API will actually accept.
   const statusOptions: ProformaStatus[] = allowedNextStatuses(proforma.status as ProformaStatus);
 
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingEdit(true);
+    try {
+      const res = await fetch(`/api/proformas/${proforma.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editTerms),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to update quotation');
+      }
+      toast({ title: 'Quotation updated successfully', variant: 'success' });
+      setIsEditOpen(false);
+      loadData(true);
+    } catch (err: any) {
+      toast({ title: err.message || 'Update failed', variant: 'error' });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDeleteProforma = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/proformas/${proforma.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to delete proforma');
+      }
+      toast({ title: 'Proforma quotation deleted', variant: 'success' });
+      router.push('/proformas');
+    } catch (err: any) {
+      toast({ title: err.message || 'Delete failed', variant: 'error' });
+      setIsDeleting(false);
+    }
+  };
+
   const handleConvert = async () => {
     setIsConverting(true);
     setErrorMessage('');
@@ -258,16 +333,26 @@ export default function ProformaDetailPage() {
       }
 
       await loadData(true);
-      setEmailSentSuccess(true);
-      toast({
-        title: data.simulated ? 'Email logged (SMTP not configured)' : 'Proforma sent',
-        description: data.message,
-        variant: data.simulated ? 'warning' : 'success',
+      const isSimulated = Boolean(data.simulated);
+      setEmailResult({
+        simulated: isSimulated,
+        message:
+          data.message ||
+          (isSimulated
+            ? 'SMTP is not configured, so the email was logged but not delivered. Add SMTP credentials in Settings.'
+            : `Quotation delivered to ${proforma.customerEmail}`),
+        recipient: data.recipient || proforma.customerEmail,
       });
-      setTimeout(() => {
-        setEmailSentSuccess(false);
-        setIsEmailModalOpen(false);
-      }, 1500);
+
+      toast({
+        title: isSimulated ? 'Email Logged (SMTP not configured)' : 'Proforma Sent Successfully',
+        description:
+          data.message ||
+          (isSimulated
+            ? 'SMTP is not configured, so the email was logged but not delivered. Add SMTP credentials in Settings.'
+            : `Quotation delivered to ${proforma.customerEmail}`),
+        variant: isSimulated ? 'warning' : 'success',
+      });
     } catch (error: any) {
       setErrorMessage(error?.message || 'Failed to send email.');
       toast({ title: 'Email failed', description: error?.message, variant: 'error' });
@@ -344,7 +429,11 @@ export default function ProformaDetailPage() {
               size="sm"
               variant="outline"
               iconLeft={<Mail className="h-3.5 w-3.5 text-brand-600" />}
-              onClick={() => setIsEmailModalOpen(true)}
+              onClick={() => {
+                setEmailResult(null);
+                setErrorMessage('');
+                setIsEmailModalOpen(true);
+              }}
             >
               Email Quote
             </Button>
@@ -387,6 +476,18 @@ export default function ProformaDetailPage() {
             </LinkButton>
           )}
 
+          {/* EDIT OPTION (DRAFT ONLY) */}
+          {proforma.status === 'DRAFT' && (
+            <Button
+              size="sm"
+              variant="outline"
+              iconLeft={<Edit2 className="h-3.5 w-3.5" />}
+              onClick={() => setIsEditOpen(true)}
+            >
+              Edit Terms
+            </Button>
+          )}
+
           {/* CANCEL OPTION */}
           {proforma.status !== 'CONVERTED' && proforma.status !== 'CANCELLED' && (
             <Button
@@ -394,9 +495,22 @@ export default function ProformaDetailPage() {
               variant="outline"
               loading={isChangingStatus}
               onClick={() => setPendingCancel(true)}
-              className="text-red-600 border-red-200 hover:bg-red-50 text-xs font-semibold"
+              className="text-amber-600 border-amber-200 hover:bg-amber-50 text-xs font-semibold"
             >
               Cancel
+            </Button>
+          )}
+
+          {/* DELETE OPTION (DRAFT OR CANCELLED) */}
+          {(proforma.status === 'DRAFT' || proforma.status === 'CANCELLED') && (
+            <Button
+              size="sm"
+              variant="outline"
+              iconLeft={<Trash2 className="h-3.5 w-3.5" />}
+              onClick={() => setIsDeleteOpen(true)}
+              className="text-red-600 border-red-200 hover:bg-red-50 text-xs font-semibold"
+            >
+              Delete
             </Button>
           )}
         </div>
@@ -662,6 +776,146 @@ export default function ProformaDetailPage() {
         </div>
       )}
 
+      {/* Email Quote Modal */}
+      {isEmailModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+          <div className="relative w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-2xl p-7 space-y-5">
+            <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-xl font-semibold tracking-tight text-slate-900">Email Quotation</h3>
+                <p className="text-xs text-slate-500 mt-1">Send Proforma {proforma.proformaNumber}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsEmailModalOpen(false);
+                  setEmailResult(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 mt-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            {!emailResult ? (
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
+                  <div className="text-xs text-slate-500 mb-1">Recipient Email</div>
+                  <div className="text-sm font-semibold text-slate-900">
+                    {proforma.customerEmail || 'No email address on file for this customer'}
+                  </div>
+                </div>
+
+                {isSmtpConfigured === false && (
+                  <div className="p-3.5 rounded-lg bg-amber-50/80 border border-amber-200/80 text-amber-900 text-xs flex items-start gap-2.5">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <div className="font-semibold text-amber-950">SMTP Not Configured (Simulation Mode)</div>
+                      <p className="text-amber-800 text-[11px] leading-relaxed">
+                        Live email delivery is currently disabled. Sending will record this proforma in the Email &amp; Notification logs without dispatching a live email.
+                      </p>
+                      <Link
+                        href="/settings"
+                        className="inline-flex items-center gap-1 font-medium text-amber-900 underline hover:text-amber-950 text-[11px] mt-0.5"
+                      >
+                        Configure SMTP in Settings <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
+                {errorMessage && (
+                  <div className="p-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-md">
+                    {errorMessage}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsEmailModalOpen(false);
+                      setEmailResult(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    loading={isSendingEmail}
+                    onClick={handleSendEmail}
+                    disabled={!proforma.customerEmail}
+                    className="bg-[#005E82] hover:bg-[#004B68] text-white font-semibold text-xs"
+                    iconLeft={<Send className="h-3.5 w-3.5" />}
+                  >
+                    {isSmtpConfigured === false ? 'Send & Log (Simulated)' : 'Send Email'}
+                  </Button>
+                </div>
+              </div>
+            ) : emailResult.simulated ? (
+              <div className="space-y-5">
+                <div className="flex flex-col items-center text-center gap-2.5 py-4">
+                  <div className="h-12 w-12 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                    <AlertTriangle className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="text-base font-bold text-slate-900">Email Logged (SMTP Not Configured)</div>
+                    <div className="text-xs text-slate-600 mt-1 max-w-sm">
+                      {emailResult.message}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+                  <div className="font-semibold text-slate-800">Delivery Status</div>
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                    This proforma was recorded in the Notification &amp; Email Audit logs. To deliver live emails directly to your customers' inboxes, please enter your SMTP credentials in Settings.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                  <LinkButton href="/settings" variant="outline" size="sm">
+                    Configure SMTP
+                  </LinkButton>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setIsEmailModalOpen(false);
+                      setEmailResult(null);
+                    }}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <div className="flex flex-col items-center text-center gap-2 py-4">
+                  <div className="h-12 w-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                    <CheckCircle2 className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="text-base font-bold text-slate-900">Email Sent Successfully</div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      Quotation delivered to {emailResult.recipient || proforma.customerEmail}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end pt-3 border-t border-slate-100">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setIsEmailModalOpen(false);
+                      setEmailResult(null);
+                    }}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* PDF Modal */}
       {isPrintModalOpen && (
         <PrintableDocumentModal
@@ -683,6 +937,75 @@ export default function ProformaDetailPage() {
         destructive
         loading={isChangingStatus}
       />
+
+      <ConfirmDialog
+        open={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={handleDeleteProforma}
+        title={`Delete Proforma ${proforma.proformaNumber}?`}
+        description="Are you sure you want to permanently delete this quotation? This cannot be undone."
+        confirmLabel="Delete Proforma"
+        destructive
+        loading={isDeleting}
+      />
+
+      <Drawer
+        open={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        title="Edit Quotation Terms"
+        description="Update commercial parameters and special instructions."
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" onClick={() => setIsEditOpen(false)} disabled={isSavingEdit}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} loading={isSavingEdit}>
+              Save Terms
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleSaveEdit} className="flex flex-col gap-4">
+          <Input
+            label="Payment Terms"
+            value={editTerms.paymentTerms}
+            onChange={(e) => setEditTerms({ ...editTerms, paymentTerms: e.target.value })}
+            placeholder="e.g. NET 30 days from dispatch"
+          />
+          <Input
+            label="Delivery Terms"
+            value={editTerms.deliveryTerms}
+            onChange={(e) => setEditTerms({ ...editTerms, deliveryTerms: e.target.value })}
+            placeholder="e.g. Air Freight via Courier (CIF)"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Discount (%)"
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              value={editTerms.discountPercent}
+              onChange={(e) => setEditTerms({ ...editTerms, discountPercent: Number(e.target.value) })}
+            />
+            <Input
+              label="Shipping Cost (USD)"
+              type="number"
+              min="0"
+              step="1"
+              value={editTerms.shippingCost}
+              onChange={(e) => setEditTerms({ ...editTerms, shippingCost: Number(e.target.value) })}
+            />
+          </div>
+          <Textarea
+            label="Internal Notes / Remarks"
+            value={editTerms.notes}
+            onChange={(e) => setEditTerms({ ...editTerms, notes: e.target.value })}
+            rows={3}
+            placeholder="Special handling instructions..."
+          />
+        </form>
+      </Drawer>
     </div>
   );
 }

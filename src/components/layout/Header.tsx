@@ -260,6 +260,7 @@ export default function Header() {
                     <Link
                       key={n.id}
                       href={n.link}
+                      prefetch={false}
                       onClick={() => {
                         dataStore.markNotificationAsRead(n.id);
                         reloadData();

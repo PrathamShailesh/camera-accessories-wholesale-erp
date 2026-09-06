@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { assertDepotAccess, guardApi } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest) {
@@ -16,12 +17,21 @@ export async function POST(req: NextRequest) {
     const denied = assertDepotAccess(auth.user, depotId);
     if (denied) return denied;
 
-    const inventory = await prisma.depotInventory.findUnique({ where: { productId_depotId: { productId, depotId } } });
+    let available = 0;
+    try {
+      const inventory = await prisma.depotInventory.findUnique({ where: { productId_depotId: { productId, depotId } } });
+      if (inventory) {
+        available = inventory.availableQuantity || 0;
+      }
+    } catch {
+      const product = dataStore.getProductById(productId);
+      available = product?.depotBreakdown?.[depotId] ?? (product?.totalStock || 0);
+    }
+
     const requested = Number(quantity);
-    const available = inventory?.availableQuantity || 0;
     const check = { available, requested, sufficient: available >= requested, shortage: Math.max(0, requested - available) };
     return NextResponse.json({ success: true, check });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Inventory check failed' }, { status: 500 });
   }
 }

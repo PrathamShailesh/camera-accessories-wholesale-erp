@@ -158,3 +158,109 @@ export async function deductStockForInvoice(
     console.error(`❌ Error deducting stock for invoice ${invoiceNumber}:`, error);
   }
 }
+
+/**
+ * Safely restores inventory and releases serials when a Tax Invoice is cancelled
+ * before dispatch/delivery. Strictly audited through StockTransaction (RETURN).
+ */
+export async function restoreStockForCancelledInvoice(
+  invoiceId: string,
+  invoiceNumber: string,
+  items: PurchaseItem[],
+  defaultDepotId: string
+) {
+  try {
+    // 1. Release serial numbers allocated to this invoice back to IN_STOCK
+    const allocatedSerials = await prisma.serialNumber.findMany({
+      where: { invoiceId },
+    });
+    for (const serial of allocatedSerials) {
+      let history: any[] = [];
+      try {
+        history = JSON.parse(serial.historyJson || '[]');
+      } catch {
+        history = [];
+      }
+      history.push({
+        action: 'INVOICE_CANCELLED_RELEASED',
+        invoiceId,
+        invoiceNumber,
+        timestamp: new Date().toISOString(),
+      });
+      await prisma.serialNumber.update({
+        where: { id: serial.id },
+        data: {
+          status: 'IN_STOCK',
+          invoiceId: null,
+          invoiceNumber: null,
+          historyJson: JSON.stringify(history),
+        },
+      });
+    }
+
+    // 2. Restore DepotInventory & totalStock
+    const allDepots = await prisma.depot.findMany();
+    const depotMap = new Map(allDepots.map((d) => [d.id, d]));
+
+    for (const item of items) {
+      const itemDepotId = item.depotId || defaultDepotId;
+      const qty = Math.max(0, Number(item.quantity) || 0);
+      if (qty <= 0) continue;
+
+      const depot = depotMap.get(itemDepotId) || allDepots[0];
+      const finalDepotId = depot?.id || itemDepotId;
+
+      await prisma.depotInventory.upsert({
+        where: { productId_depotId: { productId: item.productId, depotId: finalDepotId } },
+        update: {
+          quantity: { increment: qty },
+          availableQuantity: { increment: qty },
+        },
+        create: {
+          productId: item.productId,
+          depotId: finalDepotId,
+          quantity: qty,
+          availableQuantity: qty,
+          allocatedQuantity: 0,
+        },
+      });
+
+      const allProductInvs = await prisma.depotInventory.findMany({
+        where: { productId: item.productId },
+      });
+      const newTotal = allProductInvs.reduce((sum, inv) => sum + inv.quantity, 0);
+
+      const product = await prisma.product.update({
+        where: { id: item.productId },
+        data: { totalStock: newTotal },
+      });
+
+      await prisma.stockTransaction.create({
+        data: {
+          type: 'RETURN',
+          productId: product.id,
+          productSku: product.sku,
+          productName: product.name,
+          sourceDepotId: finalDepotId,
+          sourceDepotName: depot?.name || 'Depot Hub',
+          quantity: qty,
+          unitCost: product.purchasePrice || 0,
+          referenceNumber: invoiceNumber,
+          notes: `Invoice cancelled. Restored stock. Invoice: ${invoiceNumber}`,
+          createdBy: 'Order Fulfilment System',
+        },
+      });
+
+      try {
+        const memoryProd = dataStore.getProductById(product.id) || dataStore.getProducts().find((p) => p.sku === product.sku);
+        if (memoryProd && memoryProd.depotBreakdown) {
+          memoryProd.depotBreakdown[finalDepotId] = (memoryProd.depotBreakdown[finalDepotId] || 0) + qty;
+          memoryProd.totalStock = Object.values(memoryProd.depotBreakdown).reduce((a: number, b: number) => a + b, 0);
+        }
+      } catch {}
+    }
+  } catch (error) {
+    console.error(`Error restoring stock for invoice ${invoiceNumber}:`, error);
+  }
+}
+

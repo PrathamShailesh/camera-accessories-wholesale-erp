@@ -14,7 +14,6 @@ import {
   FolderLock,
   ArrowRight,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -30,50 +29,22 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 50);
-      const raw = dataStore.searchGlobal(query.trim() || '');
-      const flattened: any[] = [];
 
-      raw.invoices?.forEach((inv) => {
-        flattened.push({
-          title: inv.invoiceNumber,
-          subtitle: `${inv.customerCompany} • ${inv.fulfilmentStatus}`,
-          category: 'Tax Invoices',
-          link: `/invoices/${inv.id}`,
-          badge: inv.paymentStatus,
-        });
-      });
+      const q = query.trim();
+      if (!q) {
+        setResults([]);
+        return;
+      }
 
-      raw.proformas?.forEach((pf) => {
-        flattened.push({
-          title: pf.proformaNumber,
-          subtitle: `${pf.customerCompany} • ${pf.status}`,
-          category: 'Proforma Invoices',
-          link: `/proformas/${pf.id}`,
-          badge: pf.status,
-        });
-      });
+      const abortCtrl = new AbortController();
+      fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: abortCtrl.signal })
+        .then((res) => (res.ok ? res.json() : { results: [] }))
+        .then((data) => {
+          setResults(Array.isArray(data.results) ? data.results : []);
+        })
+        .catch(() => {});
 
-      raw.products?.forEach((p) => {
-        flattened.push({
-          title: p.name,
-          subtitle: `SKU: ${p.sku} • Stock: ${p.totalStock} units`,
-          category: 'Products & Inventory',
-          link: `/products`,
-          badge: p.brand,
-        });
-      });
-
-      raw.customers?.forEach((c) => {
-        flattened.push({
-          title: c.companyName,
-          subtitle: `${c.contactPerson} • ${c.email}`,
-          category: 'Customers',
-          link: `/customers`,
-          badge: c.country,
-        });
-      });
-
-      setResults(flattened);
+      return () => abortCtrl.abort();
     }
   }, [isOpen, query]);
 

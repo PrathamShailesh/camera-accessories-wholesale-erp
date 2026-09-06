@@ -21,7 +21,11 @@ import {
   ExternalLink,
   ChevronRight,
   MoreVertical,
+  Trash2,
+  XCircle,
 } from 'lucide-react';
+import { useDebounce } from '@/hooks/useDebounce';
+import { ConfirmDialog } from '@/components/ui/Modal';
 import { ServiceInvoice, ServiceInvoiceStatus } from '@/types/erp';
 import { formatUSD, formatDate } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
@@ -32,15 +36,19 @@ export default function ServiceInvoicesListPage() {
   const [invoices, setInvoices] = useState<ServiceInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [isSendingEmail, setIsSendingEmail] = useState<Record<string, boolean>>({});
+  const [deletingInvoice, setDeletingInvoice] = useState<ServiceInvoice | null>(null);
+  const [cancellingInvoice, setCancellingInvoice] = useState<ServiceInvoice | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchInvoices = async () => {
     setIsLoading(true);
     try {
       const queryParams = new URLSearchParams();
       if (statusFilter !== 'ALL') queryParams.set('status', statusFilter);
-      if (searchQuery.trim()) queryParams.set('search', searchQuery.trim());
+      if (debouncedSearch.trim()) queryParams.set('search', debouncedSearch.trim());
 
       const res = await fetch(`/api/service-invoices?${queryParams.toString()}`);
       if (res.ok) {
@@ -56,11 +64,53 @@ export default function ServiceInvoicesListPage() {
 
   useEffect(() => {
     fetchInvoices();
-  }, [statusFilter]);
+  }, [statusFilter, debouncedSearch]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchInvoices();
+  };
+
+  const confirmCancel = async () => {
+    if (!cancellingInvoice) return;
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`/api/service-invoices/${cancellingInvoice.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'CANCELLED' }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to cancel service invoice');
+      }
+      toast({ title: 'Service invoice cancelled', variant: 'success' });
+      setCancellingInvoice(null);
+      fetchInvoices();
+    } catch (err: any) {
+      toast({ title: err.message || 'Could not cancel service invoice', variant: 'error' });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingInvoice) return;
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`/api/service-invoices/${deletingInvoice.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to delete service invoice');
+      }
+      toast({ title: 'Service invoice deleted', variant: 'success' });
+      setDeletingInvoice(null);
+      fetchInvoices();
+    } catch (err: any) {
+      toast({ title: err.message || 'Could not delete service invoice', variant: 'error' });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleSendInvoiceEmail = async (inv: ServiceInvoice) => {
@@ -72,10 +122,15 @@ export default function ServiceInvoicesListPage() {
       const data = await res.json();
 
       if (res.ok) {
+        const isSimulated = Boolean(data.simulated);
         toast({
-          title: 'Service Invoice Sent',
-          description: `Invoice #${inv.invoiceNumber} emailed to ${inv.customerEmail}`,
-          variant: 'success',
+          title: isSimulated ? 'Email Logged (SMTP not configured)' : 'Service Invoice Sent',
+          description:
+            data.message ||
+            (isSimulated
+              ? 'SMTP is not configured, so the email was logged but not delivered. Add SMTP credentials in Settings.'
+              : `Invoice #${inv.invoiceNumber} emailed to ${inv.customerEmail}`),
+          variant: isSimulated ? 'warning' : 'success',
         });
 
         // Update local status
@@ -359,6 +414,28 @@ export default function ServiceInvoicesListPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Link>
+
+                        {inv.status !== 'CANCELLED' && inv.status !== 'PAID' && (
+                          <button
+                            type="button"
+                            onClick={() => setCancellingInvoice(inv)}
+                            className="p-1.5 rounded-xl bg-white border border-[#E5E7EB] text-amber-600 hover:bg-amber-50 transition-all shadow-xs"
+                            title="Cancel Service Invoice"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        )}
+
+                        {(inv.status === 'DRAFT' || inv.status === 'CANCELLED') && (
+                          <button
+                            type="button"
+                            onClick={() => setDeletingInvoice(inv)}
+                            className="p-1.5 rounded-xl bg-white border border-[#E5E7EB] text-red-600 hover:bg-red-50 transition-all shadow-xs"
+                            title="Delete Service Invoice"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -368,6 +445,28 @@ export default function ServiceInvoicesListPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={cancellingInvoice !== null}
+        onClose={() => setCancellingInvoice(null)}
+        onConfirm={confirmCancel}
+        title={`Cancel Service Invoice #${cancellingInvoice?.invoiceNumber}?`}
+        description="Are you sure you want to cancel this service invoice? It will be marked as CANCELLED."
+        confirmLabel="Cancel Invoice"
+        destructive
+        loading={isProcessing}
+      />
+
+      <ConfirmDialog
+        open={deletingInvoice !== null}
+        onClose={() => setDeletingInvoice(null)}
+        onConfirm={confirmDelete}
+        title={`Delete Service Invoice #${deletingInvoice?.invoiceNumber}?`}
+        description="Are you sure you want to permanently delete this service invoice? This action cannot be undone."
+        confirmLabel="Delete Invoice"
+        destructive
+        loading={isProcessing}
+      />
     </div>
   );
 }

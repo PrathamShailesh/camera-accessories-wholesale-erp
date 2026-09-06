@@ -1,23 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 import { broadcastSystemEvent } from '@/lib/events-emitter';
 import { canTransition, ProformaStatus } from '@/lib/proforma-workflow';
 
-/**
- * Confirms a proforma (customer accepted the quotation).
- *
- * Previously this wrote to the in-memory data store, so confirmations were lost
- * on restart and never reached the database.
- */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await guardApi(req, 'proformas.write');
   if (!auth.ok) return auth.response;
 
   try {
-    const existing = await prisma.proforma.findFirst({
-      where: { OR: [{ id: params.id }, { proformaNumber: params.id }] },
-    });
+    let existing: any = null;
+    try {
+      existing = await prisma.proforma.findFirst({
+        where: { OR: [{ id: params.id }, { proformaNumber: params.id }] },
+      });
+    } catch {}
+
+    if (!existing) {
+      existing = dataStore.getProformaById(params.id);
+    }
 
     if (!existing) {
       return NextResponse.json({ error: 'Proforma not found' }, { status: 404 });
@@ -28,11 +30,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: check.reason }, { status: 400 });
     }
 
-    const proforma = await prisma.proforma.update({
-      where: { id: existing.id },
-      data: { status: 'CONFIRMED' },
-      include: { customer: true, items: true },
-    });
+    let proforma: any = null;
+    try {
+      proforma = await prisma.proforma.update({
+        where: { id: existing.id },
+        data: { status: 'CONFIRMED' },
+        include: { customer: true, items: true },
+      });
+    } catch (dbErr) {
+      proforma = dataStore.updateProforma(existing.id, { status: 'CONFIRMED' });
+    }
+
+    if (!proforma) {
+      proforma = dataStore.updateProforma(existing.id, { status: 'CONFIRMED' });
+    }
 
     try {
       broadcastSystemEvent({

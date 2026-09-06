@@ -12,48 +12,54 @@ import {
   Image as ImageIcon,
   AlertCircle,
   X,
+  Sparkles,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
 import { formatFileSize, formatDateTime } from '@/lib/utils';
 import { CloudDocument, DocumentCategory } from '@/types/erp';
 import CloudinaryUploadModal from '@/components/documents/CloudinaryUploadModal';
+import AzurePdfExtractionModal from '@/components/documents/AzurePdfExtractionModal';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button, LinkButton } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 
+import { useDebounce } from '@/hooks/useDebounce';
+
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<CloudDocument[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<CloudDocument | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const loadData = async (query = '') => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/documents');
+      const params = new URLSearchParams();
+      if (query) params.set('q', query);
+      if (selectedCategory && selectedCategory !== 'ALL') params.set('category', selectedCategory);
+      const res = await fetch(`/api/documents?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setDocuments(Array.isArray(data) ? data : []);
       } else {
         setError('Failed to load documents');
-        setDocuments(dataStore.getDocuments());
       }
     } catch {
       setError('Something went wrong. Please try again.');
-      setDocuments(dataStore.getDocuments());
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(debouncedSearch);
+  }, [debouncedSearch, selectedCategory]);
 
   const filteredDocs = documents.filter((doc) => {
     if (selectedCategory !== 'ALL' && doc.category !== selectedCategory) return false;
@@ -101,9 +107,18 @@ export default function DocumentsPage() {
         title="Documents"
         description="One place for every commercial document — AWBs, invoices, proformas, and certificates."
         actions={
-          <Button iconLeft={<UploadCloud className="h-4 w-4" />} onClick={() => setIsUploadOpen(true)}>
-            Upload Document
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              iconLeft={<Sparkles className="h-4 w-4 text-primary" />}
+              onClick={() => setIsAiModalOpen(true)}
+            >
+              AI PDF Extraction
+            </Button>
+            <Button iconLeft={<UploadCloud className="h-4 w-4" />} onClick={() => setIsUploadOpen(true)}>
+              Upload Document
+            </Button>
+          </div>
         }
       />
 
@@ -214,6 +229,12 @@ export default function DocumentsPage() {
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
         onUploaded={() => loadData()}
+      />
+
+      <AzurePdfExtractionModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onSuccess={() => loadData()}
       />
 
       {/* Preview Modal */}

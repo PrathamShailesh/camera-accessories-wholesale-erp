@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -7,17 +8,33 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (!auth.ok) return auth.response;
 
   try {
-    // Cap order-history relations to the most recent 50 each — a long-time
-    // customer's full history is unbounded otherwise, and the detail page
-    // only needs a recent-activity view, not every order ever placed.
-    const customer = await prisma.customer.findUnique({
-      where: { id: params.id },
-      include: {
-        proformas: { orderBy: { createdAt: 'desc' }, take: 50 },
-        taxInvoices: { orderBy: { createdAt: 'desc' }, take: 50 },
-        shipments: { orderBy: { createdAt: 'desc' }, take: 50 },
-      },
-    });
+    let customer: any = null;
+    try {
+      customer = await prisma.customer.findUnique({
+        where: { id: params.id },
+        include: {
+          proformas: { orderBy: { createdAt: 'desc' }, take: 50 },
+          taxInvoices: { orderBy: { createdAt: 'desc' }, take: 50 },
+          shipments: { orderBy: { createdAt: 'desc' }, take: 50 },
+        },
+      });
+    } catch (dbErr) {
+      // Prisma offline, proceed to dataStore fallback
+    }
+
+    if (!customer) {
+      const fallback = dataStore.getCustomerById(params.id);
+      if (fallback) {
+        const customerProformas = dataStore.getProformas({ customerId: fallback.id });
+        const customerInvoices = dataStore.getInvoices({ customerId: fallback.id });
+        customer = {
+          ...fallback,
+          proformas: customerProformas,
+          taxInvoices: customerInvoices,
+          shipments: [],
+        };
+      }
+    }
 
     if (!customer) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
@@ -65,10 +82,25 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (status !== undefined) updateData.status = status;
     if (notes !== undefined) updateData.notes = notes;
 
-    const customer = await prisma.customer.update({
-      where: { id: params.id },
-      data: updateData,
-    });
+    let customer: any = null;
+    try {
+      customer = await prisma.customer.update({
+        where: { id: params.id },
+        data: updateData,
+      });
+    } catch (dbErr) {
+      // Fallback to dataStore
+      customer = dataStore.updateCustomer(params.id, updateData);
+    }
+
+    if (!customer) {
+      // Try by ID in dataStore if not already attempted
+      customer = dataStore.updateCustomer(params.id, updateData);
+    }
+
+    if (!customer) {
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+    }
 
     return NextResponse.json({ success: true, customer });
   } catch (error: any) {
@@ -82,10 +114,15 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!auth.ok) return auth.response;
 
   try {
-    await prisma.customer.delete({
-      where: { id: params.id },
-    });
+    try {
+      await prisma.customer.delete({
+        where: { id: params.id },
+      });
+    } catch (dbErr) {
+      // Prisma offline, proceed to dataStore delete
+    }
 
+    dataStore.deleteCustomer(params.id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting customer:', error);

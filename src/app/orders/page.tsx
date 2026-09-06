@@ -11,6 +11,8 @@ import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { SearchInput } from '@/components/ui/Input';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface StageConfig {
   key: string;
@@ -31,13 +33,19 @@ import { fetchWithCache } from '@/lib/client-cache';
 export default function OrdersPipelinePage() {
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
   const [proformas, setProformas] = useState<Proforma[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [loading, setLoading] = useState(true);
 
-  const loadData = async (force = false) => {
+  const loadData = async (force = false, query = '') => {
     try {
+      const q = query.trim();
+      const invUrl = q ? `/api/invoices?q=${encodeURIComponent(q)}` : '/api/invoices';
+      const pfUrl = q ? `/api/proformas?q=${encodeURIComponent(q)}` : '/api/proformas';
+
       const [invRes, pfRes] = await Promise.all([
-        fetchWithCache<TaxInvoice[]>('/api/invoices', undefined, force ? 0 : 15000),
-        fetchWithCache<Proforma[]>('/api/proformas', undefined, force ? 0 : 15000),
+        fetchWithCache<TaxInvoice[]>(invUrl, undefined, force ? 0 : 5000),
+        fetchWithCache<Proforma[]>(pfUrl, undefined, force ? 0 : 5000),
       ]);
       setInvoices(Array.isArray(invRes) ? invRes : []);
       setProformas(Array.isArray(pfRes) ? pfRes : []);
@@ -50,8 +58,10 @@ export default function OrdersPipelinePage() {
   };
 
   useEffect(() => {
-    loadData();
+    loadData(true, debouncedSearch);
+  }, [debouncedSearch]);
 
+  useEffect(() => {
     let eventSource: EventSource | null = null;
     try {
       eventSource = new EventSource('/api/events');
@@ -93,6 +103,14 @@ export default function OrdersPipelinePage() {
         title="Order Pipeline"
         description="Every live order from quotation through dispatch and delivery."
       />
+
+      <div className="max-w-md">
+        <SearchInput
+          placeholder="Search by order #, invoice #, or customer..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
 
       {loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">

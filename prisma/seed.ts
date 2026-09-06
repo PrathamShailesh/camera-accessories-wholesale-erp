@@ -76,8 +76,8 @@ async function main() {
   });
   console.log('✅ Company settings created');
 
-  // Create Single Depot (Current Depot)
-  console.log('🏭 Creating single central depot...');
+  // Create Depots (Central Hub and Regional Depot for transfer testing)
+  console.log('🏭 Creating depots...');
   const centralDepot = await prisma.depot.create({
     data: {
       id: 'dep-central',
@@ -95,15 +95,75 @@ async function main() {
       totalStockValue: 0,
     },
   });
-  console.log(`✅ Created central depot: ${centralDepot.name}`);
 
-  // Create Initial Users with salted password hashes
+  const regionalDepot = await prisma.depot.create({
+    data: {
+      id: 'dep-regional',
+      code: 'DEP-REGIONAL',
+      name: 'Regional Depot',
+      address: 'Dubai South Aviation City, Unit 4B',
+      city: 'Dubai',
+      country: 'United Arab Emirates',
+      contactPerson: 'Regional Logistics Officer',
+      phone: '+971 4 881 2299',
+      email: 'regional@aribglobal.com',
+      isCentralHub: false,
+      activeOrdersCount: 0,
+      totalStockUnits: 0,
+      totalStockValue: 0,
+    },
+  });
+  console.log(`✅ Created depots: ${centralDepot.name}, ${regionalDepot.name}`);
+
+  // Create Standard Product Categories
+  console.log('📦 Creating product categories...');
+  const categories = await Promise.all([
+    prisma.category.create({
+      data: {
+        id: 'cat-cam',
+        name: 'Camera Bodies',
+        slug: 'camera-bodies',
+        description: 'Professional cinema and mirrorless camera bodies',
+        icon: 'Camera',
+      },
+    }),
+    prisma.category.create({
+      data: {
+        id: 'cat-len',
+        name: 'Cinema Lenses',
+        slug: 'cinema-lenses',
+        description: 'High-speed cinema primes and zoom optics',
+        icon: 'Disc',
+      },
+    }),
+    prisma.category.create({
+      data: {
+        id: 'cat-sto',
+        name: 'Storage & Media',
+        slug: 'storage-media',
+        description: 'CFexpress, Cinema SSDs and SDXC memory cards',
+        icon: 'HardDrive',
+      },
+    }),
+    prisma.category.create({
+      data: {
+        id: 'cat-lig',
+        name: 'Lighting & Grip',
+        slug: 'lighting-grip',
+        description: 'Continuous LED lights and studio grip',
+        icon: 'SunMedium',
+      },
+    }),
+  ]);
+  console.log(`✅ Created ${categories.length} categories`);
+
+  // Create System Users matching Credential Matrix
   console.log('👤 Creating initial system users...');
   const users = await Promise.all([
     prisma.user.create({
       data: {
         id: 'usr-admin',
-        name: 'System Administrator',
+        name: 'Sarah Jenkins (Super Admin)',
         email: 'admin@aribglobal.com',
         role: 'SUPER_ADMIN',
         avatar: '',
@@ -114,14 +174,38 @@ async function main() {
     }),
     prisma.user.create({
       data: {
+        id: 'usr-mgr',
+        name: 'Marcus Vance (Manager)',
+        email: 'marcus.vance@lenscore.com',
+        role: 'MANAGER',
+        avatar: '',
+        phone: '+971 4 800 0102',
+        status: 'ACTIVE',
+        passwordHash: hashSeedPassword('Manager@Growth2026!'),
+      },
+    }),
+    prisma.user.create({
+      data: {
+        id: 'usr-erp',
+        name: 'Priya Menon (ERP User)',
+        email: 'priya.erp@lenscore.com',
+        role: 'ERP_USER',
+        avatar: '',
+        phone: '+971 4 800 0103',
+        status: 'ACTIVE',
+        passwordHash: hashSeedPassword('ErpUser@Growth2026!'),
+      },
+    }),
+    prisma.user.create({
+      data: {
         id: 'usr-depot',
-        name: 'Depot Manager',
+        name: 'Tariq Al-Mansoor (Depot User)',
         email: 'depot@aribglobal.com',
         role: 'DEPOT_USER',
         assignedDepotId: 'dep-central',
         assignedDepotName: 'Central Depot',
         avatar: '',
-        phone: '+971 4 800 0100',
+        phone: '+971 4 800 0104',
         status: 'ACTIVE',
         passwordHash: hashSeedPassword('Depot@Arib2026!'),
       },

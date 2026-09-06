@@ -32,6 +32,7 @@ export async function middleware(req: NextRequest) {
     pathname === '/favicon.ico' ||
     pathname === '/manifest.json' ||
     pathname === '/pdflogo.png' ||
+    pathname === '/arib-seal.png' ||
     pathname === '/Logo-Samples.png' ||
     pathname === '/sw.js'
   ) {

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Users, Plus, KeyRound, CheckCircle2, ShieldAlert, Check, Minus, Trash2, Power } from 'lucide-react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { formatDateTime } from '@/lib/utils';
 import { User, UserRole, Depot } from '@/types/erp';
 import ImageUploadField from '@/components/ui/ImageUploadField';
@@ -48,7 +49,9 @@ export default function UsersManagementPage() {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [depots, setDepots] = useState<Depot[]>([]);
+  const [activeTab, setActiveTab] = useState<'users' | 'roles'>('users');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
 
@@ -75,9 +78,11 @@ export default function UsersManagementPage() {
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const loadData = async () => {
+  const loadData = async (query = '') => {
     try {
-      const [usersRes, depotsRes] = await Promise.all([fetch('/api/users'), fetch('/api/depots')]);
+      const q = query.trim();
+      const usersUrl = q ? `/api/users?q=${encodeURIComponent(q)}` : '/api/users';
+      const [usersRes, depotsRes] = await Promise.all([fetch(usersUrl), fetch('/api/depots')]);
       const usersData = usersRes.ok ? await usersRes.json() : [];
       const depotsData = depotsRes.ok ? await depotsRes.json() : [];
       setUsers(Array.isArray(usersData) ? usersData : []);
@@ -90,9 +95,8 @@ export default function UsersManagementPage() {
   };
 
   useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    loadData(debouncedSearch);
+  }, [debouncedSearch]);
 
   const openCreate = () => {
     setForm({
@@ -167,12 +171,53 @@ export default function UsersManagementPage() {
       }
 
       toast({ title: isEdit ? 'User updated' : 'User created', variant: 'success' });
-      await loadData();
+      await loadData(debouncedSearch);
       closeDrawer();
     } catch (err: any) {
       setFormError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleToggleStatus = async (user: User) => {
+    const nextStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to change user status');
+      }
+      toast({
+        title: nextStatus === 'ACTIVE' ? 'User activated' : 'User deactivated',
+        variant: 'success',
+      });
+      await loadData(debouncedSearch);
+    } catch (err: any) {
+      toast({ title: err.message || 'Status change failed', variant: 'error' });
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/users/${deleteTarget.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to delete user');
+      }
+      toast({ title: 'User account deleted', variant: 'success' });
+      setDeleteTarget(null);
+      await loadData(debouncedSearch);
+    } catch (err: any) {
+      toast({ title: err.message || 'Delete failed', variant: 'error' });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -232,100 +277,250 @@ export default function UsersManagementPage() {
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
         eyebrow="07 / ADMINISTRATION"
-        title="Users"
-        description="System operators, role-based access, and depot assignments."
+        title="Users & Roles"
+        description="System operators, role-based access control, and depot assignments."
         actions={
-          <Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreate}>
-            New User
-          </Button>
+          activeTab === 'users' ? (
+            <Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreate}>
+              New User
+            </Button>
+          ) : undefined
         }
       />
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <SearchInput
-          placeholder="Search name, email, or depot..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          wrapperClassName="w-full sm:w-80"
-        />
-        <Select
-          options={[{ label: 'All roles', value: 'ALL' }, ...ROLE_OPTIONS]}
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          wrapperClassName="w-44"
-        />
-        <span className="text-xs text-muted sm:ml-auto">{filteredUsers.length} users</span>
+      <div className="flex border-b border-line gap-2">
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
+            activeTab === 'users'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted hover:text-ink'
+          }`}
+        >
+          <Users className="h-4 w-4" />
+          <span>Team Members ({users.length})</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('roles')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
+            activeTab === 'roles'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted hover:text-ink'
+          }`}
+        >
+          <ShieldAlert className="h-4 w-4" />
+          <span>Roles & Permissions Matrix</span>
+        </button>
       </div>
 
-      {loading ? (
-        <SkeletonTable rows={5} cols={6} />
-      ) : filteredUsers.length === 0 ? (
-        <EmptyState
-          icon={Users}
-          title={users.length === 0 ? 'No users yet' : 'No matching users'}
-          description={
-            users.length === 0
-              ? 'Add team members and assign their roles to control access.'
-              : 'No users match your search or role filter.'
-          }
-          action={
-            users.length === 0 && (
-              <Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreate}>
-                Add User
-              </Button>
-            )
-          }
-        />
+      {activeTab === 'roles' ? (
+        <div className="space-y-6 animate-fade-in">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="p-4 border-l-4 border-l-primary bg-white">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-sm text-ink">Super Admin</span>
+                <Badge tone="primary">Full Access</Badge>
+              </div>
+              <p className="text-xs text-muted mt-2 leading-relaxed">
+                Unrestricted administrative and executive control. User management, settings, financial profit reports, and multi-depot overview.
+              </p>
+            </Card>
+            <Card className="p-4 border-l-4 border-l-sky-500 bg-white">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-sm text-ink">Manager</span>
+                <Badge tone="info">Operations Lead</Badge>
+              </div>
+              <p className="text-xs text-muted mt-2 leading-relaxed">
+                Full sales, billing, inventory, and logistics authorization. Can create proformas, approve invoices, and dispatch shipments.
+              </p>
+            </Card>
+            <Card className="p-4 border-l-4 border-l-slate-400 bg-white">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-sm text-ink">ERP User</span>
+                <Badge tone="neutral">Sales & Orders</Badge>
+              </div>
+              <p className="text-xs text-muted mt-2 leading-relaxed">
+                Front-office sales representative. Generates quotations and proformas, views catalog pricing and customer records.
+              </p>
+            </Card>
+            <Card className="p-4 border-l-4 border-l-amber-500 bg-white">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-sm text-ink">Depot User</span>
+                <Badge tone="warning">Warehouse Only</Badge>
+              </div>
+              <p className="text-xs text-muted mt-2 leading-relaxed">
+                Sandboxed to their assigned physical depot. Barcode scanner UI, shelf item picking, packing validation, and airway bill handover.
+              </p>
+            </Card>
+          </div>
+
+          <Card className="overflow-hidden p-0">
+            <div className="px-5 py-3.5 bg-surface border-b border-line">
+              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Access Control Matrix</h3>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableHead>Functional Module</TableHead>
+                <TableHead>Super Admin</TableHead>
+                <TableHead>Manager</TableHead>
+                <TableHead>ERP User</TableHead>
+                <TableHead>Depot User</TableHead>
+              </TableHeader>
+              <TableBody>
+                {[
+                  { module: 'Sales & Proformas', desc: 'Quotations, proforma invoices, email sending, converting to tax invoice', sa: 'Full Access', m: 'Full Access', eu: 'Full Access', du: 'None' },
+                  { module: 'Tax Invoices & Billing', desc: 'Tax invoices, service invoices, financial PDFs, payment tracking', sa: 'Full Access', m: 'Full Access', eu: 'View Only', du: 'None' },
+                  { module: 'Product Catalog & Pricing', desc: 'Product specs, pricing, margins, barcode generation, bulk import', sa: 'Full Access', m: 'Full Access', eu: 'View Only', du: 'Stock Only' },
+                  { module: 'Inventory & Serial Tracking', desc: 'Multi-warehouse stock, serial tracking, transfers, stock adjustments', sa: 'Full Access', m: 'Full Access', eu: 'View Only', du: 'Assigned Depot' },
+                  { module: 'Depot & Fulfilment', desc: 'Barcode scanning, order picking, packing station, shipment dispatch', sa: 'Full Access', m: 'Full Access', eu: 'None', du: 'Assigned Depot' },
+                  { module: 'Shipments & Airway Bills', desc: 'AWB generation, carrier tracking, delivery confirmation', sa: 'Full Access', m: 'Full Access', eu: 'View Only', du: 'Assigned Depot' },
+                  { module: 'Financial Reports & Analytics', desc: 'Profitability, sales analytics, gross margin reports, inventory value', sa: 'Full Access', m: 'Full Access', eu: 'None', du: 'None' },
+                  { module: 'Users & Administration', desc: 'Team member accounts, role assignment, audit logs, system settings', sa: 'Full Access', m: 'None', eu: 'None', du: 'None' },
+                ].map((row) => (
+                  <TableRow key={row.module}>
+                    <TableCell>
+                      <div className="font-semibold text-ink text-xs">{row.module}</div>
+                      <div className="text-[11px] text-muted mt-0.5">{row.desc}</div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        <Check className="h-3 w-3" /> {row.sa}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded border ${
+                        row.m === 'Full Access' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-slate-400 bg-slate-50 border-slate-200'
+                      }`}>
+                        {row.m === 'Full Access' ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />} {row.m}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded border ${
+                        row.eu === 'Full Access' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : row.eu === 'View Only' ? 'text-sky-700 bg-sky-50 border-sky-200' : 'text-slate-400 bg-slate-50 border-slate-200'
+                      }`}>
+                        {row.eu === 'Full Access' ? <Check className="h-3 w-3" /> : row.eu === 'View Only' ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />} {row.eu}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded border ${
+                        row.du.includes('Assigned') ? 'text-amber-700 bg-amber-50 border-amber-200' : row.du === 'Stock Only' ? 'text-sky-700 bg-sky-50 border-sky-200' : 'text-slate-400 bg-slate-50 border-slate-200'
+                      }`}>
+                        {row.du === 'None' ? <Minus className="h-3 w-3" /> : <Check className="h-3 w-3" />} {row.du}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </div>
       ) : (
-        <Card className="overflow-hidden p-0">
-          <Table>
-            <TableHeader>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Depot</TableHead>
-              <TableHead>Last Login</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead align="right">Action</TableHead>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar name={u.name} src={u.avatar} size="sm" />
-                      <div className="min-w-0">
-                        <div className="font-semibold text-ink truncate">{u.name}</div>
-                        <div className="text-xs text-muted truncate mt-0.5">{u.email}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge tone={ROLE_TONE[u.role] || 'neutral'}>{u.role.replace(/_/g, ' ')}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted">
-                    {u.role === 'DEPOT_USER' ? u.assignedDepotName || '—' : 'All depots'}
-                  </TableCell>
-                  <TableCell className="text-muted text-xs">
-                    {u.lastLogin ? formatDateTime(u.lastLogin) : 'Never'}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={u.status} />
-                  </TableCell>
-                  <TableCell align="right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Button variant="ghost" size="sm" onClick={() => setResetTarget(u)}>
-                        Reset
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
-                        Edit
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+        <>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <SearchInput
+              placeholder="Search name, email, or depot..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              wrapperClassName="w-full sm:w-80"
+            />
+            <Select
+              options={[{ label: 'All roles', value: 'ALL' }, ...ROLE_OPTIONS]}
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              wrapperClassName="w-44"
+            />
+            <span className="text-xs text-muted sm:ml-auto">{filteredUsers.length} users</span>
+          </div>
+
+          {loading ? (
+            <SkeletonTable rows={5} cols={6} />
+          ) : filteredUsers.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title={users.length === 0 ? 'No users yet' : 'No matching users'}
+              description={
+                users.length === 0
+                  ? 'Add team members and assign their roles to control access.'
+                  : 'No users match your search or role filter.'
+              }
+              action={
+                users.length === 0 && (
+                  <Button iconLeft={<Plus className="h-4 w-4" />} onClick={openCreate}>
+                    Add User
+                  </Button>
+                )
+              }
+            />
+          ) : (
+            <Card className="overflow-hidden p-0">
+              <Table>
+                <TableHeader>
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Depot</TableHead>
+                  <TableHead>Last Login</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead align="right">Action</TableHead>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar name={u.name} src={u.avatar} size="sm" />
+                          <div className="min-w-0">
+                            <div className="font-semibold text-ink truncate">{u.name}</div>
+                            <div className="text-xs text-muted truncate mt-0.5">{u.email}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge tone={ROLE_TONE[u.role] || 'neutral'}>{u.role.replace(/_/g, ' ')}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted">
+                        {u.role === 'DEPOT_USER' ? u.assignedDepotName || '—' : 'All depots'}
+                      </TableCell>
+                      <TableCell className="text-muted text-xs">
+                        {u.lastLogin ? formatDateTime(u.lastLogin) : 'Never'}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={u.status} />
+                      </TableCell>
+                      <TableCell align="right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleStatus(u)}
+                            className={u.status === 'ACTIVE' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}
+                            title={u.status === 'ACTIVE' ? 'Deactivate user' : 'Activate user'}
+                          >
+                            {u.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setResetTarget(u)}>
+                            Reset
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2"
+                            onClick={() => setDeleteTarget(u)}
+                            title="Delete User"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          )}
+        </>
       )}
 
       <Drawer
@@ -434,23 +629,24 @@ export default function UsersManagementPage() {
         </form>
       </Drawer>
 
+      {/* Reset Password Modal */}
       <Modal
         open={resetTarget !== null}
         onClose={() => setResetTarget(null)}
-        title="Reset Password"
-        description={resetTarget ? `Set a new password for ${resetTarget.name}.` : undefined}
+        title={`Reset Password for ${resetTarget?.name || 'User'}`}
+        description="Set a new temporary password for this user. They should change it upon next login."
         footer={
           <>
             <Button variant="outline" onClick={() => setResetTarget(null)} disabled={isResetting}>
               Cancel
             </Button>
-            <Button type="submit" form="reset-form" loading={isResetting} iconLeft={!isResetting ? <KeyRound className="h-4 w-4" /> : undefined}>
-              Reset Password
+            <Button onClick={handleResetPassword} loading={isResetting} iconLeft={<KeyRound className="h-4 w-4" />}>
+              Save Password
             </Button>
           </>
         }
       >
-        <form id="reset-form" onSubmit={handleResetPassword} className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {resetError && (
             <div className="rounded-lg border border-danger-border bg-danger-soft px-3.5 py-2.5 text-xs text-danger">
               {resetError}
@@ -458,14 +654,16 @@ export default function UsersManagementPage() {
           )}
           <Input
             label="New Password"
+            type="text"
+            required
             value={resetPassword}
             onChange={(e) => setResetPassword(e.target.value)}
-            required
-            hint="Share this securely — the user should change it after signing in."
+            hint="Minimum 8 characters with letters, numbers, and symbols recommended."
           />
-        </form>
+        </div>
       </Modal>
 
+      {/* Delete User Confirmation */}
       <ConfirmDialog
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}

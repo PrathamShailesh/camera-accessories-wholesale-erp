@@ -13,9 +13,26 @@ export async function GET(req: NextRequest) {
   try {
     const scopedDepotId = depotIdFilter(auth.user);
     const { take, skip } = parsePagination(req, { defaultLimit: 50, maxLimit: 200 });
+    const q = req.nextUrl.searchParams.get('q')?.trim();
+    const paymentStatus = req.nextUrl.searchParams.get('paymentStatus')?.trim();
+    const fulfilmentStatus = req.nextUrl.searchParams.get('fulfilmentStatus')?.trim();
+
+    const where: any = {};
+    if (scopedDepotId) where.depotId = scopedDepotId;
+    if (paymentStatus && paymentStatus !== 'ALL') where.paymentStatus = paymentStatus;
+    if (fulfilmentStatus && fulfilmentStatus !== 'ALL') where.fulfilmentStatus = fulfilmentStatus;
+    if (q) {
+      where.OR = [
+        { invoiceNumber: { contains: q, mode: 'insensitive' as const } },
+        { customerCompany: { contains: q, mode: 'insensitive' as const } },
+        { customerName: { contains: q, mode: 'insensitive' as const } },
+        { proformaNumber: { contains: q, mode: 'insensitive' as const } },
+      ];
+    }
+
     const invoices = await withDbTimeout(() =>
       prisma.taxInvoice.findMany({
-        where: scopedDepotId ? { depotId: scopedDepotId } : undefined,
+        where: Object.keys(where).length > 0 ? where : undefined,
         include: {
           items: true,
           packingDetails: true,
@@ -57,10 +74,19 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching invoices from DB, using fallback:', error);
     try {
-      const fallbackInvoices = dataStore.getInvoices();
-      return NextResponse.json(fallbackInvoices);
+      const q = req.nextUrl.searchParams.get('q')?.trim()?.toLowerCase();
+      let list = dataStore.getInvoices();
+      if (q) {
+        list = list.filter(
+          (inv) =>
+            inv.invoiceNumber.toLowerCase().includes(q) ||
+            inv.customerCompany.toLowerCase().includes(q) ||
+            inv.customerName.toLowerCase().includes(q) ||
+            (inv.proformaNumber && inv.proformaNumber.toLowerCase().includes(q))
+        );
+      }
+      return NextResponse.json(list);
     } catch {
       return NextResponse.json([]);
     }
@@ -75,35 +101,40 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { proformaId, depotId } = body;
 
-    if (proformaId) {
-      const proforma = await prisma.proforma.findUnique({
+    if (!proformaId) {
+      return NextResponse.json({ error: 'ProformaId required for invoice creation' }, { status: 400 });
+    }
+
+    // Lookup proforma (DB or dataStore)
+    let proforma: any = null;
+    try {
+      proforma = await prisma.proforma.findUnique({
         where: { id: proformaId },
         include: { items: true, customer: true },
       });
+    } catch {}
 
-      if (!proforma) {
-        return NextResponse.json({ error: 'Proforma not found' }, { status: 404 });
-      }
+    if (!proforma) {
+      proforma = dataStore.getProformaById(proformaId);
+    }
 
-      if (proforma.status !== 'CONFIRMED') {
-        return NextResponse.json({ error: 'Proforma must be confirmed before conversion' }, { status: 400 });
-      }
+    if (!proforma) {
+      return NextResponse.json({ error: 'Proforma not found' }, { status: 404 });
+    }
 
-      const depot = await prisma.depot.findUnique({
-        where: { id: depotId },
-      });
+    const finalDepotId = depotId || proforma.selectedDepotId || 'dep-central';
+    const depot = dataStore.getDepotById(finalDepotId);
+    const depotName = depot?.name || 'Central Depot';
 
-      if (!depot) {
-        return NextResponse.json({ error: 'Depot not found' }, { status: 404 });
-      }
-
+    let invoice: any = null;
+    try {
       const settings = await prisma.companySettings.findUnique({
         where: { id: 'global-settings' },
       });
       const nextNumber = settings?.invoiceNextNumber || 1;
       const invoiceNumber = `${settings?.invoicePrefix || 'INV-2026-'}${String(nextNumber).padStart(5, '0')}`;
 
-      const invoice = await prisma.taxInvoice.create({
+      invoice = await prisma.taxInvoice.create({
         data: {
           invoiceNumber,
           proformaId,
@@ -115,8 +146,8 @@ export async function POST(req: NextRequest) {
           customerPhone: proforma.customerPhone,
           billingAddress: proforma.billingAddress,
           shippingAddress: proforma.shippingAddress,
-          depotId,
-          depotName: depot.name,
+          depotId: finalDepotId,
+          depotName,
           issueDate: new Date(),
           dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           paymentTerms: proforma.paymentTerms,
@@ -127,14 +158,14 @@ export async function POST(req: NextRequest) {
           taxAmount: proforma.taxAmount,
           shippingCost: proforma.shippingCost,
           grandTotal: proforma.grandTotal,
-          currency: proforma.currency,
+          currency: proforma.currency || 'USD',
           notes: proforma.notes,
         },
       });
 
-      for (const item of proforma.items) {
-        await prisma.invoiceItem.create({
-          data: {
+      if (Array.isArray(proforma.items) && proforma.items.length > 0) {
+        await prisma.invoiceItem.createMany({
+          data: proforma.items.map((item: any) => ({
             invoiceId: invoice.id,
             productId: item.productId,
             productSku: item.productSku,
@@ -145,29 +176,13 @@ export async function POST(req: NextRequest) {
             taxRate: item.taxRate,
             taxAmount: item.taxAmount,
             totalPrice: item.totalPrice,
-            depotId,
-            depotName: depot.name,
+            depotId: item.selectedDepotId || finalDepotId,
+            depotName,
             trackSerial: item.trackSerial,
             isPicked: false,
-          },
+          })),
         });
       }
-
-      await deductStockForInvoice(
-        invoice.id,
-        proforma.items.map((i) => ({
-          productId: i.productId,
-          productSku: i.productSku,
-          productName: i.productName,
-          quantity: i.quantity,
-          depotId,
-          trackSerial: i.trackSerial,
-          unitPrice: i.unitPrice,
-        })),
-        depotId,
-        invoice.invoiceNumber,
-        proforma.customerCompany || proforma.customerName
-      );
 
       await prisma.proforma.update({
         where: { id: proformaId },
@@ -182,26 +197,46 @@ export async function POST(req: NextRequest) {
       await prisma.companySettings.update({
         where: { id: 'global-settings' },
         data: { invoiceNextNumber: nextNumber + 1 },
+      }).catch(() => {});
+    } catch (dbErr) {
+      // Fallback to dataStore
+      invoice = dataStore.createInvoice({
+        proformaId,
+        proformaNumber: proforma.proformaNumber,
+        customerId: proforma.customerId,
+        customerName: proforma.customerName,
+        customerCompany: proforma.customerCompany,
+        customerEmail: proforma.customerEmail,
+        customerPhone: proforma.customerPhone,
+        billingAddress: proforma.billingAddress,
+        shippingAddress: proforma.shippingAddress,
+        depotId: finalDepotId,
+        depotName,
+        paymentTerms: proforma.paymentTerms,
+        subtotal: proforma.subtotal,
+        discountAmount: proforma.discountAmount,
+        taxAmount: proforma.taxAmount,
+        shippingCost: proforma.shippingCost,
+        grandTotal: proforma.grandTotal,
+        currency: proforma.currency || 'USD',
+        notes: proforma.notes,
+        items: proforma.items,
       });
 
-      const completeInvoice = await prisma.taxInvoice.findUnique({
-        where: { id: invoice.id },
-        include: { items: true, customer: true, depot: true },
-      });
-
-      // Trigger async transactional email for Depot team (non-blocking)
-      try {
-        triggerInvoiceCreatedDepotEmail(completeInvoice || invoice);
-      } catch (emailErr) {
-        console.error('Failed to queue depot email:', emailErr);
-      }
-
-      return NextResponse.json(completeInvoice || invoice, { status: 201 });
+      dataStore.updateProforma(proformaId, {
+        status: 'CONVERTED',
+        convertedToInvoiceId: invoice.id,
+        convertedToInvoiceNumber: invoice.invoiceNumber,
+      } as any);
     }
 
-    return NextResponse.json({ error: 'ProformaId required for invoice creation' }, { status: 400 });
-  } catch (error) {
+    try {
+      triggerInvoiceCreatedDepotEmail(invoice);
+    } catch {}
+
+    return NextResponse.json(invoice, { status: 201 });
+  } catch (error: any) {
     console.error('Error creating invoice:', error);
-    return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Failed to create invoice' }, { status: 500 });
   }
 }

@@ -73,6 +73,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
 
 export interface LinkButtonProps extends BaseButtonProps {
   href: string;
+  prefetch?: boolean;
   target?: string;
   rel?: string;
   title?: string;
@@ -81,6 +82,7 @@ export interface LinkButtonProps extends BaseButtonProps {
 
 export function LinkButton({
   href,
+  prefetch = false,
   className,
   variant = 'primary',
   size = 'md',
@@ -91,7 +93,7 @@ export function LinkButton({
   ...props
 }: LinkButtonProps) {
   return (
-    <Link href={href} className={buttonClassName(variant, size, className)} {...props}>
+    <Link href={href} prefetch={prefetch} className={buttonClassName(variant, size, className)} {...props}>
       {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : iconLeft}
       {children}
       {!loading && iconRight}

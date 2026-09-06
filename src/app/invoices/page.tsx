@@ -9,8 +9,11 @@ import {
   Building2,
   AlertCircle,
   Plus,
+  XCircle,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
+import { useDebounce } from '@/hooks/useDebounce';
+import { ConfirmDialog } from '@/components/ui/Modal';
+import { useToast } from '@/components/ui/Toast';
 import { formatUSD, formatDate } from '@/lib/utils';
 import { TaxInvoice, User } from '@/types/erp';
 import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
@@ -24,32 +27,49 @@ import { SkeletonTable } from '@/components/ui/Skeleton';
 import { fetchWithCache, getCurrentUserCachedSync } from '@/lib/client-cache';
 
 export default function InvoicesPage() {
-  const [currentUser, setCurrentUser] = useState<User>(() => getCurrentUserCachedSync()?.user || dataStore.getCurrentUser());
+  const { toast } = useToast();
+  const [currentUser, setCurrentUser] = useState<User>(
+    () => (getCurrentUserCachedSync()?.user as User) || ({
+      id: 'usr-admin',
+      name: 'Super Admin',
+      role: 'SUPER_ADMIN',
+      email: 'admin@arib.com',
+      status: 'ACTIVE',
+    } as User)
+  );
   const [invoices, setInvoices] = useState<TaxInvoice[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [selectedDoc, setSelectedDoc] = useState<TaxInvoice | null>(null);
+  const [cancellingInvoice, setCancellingInvoice] = useState<TaxInvoice | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const loadData = async (force = false) => {
+    setIsLoading(true);
     try {
       const cached = getCurrentUserCachedSync()?.user;
       if (cached) setCurrentUser(cached);
-      const data = await fetchWithCache<TaxInvoice[]>('/api/invoices', undefined, 10000);
+      const params = new URLSearchParams();
+      if (debouncedSearch) params.set('q', debouncedSearch);
+      if (filterStatus && filterStatus !== 'ALL') params.set('fulfilmentStatus', filterStatus);
+      const url = `/api/invoices${params.toString() ? `?${params.toString()}` : ''}`;
+      const data = await fetchWithCache<TaxInvoice[]>(url, undefined, force ? 0 : 5000);
       setInvoices(Array.isArray(data) ? data : []);
       setError(null);
     } catch {
       setError('Something went wrong. Please try again.');
-      setInvoices(dataStore.getInvoices());
+      setInvoices([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(true);
+  }, [debouncedSearch, filterStatus]);
 
   const isDepotUser = currentUser.role === 'DEPOT_USER';
 
@@ -205,6 +225,18 @@ export default function InvoicesPage() {
                       <LinkButton href={`/invoices/${inv.id}`} size="sm" variant="secondary">
                         Open
                       </LinkButton>
+                      {inv.fulfilmentStatus !== 'DELIVERED' &&
+                        inv.fulfilmentStatus !== 'SHIPPED' &&
+                        inv.fulfilmentStatus !== 'CANCELLED' && (
+                          <button
+                            type="button"
+                            onClick={() => setCancellingInvoice(inv)}
+                            className="p-1.5 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                            title="Cancel Invoice & Restore Stock"
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -223,6 +255,38 @@ export default function InvoicesPage() {
           data={selectedDoc}
         />
       )}
+
+      <ConfirmDialog
+        open={cancellingInvoice !== null}
+        onClose={() => setCancellingInvoice(null)}
+        onConfirm={async () => {
+          if (!cancellingInvoice) return;
+          setIsCancelling(true);
+          try {
+            const res = await fetch(`/api/invoices/${cancellingInvoice.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fulfilmentStatus: 'CANCELLED' }),
+            });
+            if (!res.ok) {
+              const d = await res.json().catch(() => ({}));
+              throw new Error(d.error || 'Failed to cancel invoice');
+            }
+            toast({ title: 'Invoice cancelled and stock restored to depot', variant: 'success' });
+            setCancellingInvoice(null);
+            loadData(true);
+          } catch (err: any) {
+            toast({ title: err.message || 'Could not cancel invoice', variant: 'error' });
+          } finally {
+            setIsCancelling(false);
+          }
+        }}
+        title={`Cancel Tax Invoice ${cancellingInvoice?.invoiceNumber}?`}
+        description="This will cancel the invoice, restore allocated inventory units back to the depot, and release all reserved serial numbers."
+        confirmLabel="Cancel Invoice"
+        destructive
+        loading={isCancelling}
+      />
     </div>
   );
 }

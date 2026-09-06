@@ -16,10 +16,11 @@ import {
   ExternalLink,
   CreditCard,
   X,
+  XCircle,
 } from 'lucide-react';
-import dataStore from '@/lib/data-store';
 import { formatUSD, formatDate } from '@/lib/utils';
 import { TaxInvoice, Shipment, CloudDocument, User } from '@/types/erp';
+import { fetchCurrentUserCached, getCurrentUserCachedSync } from '@/lib/client-cache';
 import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
 import CloudinaryUploadModal from '@/components/documents/CloudinaryUploadModal';
 import { Button, LinkButton } from '@/components/ui/Button';
@@ -27,13 +28,24 @@ import { StatusBadge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { ConfirmDialog } from '@/components/ui/Modal';
+import { useToast } from '@/components/ui/Toast';
 
 export default function InvoiceDetailPage() {
+  const { toast } = useToast();
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
 
-  const [currentUser, setCurrentUser] = useState<User>(dataStore.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<User>(
+    () => (getCurrentUserCachedSync()?.user as User) || ({
+      id: 'usr-admin',
+      name: 'Super Admin',
+      role: 'SUPER_ADMIN',
+      email: 'admin@arib.com',
+      status: 'ACTIVE',
+    } as User)
+  );
   const [invoice, setInvoice] = useState<TaxInvoice | null>(null);
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [documents, setDocuments] = useState<CloudDocument[]>([]);
@@ -45,18 +57,20 @@ export default function InvoiceDetailPage() {
   const [isPicking, setIsPicking] = useState(false);
   const [isPacking, setIsPacking] = useState(false);
   const [isShipping, setIsShipping] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Packing modal fields
   const [packedBy, setPackedBy] = useState('');
   const [boxCount, setBoxCount] = useState(1);
-  const [totalWeight, setTotalWeight] = useState(6.5);
-  const [lengthCm, setLengthCm] = useState(45);
-  const [widthCm, setWidthCm] = useState(35);
+  const [totalWeight, setTotalWeight] = useState(4.5);
+  const [lengthCm, setLengthCm] = useState(40);
+  const [widthCm, setWidthCm] = useState(30);
   const [heightCm, setHeightCm] = useState(25);
   const [packagePhotoUrl, setPackagePhotoUrl] = useState('');
 
   // Shipping modal fields
-  const [courier, setCourier] = useState<Shipment['courier']>('DHL_EXPRESS');
+  const [courier, setCourier] = useState('DHL_EXPRESS');
   const [awbNumber, setAwbNumber] = useState('');
   const [trackingUrl, setTrackingUrl] = useState('');
   const [shippingCost, setShippingCost] = useState(180);
@@ -64,37 +78,43 @@ export default function InvoiceDetailPage() {
 
   const loadData = async () => {
     try {
-      const user = dataStore.getCurrentUser();
-      setCurrentUser(user);
+      const authData = await fetchCurrentUserCached();
+      if (authData?.authenticated && authData.user) {
+        setCurrentUser(authData.user);
+      }
 
       const res = await fetch(`/api/invoices/${id}`);
       if (res.ok) {
         const inv = await res.json();
         setInvoice(inv);
-        if (inv.shipment || inv.shipmentId) {
-          setShipment(inv.shipment || dataStore.getShipmentById(inv.shipmentId));
+        if (inv.shipment) {
+          setShipment(inv.shipment);
+        } else if (inv.shipmentId) {
+          try {
+            const shpRes = await fetch(`/api/shipments/${inv.shipmentId}`);
+            if (shpRes.ok) {
+              const shp = await shpRes.json();
+              setShipment(shp);
+            }
+          } catch {}
         }
-        const docs = dataStore.getDocuments({ entityId: inv.id });
-        setDocuments(docs);
-        if (!packedBy) setPackedBy(user.name);
+
+        try {
+          const docsRes = await fetch(`/api/documents?entityId=${inv.id}`);
+          if (docsRes.ok) {
+            const docs = await docsRes.json();
+            setDocuments(Array.isArray(docs) ? docs : []);
+          }
+        } catch {}
+
+        if (!packedBy && authData?.user?.name) setPackedBy(authData.user.name);
         if (!awbNumber) setAwbNumber(`DHL-${Math.floor(1000000000 + Math.random() * 9000000000)}`);
       } else {
-        const fallbackInv = dataStore.getInvoiceById(id);
-        if (fallbackInv) {
-          setInvoice(fallbackInv);
-          if (fallbackInv.shipmentId) {
-            const shp = dataStore.getShipmentById(fallbackInv.shipmentId);
-            if (shp) setShipment(shp);
-          }
-          setDocuments(dataStore.getDocuments({ entityId: fallbackInv.id }));
-        } else {
-          setInvoice(null);
-        }
+        setInvoice(null);
       }
     } catch (error) {
       console.error('Error loading invoice:', error);
-      const fallbackInv = dataStore.getInvoiceById(id);
-      setInvoice(fallbackInv || null);
+      setInvoice(null);
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +127,7 @@ export default function InvoiceDetailPage() {
   if (isLoading) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="text-slate-500 text-xs">Loading tax invoice document...</div>
+        <div className="text-slate-500 text-xs animate-pulse">Loading tax invoice document...</div>
       </div>
     );
   }
@@ -126,93 +146,114 @@ export default function InvoiceDetailPage() {
   const isDepotUser = currentUser.role === 'DEPOT_USER';
 
   const handlePickAll = async () => {
+    if (!invoice) return;
     setIsPicking(true);
     try {
-      const res = await fetch(`/api/invoices/${invoice.id}`, {
-        method: 'PUT',
+      const res = await fetch(`/api/invoices/${invoice.id}/pick`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fulfilmentStatus: 'PROCESSING' }),
       });
       if (res.ok) {
-        const updated = await res.json();
-        setInvoice((prev) => (prev ? { ...prev, ...updated } : updated));
+        const data = await res.json();
+        setInvoice((prev) => (prev ? { ...prev, ...(data.invoice || data) } : data.invoice || data));
+      } else {
+        await fetch(`/api/invoices/${invoice.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fulfilmentStatus: 'PROCESSING' }),
+        });
       }
     } catch (e) {
       console.warn('Pick status update error:', e);
+    } finally {
+      setIsPicking(false);
+      loadData();
     }
-    try {
-      const itemIds = invoice.items?.map((i) => i.id) || [];
-      dataStore.pickInvoiceItems(invoice.id, itemIds);
-    } catch {}
-    setIsPicking(false);
-    loadData();
   };
 
   const handlePackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!invoice) return;
     setIsPacking(true);
     try {
-      const res = await fetch(`/api/invoices/${invoice.id}`, {
-        method: 'PUT',
+      const payload = {
+        packedBy,
+        packageCount: Number(boxCount),
+        totalWeightKg: Number(totalWeight),
+        lengthCm: Number(lengthCm),
+        widthCm: Number(widthCm),
+        heightCm: Number(heightCm),
+        packagePhotoUrl,
+      };
+      const res = await fetch(`/api/invoices/${invoice.id}/pack`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fulfilmentStatus: 'PACKED',
-          packedBy,
-          packageCount: Number(boxCount),
-          totalWeightKg: Number(totalWeight),
-          lengthCm: Number(lengthCm),
-          widthCm: Number(widthCm),
-          heightCm: Number(heightCm),
-          packagePhotoUrl,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
-        const updated = await res.json();
-        setInvoice((prev) => (prev ? { ...prev, ...updated } : updated));
+        const data = await res.json();
+        setInvoice((prev) => (prev ? { ...prev, ...(data.invoice || data) } : data.invoice || data));
+      } else {
+        await fetch(`/api/invoices/${invoice.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fulfilmentStatus: 'PACKED',
+            ...payload,
+          }),
+        });
       }
     } catch (e) {
       console.warn('Pack status update error:', e);
+    } finally {
+      setIsPacking(false);
+      setIsPackingModalOpen(false);
+      loadData();
     }
-    try {
-      dataStore.packInvoice(invoice.id);
-    } catch {}
-    setIsPacking(false);
-    setIsPackingModalOpen(false);
-    loadData();
   };
 
   const handleShipSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!invoice) return;
     setIsShipping(true);
     try {
-      const res = await fetch(`/api/invoices/${invoice.id}`, {
-        method: 'PUT',
+      const payload = {
+        courier,
+        airwayBillNumber: awbNumber,
+        trackingUrl,
+        shippingCost: Number(shippingCost),
+        weightKg: Number(totalWeight),
+        packageCount: Number(boxCount),
+        airwayBillDocUrl: awbDocUrl,
+      };
+      const res = await fetch(`/api/invoices/${invoice.id}/ship`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fulfilmentStatus: 'SHIPPED',
-          courier,
-          airwayBillNumber: awbNumber,
-          trackingUrl,
-          shippingCost: Number(shippingCost),
-          weightKg: Number(totalWeight),
-          packageCount: Number(boxCount),
-          awbDocumentUrl: awbDocUrl,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
-        const updated = await res.json();
-        setInvoice((prev) => (prev ? { ...prev, ...updated } : updated));
+        const data = await res.json();
+        if (data.invoice) setInvoice(data.invoice);
+        if (data.shipment) setShipment(data.shipment);
+      } else {
+        await fetch(`/api/invoices/${invoice.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fulfilmentStatus: 'SHIPPED',
+            ...payload,
+          }),
+        });
       }
     } catch (e) {
       console.warn('Ship status update error:', e);
+    } finally {
+      setIsShipping(false);
+      setIsShippingModalOpen(false);
+      loadData();
     }
-    try {
-      dataStore.dispatchShipment(invoice.id);
-    } catch {}
-    setIsShipping(false);
-    setIsShippingModalOpen(false);
-    loadData();
   };
+
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-16">
@@ -283,9 +324,23 @@ export default function InvoiceDetailPage() {
                 onClick={() => setIsShippingModalOpen(true)}
                 className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs"
               >
-                Dispatch (AWB)
+                Ship Order
               </Button>
             )}
+
+            {invoice.fulfilmentStatus !== 'DELIVERED' &&
+              invoice.fulfilmentStatus !== 'SHIPPED' &&
+              invoice.fulfilmentStatus !== 'CANCELLED' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  iconLeft={<XCircle className="h-3.5 w-3.5 text-red-500" />}
+                  onClick={() => setIsCancelModalOpen(true)}
+                  className="text-red-600 border-red-200 hover:bg-red-50 text-xs font-semibold"
+                >
+                  Cancel Invoice
+                </Button>
+              )}
           </>
         }
       />
@@ -473,8 +528,8 @@ export default function InvoiceDetailPage() {
         </div>
       </div>
 
-      {/* Modals */}
-      {isPrintModalOpen && (
+      {/* Printable Modal */}
+      {isPrintModalOpen && invoice && (
         <PrintableDocumentModal
           isOpen={true}
           onClose={() => setIsPrintModalOpen(false)}
@@ -483,16 +538,50 @@ export default function InvoiceDetailPage() {
         />
       )}
 
-      {isUploadModalOpen && (
+      {/* Cloudinary Upload Modal */}
+      {isUploadModalOpen && invoice && (
         <CloudinaryUploadModal
           isOpen={true}
           onClose={() => setIsUploadModalOpen(false)}
-          onUploaded={() => loadData()}
           defaultEntityType="INVOICE"
           defaultEntityId={invoice.id}
           defaultEntityLabel={invoice.invoiceNumber}
+          onUploaded={() => loadData()}
         />
       )}
+
+      {/* Cancel Invoice Confirmation */}
+      <ConfirmDialog
+        open={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        onConfirm={async () => {
+          if (!invoice) return;
+          setIsCancelling(true);
+          try {
+            const res = await fetch(`/api/invoices/${invoice.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fulfilmentStatus: 'CANCELLED' }),
+            });
+            if (!res.ok) {
+              const d = await res.json().catch(() => ({}));
+              throw new Error(d.error || 'Failed to cancel invoice');
+            }
+            toast({ title: 'Invoice cancelled and stock restored to depot', variant: 'success' });
+            setIsCancelModalOpen(false);
+            loadData();
+          } catch (err: any) {
+            toast({ title: err.message || 'Could not cancel invoice', variant: 'error' });
+          } finally {
+            setIsCancelling(false);
+          }
+        }}
+        title={`Cancel Invoice ${invoice?.invoiceNumber}?`}
+        description="This will cancel the invoice, restore allocated inventory units back to the depot, and release all reserved serial numbers."
+        confirmLabel="Cancel Invoice"
+        destructive
+        loading={isCancelling}
+      />
 
       {/* Packing Modal */}
       {isPackingModalOpen && (

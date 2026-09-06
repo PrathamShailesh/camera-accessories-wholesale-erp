@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { prisma } from '@/lib/prisma';
+import dataStore from '@/lib/data-store';
 import { depotIdFilter, guardApi } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest) {
@@ -43,33 +44,41 @@ export async function POST(req: NextRequest) {
     const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(format.toLowerCase());
     const fileType = isImage ? `image/${format}` : 'application/pdf';
 
-    // Register in centralized Cloud Documents Hub
-    const cloudDoc = await prisma.cloudDocument.create({
-      data: {
-        title: title || fileName || `Document ${new Date().toLocaleDateString()}`,
-        fileName: fileName || `Upload_${Date.now()}.${format}`,
-        fileType,
-        fileFormat: format,
-        fileSize: uploadRes?.bytes || (fileData ? Math.round(fileData.length * 0.75) : 150000),
-        cloudinaryUrl: uploadRes?.secure_url || uploadRes?.url || fileData,
-        cloudinaryPublicId: uploadRes?.public_id || `doc_${Date.now()}`,
-        category: category as any,
-        relatedEntityType,
-        relatedEntityId,
-        relatedEntityLabel,
-        tags: Array.isArray(tags) ? tags : [category],
-        uploadedBy: auth.user.id,
-        uploadedByName: auth.user.name,
-        depotId: depotIdFilter(auth.user) || null,
-      },
-    });
+    const docData = {
+      title: title || fileName || `Document ${new Date().toLocaleDateString()}`,
+      fileName: fileName || `Upload_${Date.now()}.${format}`,
+      fileType,
+      fileFormat: format,
+      fileSize: uploadRes?.bytes || (fileData ? Math.round(fileData.length * 0.75) : 150000),
+      cloudinaryUrl: uploadRes?.secure_url || uploadRes?.url || fileData,
+      cloudinaryPublicId: uploadRes?.public_id || `doc_${Date.now()}`,
+      category: category as any,
+      relatedEntityType,
+      relatedEntityId,
+      relatedEntityLabel,
+      tags: Array.isArray(tags) ? tags : [category],
+      uploadedBy: auth.user.id,
+      uploadedByName: auth.user.name,
+      depotId: depotIdFilter(auth.user) || null,
+    };
+
+    // Register in centralized Cloud Documents Hub with fallback
+    let cloudDoc: any = null;
+    try {
+      cloudDoc = await prisma.cloudDocument.create({
+        data: docData,
+      });
+      dataStore.createDocument(cloudDoc);
+    } catch {
+      cloudDoc = dataStore.createDocument(docData);
+    }
 
     return NextResponse.json({
       success: true,
       document: cloudDoc,
       cloudinary: {
-        secure_url: uploadRes?.secure_url || cloudDoc.cloudinaryUrl,
-        public_id: uploadRes?.public_id || cloudDoc.cloudinaryPublicId,
+        secure_url: uploadRes?.secure_url || cloudDoc?.cloudinaryUrl || fileData,
+        public_id: uploadRes?.public_id || cloudDoc?.cloudinaryPublicId || `doc_${Date.now()}`,
       },
     });
   } catch (error: any) {

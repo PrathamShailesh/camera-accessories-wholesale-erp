@@ -217,6 +217,9 @@ model Product {
   @@index([brand])
   @@index([categoryId])
   @@index([barcode])
+  @@index([name])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model SerialNumber {
@@ -374,6 +377,7 @@ model Customer {
   @@index([companyName])
   @@index([status])
   @@index([createdAt])
+  @@index([contactPerson])
 }
 
 model Supplier {
@@ -388,6 +392,11 @@ model Supplier {
   paymentTerms  String   @default("NET_30")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([name])
+  @@index([email])
+  @@index([contactPerson])
+  @@index([createdAt])
 }
 
 model Proforma {
@@ -430,6 +439,7 @@ model Proforma {
   @@index([customerId])
   @@index([status])
   @@index([createdAt])
+  @@index([managerId])
 }
 
 model ProformaItem {
@@ -505,6 +515,9 @@ model TaxInvoice {
   @@index([createdAt])
   @@index([fulfilmentStatus, createdAt])
   @@index([depotId, createdAt])
+  @@index([paymentStatus])
+  @@index([issueDate])
+  @@index([dueDate])
 }
 
 model InvoiceItem {
@@ -609,6 +622,8 @@ model CloudDocument {
   @@index([relatedEntityId])
   @@index([depotId])
   @@index([depotId, uploadedAt])
+  @@index([title])
+  @@index([uploadedAt])
 }
 
 model AuditLog {
@@ -764,6 +779,8 @@ model ServiceInvoice {
   @@index([status])
   @@index([invoiceNumber])
   @@index([createdAt])
+  @@index([issueDate])
+  @@index([dueDate])
 }
 
 model ServiceInvoiceItem {
