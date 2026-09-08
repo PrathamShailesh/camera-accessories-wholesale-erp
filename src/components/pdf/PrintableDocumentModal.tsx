@@ -1,15 +1,17 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Printer,
   Download,
   X,
   CheckCircle2,
+  Stamp,
 } from 'lucide-react';
 import { Proforma, TaxInvoice, CompanySettings } from '@/types/erp';
 import { formatUSD, formatDocDate, numberToWordsUSD } from '@/lib/utils';
 import dataStore from '@/lib/data-store';
+import { evaluateSealPolicy } from '@/lib/seal-policy';
 
 interface PrintableDocumentModalProps {
   isOpen: boolean;
@@ -26,6 +28,16 @@ export default function PrintableDocumentModal({
 }: PrintableDocumentModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const settings: CompanySettings = dataStore.getCompanySettings();
+
+  const policy = evaluateSealPolicy({
+    documentType,
+    status: data?.status,
+    fulfilmentStatus: data?.fulfilmentStatus,
+    paymentStatus: data?.paymentStatus,
+  });
+
+  const [overrideSeal, setOverrideSeal] = useState<boolean | null>(null);
+  const shouldShowSeal = overrideSeal !== null ? overrideSeal : policy.shouldSeal;
 
   if (!isOpen || !data) return null;
 
@@ -91,6 +103,19 @@ export default function PrintableDocumentModal({
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
+              onClick={() => setOverrideSeal((prev) => (prev !== null ? !prev : !policy.shouldSeal))}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold border transition-colors ${
+                shouldShowSeal
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+              }`}
+              title={`${policy.reason} (Click to toggle company seal on/off)`}
+            >
+              <Stamp className="h-3.5 w-3.5" />
+              <span>Seal: {shouldShowSeal ? 'Included' : 'Omitted'}</span>
+            </button>
+            <button
               onClick={handlePrint}
               className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-glow hover:bg-brand-500 transition-colors"
             >
@@ -113,6 +138,17 @@ export default function PrintableDocumentModal({
             className="print-page mx-auto bg-white text-black p-8 sm:p-12 rounded-xl shadow-lg max-w-3xl text-xs font-sans leading-normal border border-slate-200"
             style={{ minHeight: '1000px' }}
           >
+            {/* Document Watermark / State Notice */}
+            {policy.isDraft && (
+              <div className="bg-amber-50 border border-amber-300 text-amber-900 text-[11px] font-bold px-3 py-1.5 rounded mb-4 text-center uppercase tracking-wider print:border-amber-400">
+                PRELIMINARY DRAFT QUOTATION — FOR REVIEW ONLY (NOT AN OFFICIAL TAX INVOICE)
+              </div>
+            )}
+            {policy.isCancelled && (
+              <div className="bg-rose-50 border border-rose-300 text-rose-900 text-[11px] font-bold px-3 py-1.5 rounded mb-4 text-center uppercase tracking-wider print:border-rose-400">
+                CANCELLED TRANSACTION — VOID & UNOFFICIAL
+              </div>
+            )}
             {/* Header: Company Logo, Name & Contact (Left) vs Document Info (Right) */}
             <div className="flex justify-between items-start mb-6">
               {/* Top Left: Logo & Contact */}
@@ -323,48 +359,121 @@ export default function PrintableDocumentModal({
               </div>
             )}
 
-            {/* Payments To Be Made To Reminder */}
-            <div className="text-xs text-black mt-4 mb-4">
-              <div className="font-bold">Payments to be made to:</div>
-              <div className="font-semibold uppercase">{settings.companyName || 'ARIB GLOBAL'}</div>
-              <div>Contact: {settings.phone || '+971 4 800 0100'}</div>
-            </div>
-
-            {/* Sign-off, Official Company Seal & Computer Generated Notice */}
-            <div className="flex justify-between items-end text-xs text-black pt-4 border-t border-slate-200 mt-4">
-              <div className="space-y-1">
-                <div className="font-bold uppercase tracking-wide text-slate-900">
-                  For {settings.companyName || 'ARIB GLOBAL GENERAL TRADING L.L.C'}
-                </div>
-                <div className="text-[11px] text-slate-600">Contact: {settings.phone || '+971 4 800 0100'}</div>
-                <div className="text-[10px] text-slate-500 font-mono">TRN: {settings.vatGstNumber || '100889218200001'}</div>
-                <div className="text-[9px] italic text-slate-600 pt-2 font-sans tracking-wide">
-                  <div>THIS IS A COMPUTER GENERATED DOCUMENT</div>
-                  <div>DIGITALLY AUTHENTICATED WITH OFFICIAL COMPANY SEAL</div>
-                </div>
+            {/* Payments To Be Made To Reminder or Warehouse Verification Notice */}
+            {isPackingList ? (
+              <div className="text-xs text-black mt-4 mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                <div className="font-bold uppercase tracking-wide text-slate-900 mb-1">Warehouse Dispatch Notice</div>
+                <div className="text-slate-600">All serial numbers, package counts, and tamper-evident carton seals must be physically inspected before vehicle departure. Report discrepancies to logistics dispatch immediately.</div>
               </div>
+            ) : (
+              <div className="text-xs text-black mt-4 mb-4">
+                <div className="font-bold">Payments to be made to:</div>
+                <div className="font-semibold uppercase">{settings.companyName || 'ARIB GLOBAL'}</div>
+                <div>Contact: {settings.phone || '+971 4 800 0100'}</div>
+              </div>
+            )}
 
-              {/* Official Seal & Authorized Signatory */}
-              <div className="flex flex-col items-center justify-end text-center shrink-0">
-                <div className="relative flex items-center justify-center p-1">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={settings.sealUrl || '/arib-seal.png'}
-                    alt="ARIB GLOBAL Official Company Seal"
-                    className="h-28 w-28 object-contain shrink-0 select-none print:h-28 print:w-28"
-                    style={{ aspectRatio: '1 / 1' }}
-                  />
-                </div>
-                <div className="border-t border-slate-400 pt-1 w-36 text-center">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-900">
-                    Official Company Seal
+            {/* Sign-off, Official Company Seal & Warehouse Verification */}
+            {isPackingList ? (
+              <div className="flex justify-between items-end text-xs text-black pt-4 border-t border-slate-200 mt-4">
+                <div className="space-y-1">
+                  <div className="font-bold uppercase tracking-wide text-slate-900">
+                    Warehouse Verification & Dispatch
                   </div>
-                  <div className="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
-                    Authorized Signatory
+                  <div className="text-[11px] text-slate-600">Origin Depot: {data.depot?.name || 'Central Logistics Hub, Dubai'}</div>
+                  <div className="text-[10px] text-slate-500 font-mono">
+                    Package Count: {data.packingDetails?.packageCount || 1} Box(es) • Weight: {data.packingDetails?.totalWeightKg || '—'} KG
+                  </div>
+                  <div className="text-[9px] text-slate-500 italic pt-1 font-sans">
+                    <div>THIS IS AN OPERATIONAL WAREHOUSE PACKING SHEET</div>
+                    <div>VERIFIED AGAINST PHYSICAL INVENTORY AT DISPATCH DOCK</div>
                   </div>
                 </div>
+
+                {/* Warehouse Dual Signatures */}
+                <div className="flex gap-6 text-center shrink-0">
+                  <div className="w-32">
+                    <div className="h-12 border-b border-slate-400 border-dashed mb-1 flex items-end justify-center pb-1">
+                      <span className="text-[11px] font-mono text-slate-800">{data.packingDetails?.packedBy || 'Depot Inspector'}</span>
+                    </div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-900">
+                      Packed & Checked
+                    </div>
+                    <div className="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
+                      Warehouse Staff
+                    </div>
+                  </div>
+                  <div className="w-32">
+                    <div className="h-12 border-b border-slate-400 border-dashed mb-1 flex items-end justify-center pb-1">
+                      <span className="text-[10px] text-slate-400 italic">Sign & Date</span>
+                    </div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-900">
+                      Consignee Receipt
+                    </div>
+                    <div className="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
+                      Courier / Customer
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex justify-between items-end text-xs text-black pt-4 border-t border-slate-200 mt-4">
+                <div className="space-y-1">
+                  <div className="font-bold uppercase tracking-wide text-slate-900">
+                    For {settings.companyName || 'ARIB GLOBAL GENERAL TRADING L.L.C'}
+                  </div>
+                  <div className="text-[11px] text-slate-600">Contact: {settings.phone || '+971 4 800 0100'}</div>
+                  <div className="text-[10px] text-slate-500 font-mono">TRN: {settings.vatGstNumber || '100889218200001'}</div>
+                  <div className="text-[9px] italic text-slate-600 pt-2 font-sans tracking-wide">
+                    <div>THIS IS A COMPUTER GENERATED DOCUMENT</div>
+                    {shouldShowSeal ? (
+                      <div className="text-brand-700 font-semibold">DIGITALLY AUTHENTICATED WITH OFFICIAL COMPANY SEAL</div>
+                    ) : (
+                      <div>SUBJECT TO FINAL TERMS & AUTHORIZED APPROVAL</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Official Seal OR Unsigned Signatory Placeholder */}
+                <div className="flex flex-col items-center justify-end text-center shrink-0">
+                  {shouldShowSeal ? (
+                    <>
+                      <div className="relative flex items-center justify-center p-1">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={settings.sealUrl || '/arib-seal.png'}
+                          alt="ARIB GLOBAL Official Company Seal"
+                          className="h-28 w-28 object-contain shrink-0 select-none print:h-28 print:w-28"
+                          style={{ aspectRatio: '1 / 1' }}
+                        />
+                      </div>
+                      <div className="border-t border-slate-400 pt-1 w-36 text-center">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-900">
+                          Official Company Seal
+                        </div>
+                        <div className="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
+                          Authorized Signatory
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-36">
+                      <div className="h-16 border-b border-slate-400 border-dashed mb-1 flex items-end justify-center pb-1">
+                        <span className="text-[10px] text-slate-400 italic">Signature</span>
+                      </div>
+                      <div className="border-t border-slate-400 pt-1 text-center">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-900">
+                          Authorized Signatory
+                        </div>
+                        <div className="text-[9px] text-slate-400 uppercase tracking-widest font-mono">
+                          {policy.isDraft ? 'Preliminary / Unsealed' : 'Pending Stamp'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

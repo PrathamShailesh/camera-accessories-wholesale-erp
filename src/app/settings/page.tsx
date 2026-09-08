@@ -222,13 +222,23 @@ export default function SettingsPage() {
                     Official Company Seal
                   </span>
                   <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    Active on Invoices & Documents
+                    Smart Commercial Policy
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Used officially on Tax Invoices, Service Invoices, Proformas, and packing documentation. Features the registered company stamp: <strong className="text-slate-200">ARIB GLOBAL GENERAL TRADING L.L.C • DUBAI - U.A.E.</strong> with full transparency and sharp vector-grade resolution.
+                  Registered company stamp: <strong className="text-slate-200">ARIB GLOBAL GENERAL TRADING L.L.C • DUBAI - U.A.E.</strong> Affixed exclusively to legally binding financial documents.
                 </p>
-                <div className="text-[11px] text-slate-500 font-mono">Asset: public/arib-seal.png (1024×1024 Hi-Res Transparent PNG)</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
+                  <div className="flex items-center gap-1.5 text-emerald-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span>Sealed: Tax Invoices & Confirmed Proformas</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-slate-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                    <span>Omitted: Packing Slips & Draft Quotes</span>
+                  </div>
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono pt-0.5">Asset: public/arib-seal.png (1024×1024 Hi-Res Transparent PNG)</div>
               </div>
             </div>
           </div>

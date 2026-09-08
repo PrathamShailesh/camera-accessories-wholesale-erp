@@ -364,7 +364,7 @@ export default function ServiceInvoiceDetailPage() {
           </div>
         </div>
 
-        {/* Sign-off & Official Company Seal */}
+        {/* Sign-off & Official Company Seal or Draft Signatory Line */}
         <div className="flex flex-col sm:flex-row justify-between items-end gap-6 pt-6 border-t border-[#E5E7EB] mt-6">
           <div className="space-y-1 text-xs text-[#6B7280]">
             <div className="font-bold uppercase tracking-wider text-[#111827]">
@@ -373,28 +373,50 @@ export default function ServiceInvoiceDetailPage() {
             <div>Corporate Services & Wholesale Division</div>
             <div className="font-mono text-[10px]">TRN: 100889218200001 • Dubai, United Arab Emirates</div>
             <div className="text-[10px] italic text-[#9CA3AF] pt-2">
-              THIS IS A COMPUTER GENERATED SERVICE INVOICE • OFFICIALLY AUTHENTICATED
+              {invoice.status === 'SENT' || invoice.status === 'PAID'
+                ? 'THIS IS A COMPUTER GENERATED SERVICE INVOICE • OFFICIALLY AUTHENTICATED'
+                : invoice.status === 'CANCELLED'
+                ? 'CANCELLED SERVICE INVOICE • VOID & UNOFFICIAL'
+                : 'PRELIMINARY DRAFT SERVICE INVOICE • PENDING OFFICIAL ISSUANCE'}
             </div>
           </div>
 
           <div className="flex flex-col items-center justify-end text-center shrink-0">
-            <div className="relative flex items-center justify-center mb-1">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/arib-seal.png"
-                alt="ARIB GLOBAL Official Company Seal"
-                className="h-28 w-28 object-contain shrink-0 select-none print:h-28 print:w-28"
-                style={{ aspectRatio: '1 / 1' }}
-              />
-            </div>
-            <div className="border-t border-[#9CA3AF] pt-1 w-36 text-center">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-[#111827]">
-                Official Company Seal
+            {invoice.status === 'SENT' || invoice.status === 'PAID' ? (
+              <>
+                <div className="relative flex items-center justify-center mb-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/arib-seal.png"
+                    alt="ARIB GLOBAL Official Company Seal"
+                    className="h-28 w-28 object-contain shrink-0 select-none print:h-28 print:w-28"
+                    style={{ aspectRatio: '1 / 1' }}
+                  />
+                </div>
+                <div className="border-t border-[#9CA3AF] pt-1 w-36 text-center">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#111827]">
+                    Official Company Seal
+                  </div>
+                  <div className="text-[9px] text-[#6B7280] uppercase tracking-widest font-mono">
+                    Authorized Signatory
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="w-36">
+                <div className="h-16 border-b border-slate-300 border-dashed mb-1 flex items-end justify-center pb-1">
+                  <span className="text-[10px] text-slate-400 italic">Signature</span>
+                </div>
+                <div className="border-t border-slate-300 pt-1 text-center">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#111827]">
+                    Authorized Signatory
+                  </div>
+                  <div className="text-[9px] text-[#6B7280] uppercase tracking-widest font-mono">
+                    {invoice.status === 'CANCELLED' ? 'Void / Cancelled' : 'Preliminary / Unsealed'}
+                  </div>
+                </div>
               </div>
-              <div className="text-[9px] text-[#6B7280] uppercase tracking-widest font-mono">
-                Authorized Signatory
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

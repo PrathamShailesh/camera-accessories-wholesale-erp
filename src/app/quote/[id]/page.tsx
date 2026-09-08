@@ -487,24 +487,35 @@ export default function PublicQuotePortalPage() {
 
         {/* Footer Support & Legal */}
         <footer className="pt-8 pb-12 text-center text-xs text-slate-500 space-y-4 border-t border-slate-800/80">
-          {/* Official Seal Badge */}
-          <div className="flex flex-col items-center justify-center gap-2">
-            <div className="relative p-2 rounded-2xl bg-white/5 border border-slate-800 inline-flex items-center justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/arib-seal.png"
-                alt="ARIB GLOBAL Official Company Seal"
-                className="h-16 w-16 object-contain shrink-0 drop-shadow"
-                style={{ aspectRatio: '1 / 1' }}
-              />
+          {/* Official Seal Badge when Confirmed / Security Header when Preliminary */}
+          {proforma.status === 'CONFIRMED' || proforma.status === 'CONVERTED' ? (
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="relative p-2 rounded-2xl bg-white/5 border border-slate-800 inline-flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/arib-seal.png"
+                  alt="ARIB GLOBAL Official Company Seal"
+                  className="h-16 w-16 object-contain shrink-0 drop-shadow"
+                  style={{ aspectRatio: '1 / 1' }}
+                />
+              </div>
+              <div className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">
+                Officially Authenticated Proforma Invoice
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono">
+                ARIB GLOBAL GENERAL TRADING L.L.C • DUBAI - U.A.E.
+              </div>
             </div>
-            <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
-              Officially Authenticated Enterprise Document
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-1.5">
+              <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                {proforma.status === 'CANCELLED' ? 'Quotation Cancelled / Expired' : 'Official Proforma Quotation Portal'}
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono">
+                ARIB GLOBAL GENERAL TRADING L.L.C • DUBAI - U.A.E.
+              </div>
             </div>
-            <div className="text-[10px] text-slate-500 font-mono">
-              ARIB GLOBAL GENERAL TRADING L.L.C • DUBAI - U.A.E.
-            </div>
-          </div>
+          )}
 
           <p className="font-medium text-slate-400">
             {settings?.tradingName || settings?.companyName || 'ARIB GLOBAL Wholesale Distribution LLC'}
