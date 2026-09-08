@@ -51,6 +51,7 @@ export function Avatar({ name, src, size = 'md', className, ring }: AvatarProps)
 
   return (
     <div
+      suppressHydrationWarning
       className={cn(
         'relative shrink-0 rounded-full overflow-hidden flex items-center justify-center font-semibold select-none',
         sizeClasses[size],

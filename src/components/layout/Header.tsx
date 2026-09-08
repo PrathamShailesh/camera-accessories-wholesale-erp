@@ -285,16 +285,23 @@ export default function Header() {
           {/* Profile Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 rounded-md border border-slate-200 bg-white p-1 sm:pl-1.5 sm:pr-2.5 sm:py-1 hover:bg-slate-50 transition-colors">
-                <Avatar name={currentUser.name} src={currentUser.avatar} size="sm" />
-                <div className="text-left hidden md:block">
-                  <div className="text-xs font-semibold text-slate-900 line-clamp-1">{currentUser.name}</div>
-                  <div className="text-[10px] text-slate-500 leading-tight">{currentUser.role.replace('_', ' ')}</div>
+              <button
+                className="flex items-center gap-2 rounded-md border border-slate-200 bg-white p-1 sm:pl-1.5 sm:pr-2.5 sm:py-1 hover:bg-slate-50 transition-colors"
+                suppressHydrationWarning
+              >
+                <Avatar name={isMounted ? currentUser.name : ''} src={isMounted ? currentUser.avatar : undefined} size="sm" />
+                <div className="text-left hidden md:block" suppressHydrationWarning>
+                  <div className="text-xs font-semibold text-slate-900 line-clamp-1">
+                    {isMounted ? currentUser.name : <span className="inline-block w-16 h-3 bg-slate-100 rounded" />}
+                  </div>
+                  <div className="text-[10px] text-slate-500 leading-tight">
+                    {isMounted ? currentUser.role.replace('_', ' ') : ''}
+                  </div>
                 </div>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-60 bg-white border border-slate-200 shadow-lg">
-              <div className="px-3 py-2.5 rounded-md bg-slate-50 mb-1 border border-slate-100">
+              <div className="px-3 py-2.5 rounded-md bg-slate-50 mb-1 border border-slate-100" suppressHydrationWarning>
                 <div className="font-semibold text-xs text-slate-900 line-clamp-1">{currentUser.name}</div>
                 <div className="text-[11px] text-slate-500 truncate">{currentUser.email}</div>
                 <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
