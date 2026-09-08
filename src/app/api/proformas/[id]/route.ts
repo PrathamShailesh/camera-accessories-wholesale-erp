@@ -5,7 +5,8 @@ import { broadcastSystemEvent } from '@/lib/events-emitter';
 import { guardApi } from '@/lib/api-auth';
 import { canTransition, isProformaStatus, ProformaStatus } from '@/lib/proforma-workflow';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'proformas.read');
   if (!auth.ok) return auth.response;
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     let proforma: any = null;
     try {
       proforma = await prisma.proforma.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: {
           customer: true,
           items: {
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
       if (!proforma) {
         proforma = await prisma.proforma.findUnique({
-          where: { proformaNumber: params.id },
+          where: { proformaNumber: id },
           include: {
             customer: true,
             items: {
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     if (!proforma) {
-      proforma = dataStore.getProformaById(params.id);
+      proforma = dataStore.getProformaById(id);
     }
 
     if (!proforma) {
@@ -52,7 +53,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'proformas.write');
   if (!auth.ok) return auth.response;
 
@@ -64,13 +66,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     try {
       existing = await prisma.proforma.findFirst({
         where: {
-          OR: [{ id: params.id }, { proformaNumber: params.id }],
+          OR: [{ id }, { proformaNumber: id }],
         },
       });
     } catch {}
 
     if (!existing) {
-      existing = dataStore.getProformaById(params.id);
+      existing = dataStore.getProformaById(id);
     }
 
     if (!existing) {
@@ -142,7 +144,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'proformas.write');
   if (!auth.ok) return auth.response;
 
@@ -150,12 +153,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     let existing: any = null;
     try {
       existing = await prisma.proforma.findFirst({
-        where: { OR: [{ id: params.id }, { proformaNumber: params.id }] },
+        where: { OR: [{ id }, { proformaNumber: id }] },
       });
     } catch {}
 
     if (!existing) {
-      existing = dataStore.getProformaById(params.id);
+      existing = dataStore.getProformaById(id);
     }
 
     if (!existing) {

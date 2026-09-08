@@ -4,13 +4,14 @@ import { guardApi } from '@/lib/api-auth';
 import { createTransporter, renderEmailWrapper } from '@/lib/email-service';
 import { formatUSD, formatDate } from '@/lib/utils';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'invoices.write');
   if (!auth.ok) return auth.response;
 
   try {
     const invoice = await (prisma as any).serviceInvoice.findFirst({
-      where: { OR: [{ id: params.id }, { invoiceNumber: params.id }] },
+      where: { OR: [{ id }, { invoiceNumber: id }] },
       include: { items: true, customer: true },
     });
 

@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { assertDepotAccess, guardApi } from '@/lib/api-auth';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'invoices.fulfil');
   if (!auth.ok) return auth.response;
 
@@ -11,13 +12,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     let invoice: any = null;
     try {
       invoice = await prisma.taxInvoice.findFirst({
-        where: { OR: [{ id: params.id }, { invoiceNumber: params.id }] },
+        where: { OR: [{ id }, { invoiceNumber: id }] },
         include: { customer: true, depot: true, items: true },
       });
     } catch {}
 
     if (!invoice) {
-      invoice = dataStore.getInvoiceById(params.id);
+      invoice = dataStore.getInvoiceById(id);
     }
 
     if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });

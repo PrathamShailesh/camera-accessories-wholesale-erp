@@ -4,7 +4,8 @@ import dataStore from '@/lib/data-store';
 import { assertDepotAccess, guardApi } from '@/lib/api-auth';
 import { triggerShipmentDispatchedManagerEmail } from '@/lib/email-service';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'invoices.fulfil');
   if (!auth.ok) return auth.response;
 
@@ -12,13 +13,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     let existing: any = null;
     try {
       existing = await prisma.taxInvoice.findFirst({
-        where: { OR: [{ id: params.id }, { invoiceNumber: params.id }] },
+        where: { OR: [{ id }, { invoiceNumber: id }] },
         include: { customer: true, items: true, packingDetails: true, depot: true, shipment: true },
       });
     } catch {}
 
     if (!existing) {
-      existing = dataStore.getInvoiceById(params.id);
+      existing = dataStore.getInvoiceById(id);
     }
 
     if (!existing) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });

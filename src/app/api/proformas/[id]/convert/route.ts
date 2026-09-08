@@ -8,8 +8,9 @@ import { triggerInvoiceCreatedDepotEmail } from '@/lib/email-service';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const auth = await guardApi(req, 'invoices.write');
   if (!auth.ok) return auth.response;
 
@@ -21,20 +22,20 @@ export async function POST(
     let proforma: any = null;
     try {
       proforma = await prisma.proforma.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: { items: true, customer: true },
       });
 
       if (!proforma) {
         proforma = await prisma.proforma.findUnique({
-          where: { proformaNumber: params.id },
+          where: { proformaNumber: id },
           include: { items: true, customer: true },
         });
       }
     } catch (dbErr) {}
 
     if (!proforma) {
-      proforma = dataStore.getProformaById(params.id);
+      proforma = dataStore.getProformaById(id);
     }
 
     if (!proforma) {

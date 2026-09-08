@@ -5,7 +5,8 @@ import { guardApi } from '@/lib/api-auth';
 import { broadcastSystemEvent } from '@/lib/events-emitter';
 import { canTransition, ProformaStatus } from '@/lib/proforma-workflow';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'proformas.write');
   if (!auth.ok) return auth.response;
 
@@ -13,12 +14,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     let existing: any = null;
     try {
       existing = await prisma.proforma.findFirst({
-        where: { OR: [{ id: params.id }, { proformaNumber: params.id }] },
+        where: { OR: [{ id }, { proformaNumber: id }] },
       });
     } catch {}
 
     if (!existing) {
-      existing = dataStore.getProformaById(params.id);
+      existing = dataStore.getProformaById(id);
     }
 
     if (!existing) {

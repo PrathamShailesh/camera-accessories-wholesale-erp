@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   FileText,
   Printer,
@@ -22,9 +22,11 @@ import { ServiceInvoice } from '@/types/erp';
 import { formatUSD, formatDate } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
 
-export default function ServiceInvoiceDetailPage({ params }: { params: { id: string } }) {
+export default function ServiceInvoiceDetailPage() {
+  const params = useParams();
   const { toast } = useToast();
   const router = useRouter();
+  const id = params.id as string;
   const [invoice, setInvoice] = useState<ServiceInvoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -33,9 +35,10 @@ export default function ServiceInvoiceDetailPage({ params }: { params: { id: str
   const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchInvoice = async () => {
+    if (!id) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/service-invoices/${params.id}`);
+      const res = await fetch(`/api/service-invoices/${id}`);
       if (res.ok) {
         const data = await res.json();
         setInvoice(data);
@@ -49,7 +52,7 @@ export default function ServiceInvoiceDetailPage({ params }: { params: { id: str
 
   useEffect(() => {
     fetchInvoice();
-  }, [params.id]);
+  }, [id]);
 
   const handleSendEmail = async () => {
     if (!invoice) return;

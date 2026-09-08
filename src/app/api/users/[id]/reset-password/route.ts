@@ -4,7 +4,8 @@ import { hashPassword } from '@/lib/auth';
 import { guardApi } from '@/lib/api-auth';
 import dataStore from '@/lib/data-store';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'users.write');
   if (!auth.ok) return auth.response;
 
@@ -16,9 +17,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Password must be at least 6 characters long' }, { status: 400 });
     }
 
-    let target: any = await prisma.user.findUnique({ where: { id: params.id } }).catch(() => null);
+    let target: any = await prisma.user.findUnique({ where: { id } }).catch(() => null);
     if (!target) {
-      target = dataStore.getUserById(params.id);
+      target = dataStore.getUserById(id);
     }
     if (!target) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -29,19 +30,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Update in DB
     try {
       await prisma.user.update({
-        where: { id: params.id },
+        where: { id },
         data: { passwordHash: newHash },
       });
     } catch {
       await prisma.$executeRawUnsafe(
         `UPDATE "User" SET "passwordHash" = $1, "updatedAt" = NOW() WHERE "id" = $2`,
         newHash,
-        params.id
+        id
       ).catch(() => {});
     }
 
     // Update in dataStore
-    dataStore.updateUser(params.id, { passwordHash: newHash });
+    dataStore.updateUser(id, { passwordHash: newHash });
 
     dataStore.addAuditLog({
       action: 'USER_PERMISSION_CHANGE',

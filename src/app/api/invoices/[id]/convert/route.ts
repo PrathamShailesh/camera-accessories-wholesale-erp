@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guardApi } from '@/lib/api-auth';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await guardApi(req, 'invoices.write');
   if (!auth.ok) return auth.response;
 

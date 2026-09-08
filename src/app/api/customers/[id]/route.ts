@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'customers.read');
   if (!auth.ok) return auth.response;
 
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     let customer: any = null;
     try {
       customer = await prisma.customer.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: {
           proformas: { orderBy: { createdAt: 'desc' }, take: 50 },
           taxInvoices: { orderBy: { createdAt: 'desc' }, take: 50 },
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     if (!customer) {
-      const fallback = dataStore.getCustomerById(params.id);
+      const fallback = dataStore.getCustomerById(id);
       if (fallback) {
         const customerProformas = dataStore.getProformas({ customerId: fallback.id });
         const customerInvoices = dataStore.getInvoices({ customerId: fallback.id });
@@ -47,7 +48,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'customers.write');
   if (!auth.ok) return auth.response;
 
@@ -85,17 +87,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     let customer: any = null;
     try {
       customer = await prisma.customer.update({
-        where: { id: params.id },
+        where: { id },
         data: updateData,
       });
     } catch (dbErr) {
       // Fallback to dataStore
-      customer = dataStore.updateCustomer(params.id, updateData);
+      customer = dataStore.updateCustomer(id, updateData);
     }
 
     if (!customer) {
       // Try by ID in dataStore if not already attempted
-      customer = dataStore.updateCustomer(params.id, updateData);
+      customer = dataStore.updateCustomer(id, updateData);
     }
 
     if (!customer) {
@@ -109,20 +111,21 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'customers.write');
   if (!auth.ok) return auth.response;
 
   try {
     try {
       await prisma.customer.delete({
-        where: { id: params.id },
+        where: { id },
       });
     } catch (dbErr) {
       // Prisma offline, proceed to dataStore delete
     }
 
-    dataStore.deleteCustomer(params.id);
+    dataStore.deleteCustomer(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting customer:', error);

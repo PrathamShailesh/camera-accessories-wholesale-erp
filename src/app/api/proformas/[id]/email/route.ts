@@ -5,11 +5,11 @@ import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 import { broadcastSystemEvent } from '@/lib/events-emitter';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await guardApi(req, 'proformas.write');
   if (!auth.ok) return auth.response;
 
-  const { id } = params;
+  const { id } = await params;
 
   try {
     let proforma: any = null;

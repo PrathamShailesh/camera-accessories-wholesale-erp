@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'shipments.read');
   if (!auth.ok) return auth.response;
 
@@ -13,9 +14,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       shipment = await prisma.shipment.findFirst({
         where: {
           OR: [
-            { id: params.id },
-            { shipmentNumber: params.id },
-            { invoiceId: params.id },
+            { id },
+            { shipmentNumber: id },
+            { invoiceId: id },
           ],
         },
         include: {
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     } catch {}
 
     if (!shipment) {
-      shipment = dataStore.getShipmentById(params.id);
+      shipment = dataStore.getShipmentById(id);
     }
 
     if (!shipment) {
@@ -39,7 +40,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'shipments.write');
   if (!auth.ok) return auth.response;
 
@@ -51,7 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     try {
       let existingShipment: any = await prisma.shipment.findFirst({
         where: {
-          OR: [{ id: params.id }, { shipmentNumber: params.id }, { invoiceId: params.id }],
+          OR: [{ id }, { shipmentNumber: id }, { invoiceId: id }],
         },
       });
 
@@ -78,7 +80,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
     } catch {}
 
-    const storeUpdated = dataStore.updateShipment(params.id, {
+    const storeUpdated = dataStore.updateShipment(id, {
       ...body,
       ...(status === 'DELIVERED' && {
         status: 'DELIVERED',
@@ -88,7 +90,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     });
 
     if (status === 'DELIVERED') {
-      dataStore.deliverShipment(params.id);
+      dataStore.deliverShipment(id);
     }
 
     if (!updated) {
@@ -106,6 +108,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   return PATCH(req, context);
 }

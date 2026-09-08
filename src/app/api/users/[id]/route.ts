@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi, stripUserSecrets } from '@/lib/api-auth';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'users.read');
   if (!auth.ok) return auth.response;
 
@@ -11,18 +12,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     let user: any = null;
     try {
       user = await prisma.user.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: {
           depot: true,
           auditLogs: { orderBy: { timestamp: 'desc' }, take: 50 },
         },
       });
     } catch {
-      user = dataStore.getUserById(params.id);
+      user = dataStore.getUserById(id);
     }
 
     if (!user) {
-      user = dataStore.getUserById(params.id);
+      user = dataStore.getUserById(id);
     }
 
     if (!user) {
@@ -36,7 +37,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'users.write');
   if (!auth.ok) return auth.response;
 
@@ -51,14 +53,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     // Protection 1: Prevent self-deactivation
-    if ((updateData.status === 'INACTIVE' || updateData.status === 'SUSPENDED') && auth.user.id === params.id) {
+    if ((updateData.status === 'INACTIVE' || updateData.status === 'SUSPENDED') && auth.user.id === id) {
       return NextResponse.json({ error: 'You cannot deactivate your own user account.' }, { status: 400 });
     }
 
     // Protection 2: Prevent deactivating or demoting the last active Super Admin
     if (updateData.status === 'INACTIVE' || updateData.status === 'SUSPENDED' || (updateData.role && updateData.role !== 'SUPER_ADMIN')) {
       try {
-        const target = await prisma.user.findUnique({ where: { id: params.id } });
+        const target = await prisma.user.findUnique({ where: { id } });
         if (target?.role === 'SUPER_ADMIN') {
           const superAdminCount = await prisma.user.count({
             where: { role: 'SUPER_ADMIN', status: 'ACTIVE' },
@@ -75,13 +77,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     try {
       const user = await prisma.user.update({
-        where: { id: params.id },
+        where: { id },
         data: updateData,
       });
-      dataStore.updateUser(params.id, updateData);
+      dataStore.updateUser(id, updateData);
       return NextResponse.json(stripUserSecrets(user));
     } catch {
-      const user = dataStore.updateUser(params.id, updateData);
+      const user = dataStore.updateUser(id, updateData);
       if (!user) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
@@ -93,17 +95,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'users.write');
   if (!auth.ok) return auth.response;
 
-  if (auth.user.id === params.id) {
+  if (auth.user.id === id) {
     return NextResponse.json({ error: 'You cannot delete your own account.' }, { status: 400 });
   }
 
   try {
     try {
-      const target = await prisma.user.findUnique({ where: { id: params.id } });
+      const target = await prisma.user.findUnique({ where: { id } });
       if (target?.role === 'SUPER_ADMIN') {
         const superAdminCount = await prisma.user.count({
           where: { role: 'SUPER_ADMIN', status: 'ACTIVE' },
@@ -117,10 +120,10 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       }
 
       await prisma.user.delete({
-        where: { id: params.id },
+        where: { id },
       });
     } catch {}
-    dataStore.deleteUser(params.id);
+    dataStore.deleteUser(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting user:', error);

@@ -5,7 +5,8 @@ import { assertDepotAccess, guardApi } from '@/lib/api-auth';
 import { hasPermission } from '@/lib/rbac';
 import { restoreStockForCancelledInvoice } from '@/lib/inventory-service';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'invoices.read');
   if (!auth.ok) return auth.response;
 
@@ -15,12 +16,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       invoice = await prisma.taxInvoice.findFirst({
         where: {
           OR: [
-            { id: params.id },
-            { invoiceNumber: params.id },
-            { id: { equals: params.id, mode: 'insensitive' } },
-            { invoiceNumber: { equals: params.id, mode: 'insensitive' } },
-            { proformaId: params.id },
-            { proformaNumber: { equals: params.id, mode: 'insensitive' } },
+            { id },
+            { invoiceNumber: id },
+            { id: { equals: id, mode: 'insensitive' } },
+            { invoiceNumber: { equals: id, mode: 'insensitive' } },
+            { proformaId: id },
+            { proformaNumber: { equals: id, mode: 'insensitive' } },
           ],
         },
         include: {
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     } catch (dbErr) {}
 
     if (!invoice) {
-      invoice = dataStore.getInvoiceById(params.id);
+      invoice = dataStore.getInvoiceById(id);
     }
 
     if (!invoice) {
@@ -69,7 +70,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req);
   if (!auth.ok) return auth.response;
   if (!hasPermission(auth.user.role, 'invoices.write') && !hasPermission(auth.user.role, 'invoices.fulfil')) {
@@ -90,10 +92,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       existing = await prisma.taxInvoice.findFirst({
         where: {
           OR: [
-            { id: params.id },
-            { invoiceNumber: params.id },
-            { id: { equals: params.id, mode: 'insensitive' } },
-            { invoiceNumber: { equals: params.id, mode: 'insensitive' } },
+            { id },
+            { invoiceNumber: id },
+            { id: { equals: id, mode: 'insensitive' } },
+            { invoiceNumber: { equals: id, mode: 'insensitive' } },
           ],
         },
         include: { items: true },
@@ -101,7 +103,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     } catch {}
 
     if (!existing) {
-      existing = dataStore.getInvoiceById(params.id);
+      existing = dataStore.getInvoiceById(id);
     }
 
     if (!existing) {
@@ -214,7 +216,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
 export const PATCH = PUT;
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'invoices.write');
   if (!auth.ok) return auth.response;
 
@@ -222,13 +225,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     let existing: any = null;
     try {
       existing = await prisma.taxInvoice.findFirst({
-        where: { OR: [{ id: params.id }, { invoiceNumber: params.id }] },
+        where: { OR: [{ id }, { invoiceNumber: id }] },
         select: { id: true, depotId: true, fulfilmentStatus: true },
       });
     } catch {}
 
     if (!existing) {
-      existing = dataStore.getInvoiceById(params.id);
+      existing = dataStore.getInvoiceById(id);
     }
 
     if (!existing) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });

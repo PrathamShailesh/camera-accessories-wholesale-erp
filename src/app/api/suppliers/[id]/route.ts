@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'customers.read');
   if (!auth.ok) return auth.response;
 
@@ -11,14 +12,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     let supplier: any = null;
     try {
       supplier = await prisma.supplier.findUnique({
-        where: { id: params.id },
+        where: { id },
       });
     } catch (dbErr) {
       // DB fallback
     }
 
     if (!supplier) {
-      supplier = dataStore.getSupplierById(params.id);
+      supplier = dataStore.getSupplierById(id);
     }
 
     if (!supplier) {
@@ -32,7 +33,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'customers.write');
   if (!auth.ok) return auth.response;
 
@@ -53,14 +55,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     let supplier: any = null;
     try {
       supplier = await prisma.supplier.update({
-        where: { id: params.id },
+        where: { id },
         data: updateData,
       });
     } catch (dbErr) {
       // Fallback
     }
 
-    const dsSupplier = dataStore.updateSupplier(params.id, updateData);
+    const dsSupplier = dataStore.updateSupplier(id, updateData);
     if (!supplier) supplier = dsSupplier;
 
     if (!supplier) {
@@ -74,20 +76,21 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'customers.write');
   if (!auth.ok) return auth.response;
 
   try {
     try {
       await prisma.supplier.delete({
-        where: { id: params.id },
+        where: { id },
       });
     } catch (dbErr) {
       // Prisma fallback
     }
 
-    dataStore.deleteSupplier(params.id);
+    dataStore.deleteSupplier(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting supplier:', error);

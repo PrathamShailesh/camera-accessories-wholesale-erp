@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi, sanitizeProductForRole } from '@/lib/api-auth';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'products.read');
   if (!auth.ok) return auth.response;
 
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     let product: any = null;
     try {
       product = await prisma.product.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: {
           category: true,
           inventories: {
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     if (!product) {
-      product = dataStore.getProductById(params.id);
+      product = dataStore.getProductById(id);
     }
 
     if (!product) {
@@ -39,7 +40,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'products.write');
   if (!auth.ok) return auth.response;
 
@@ -76,7 +78,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         scalarData.imageUrl = '/placeholder-product.svg';
 
         await tx.product.update({
-          where: { id: params.id },
+          where: { id },
           data: scalarData,
         });
 
@@ -84,10 +86,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           for (const inv of inventoryUpdates) {
             const qty = Math.max(0, inv.quantity);
             await tx.depotInventory.upsert({
-              where: { productId_depotId: { productId: params.id, depotId: inv.depotId } },
+              where: { productId_depotId: { productId: id, depotId: inv.depotId } },
               update: { quantity: qty, availableQuantity: qty },
               create: {
-                productId: params.id,
+                productId: id,
                 depotId: inv.depotId,
                 quantity: qty,
                 allocatedQuantity: 0,
@@ -98,11 +100,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           }
         }
 
-        const allInv = await tx.depotInventory.findMany({ where: { productId: params.id } });
+        const allInv = await tx.depotInventory.findMany({ where: { productId: id } });
         const newTotalStock = allInv.reduce((sum, inv) => sum + inv.quantity, 0);
 
         return tx.product.update({
-          where: { id: params.id },
+          where: { id },
           data: { totalStock: newTotalStock },
           include: {
             category: true,
@@ -113,12 +115,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       });
     } catch (dbErr) {
       // Fallback to dataStore
-      const current = dataStore.getProductById(params.id);
+      const current = dataStore.getProductById(id);
       const newTotalStock = depotBreakdown
         ? Object.values(depotBreakdown).reduce((sum: number, q: any) => sum + (parseInt(q) || 0), 0)
         : current?.totalStock || 0;
 
-      result = dataStore.updateProduct(params.id, {
+      result = dataStore.updateProduct(id, {
         ...scalarData,
         depotBreakdown: depotBreakdown || current?.depotBreakdown || {},
         totalStock: newTotalStock,
@@ -126,7 +128,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     if (!result) {
-      result = dataStore.getProductById(params.id);
+      result = dataStore.getProductById(id);
     }
 
     if (!result) {
@@ -140,20 +142,21 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'products.write');
   if (!auth.ok) return auth.response;
 
   try {
     try {
       await prisma.product.delete({
-        where: { id: params.id },
+        where: { id },
       });
     } catch (dbErr) {
       // Prisma offline, proceed to fallback
     }
 
-    dataStore.deleteProduct(params.id);
+    dataStore.deleteProduct(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting product:', error);

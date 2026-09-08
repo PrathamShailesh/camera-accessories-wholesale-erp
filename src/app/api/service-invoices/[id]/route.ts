@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'invoices.read');
   if (!auth.ok) return auth.response;
 
@@ -12,14 +13,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     try {
       if ((prisma as any).serviceInvoice) {
         invoice = await (prisma as any).serviceInvoice.findFirst({
-          where: { OR: [{ id: params.id }, { invoiceNumber: params.id }] },
+          where: { OR: [{ id }, { invoiceNumber: id }] },
           include: { items: true, customer: true },
         });
       }
     } catch {}
 
     if (!invoice) {
-      invoice = dataStore.getServiceInvoiceById(params.id);
+      invoice = dataStore.getServiceInvoiceById(id);
     }
 
     if (!invoice) {
@@ -33,7 +34,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'invoices.write');
   if (!auth.ok) return auth.response;
 
@@ -42,13 +44,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     try {
       if ((prisma as any).serviceInvoice) {
         existing = await (prisma as any).serviceInvoice.findFirst({
-          where: { OR: [{ id: params.id }, { invoiceNumber: params.id }] },
+          where: { OR: [{ id }, { invoiceNumber: id }] },
         });
       }
     } catch {}
 
     if (!existing) {
-      existing = dataStore.getServiceInvoiceById(params.id);
+      existing = dataStore.getServiceInvoiceById(id);
     }
 
     if (!existing) {
@@ -90,11 +92,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   return PATCH(req, { params });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const auth = await guardApi(req, 'invoices.write');
   if (!auth.ok) return auth.response;
 
@@ -103,13 +106,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     try {
       if ((prisma as any).serviceInvoice) {
         existing = await (prisma as any).serviceInvoice.findFirst({
-          where: { OR: [{ id: params.id }, { invoiceNumber: params.id }] },
+          where: { OR: [{ id }, { invoiceNumber: id }] },
         });
       }
     } catch {}
 
     if (!existing) {
-      existing = dataStore.getServiceInvoiceById(params.id);
+      existing = dataStore.getServiceInvoiceById(id);
     }
 
     if (!existing) {
