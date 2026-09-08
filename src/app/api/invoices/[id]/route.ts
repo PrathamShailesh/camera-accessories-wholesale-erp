@@ -167,40 +167,37 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         },
       });
 
-      // When payment status transitions to PAID, update Customer totalSpent and balance in both DB and dataStore
-      if (paymentStatus === 'PAID' && existing.paymentStatus !== 'PAID' && existing.customerId) {
-        const grandTotal = existing.grandTotal || 0;
+      // Sync customer metrics whenever invoice status or payment changes
+      if (existing.customerId) {
         try {
+          const custInvoices = await prisma.taxInvoice.findMany({
+            where: { customerId: existing.customerId, fulfilmentStatus: { not: 'CANCELLED' } },
+            select: { id: true, grandTotal: true, paymentStatus: true },
+          });
+          const totalOrders = custInvoices.length;
+          const totalSpent = custInvoices
+            .filter((i: any) => i.paymentStatus === 'PAID')
+            .reduce((sum: number, i: any) => sum + (Number(i.grandTotal) || 0), 0);
+          const currentBalance = custInvoices
+            .filter((i: any) => i.paymentStatus !== 'PAID')
+            .reduce((sum: number, i: any) => sum + (Number(i.grandTotal) || 0), 0);
+
           await prisma.customer.update({
             where: { id: existing.customerId },
             data: {
-              totalSpent: { increment: grandTotal },
-              currentBalance: { decrement: grandTotal },
+              totalOrders,
+              totalSpent,
+              currentBalance: Math.max(0, currentBalance),
             },
           });
         } catch {}
 
         try {
-          const cust = dataStore.getCustomerById(existing.customerId);
-          if (cust) {
-            dataStore.updateCustomer(existing.customerId, {
-              totalSpent: (cust.totalSpent || 0) + grandTotal,
-              currentBalance: Math.max(0, (cust.currentBalance || 0) - grandTotal),
-            });
-          }
+          dataStore.syncCustomerMetrics(existing.customerId);
         } catch {}
       }
     } catch (dbErr) {
       invoice = dataStore.updateInvoice(existing.id, updateData);
-      if (paymentStatus === 'PAID' && existing.paymentStatus !== 'PAID' && existing.customerId) {
-        const cust = dataStore.getCustomerById(existing.customerId);
-        if (cust) {
-          dataStore.updateCustomer(existing.customerId, {
-            totalSpent: (cust.totalSpent || 0) + (existing.grandTotal || 0),
-            currentBalance: Math.max(0, (cust.currentBalance || 0) - (existing.grandTotal || 0)),
-          });
-        }
-      }
     }
 
     if (!invoice) {

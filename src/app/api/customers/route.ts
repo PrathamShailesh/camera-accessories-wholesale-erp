@@ -28,12 +28,46 @@ export async function GET(req: NextRequest) {
     const customers = await withDbTimeout(() =>
       prisma.customer.findMany({
         where,
+        include: {
+          taxInvoices: {
+            select: {
+              grandTotal: true,
+              paymentStatus: true,
+              fulfilmentStatus: true,
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         take,
         skip,
       })
     );
-    return NextResponse.json(customers);
+
+    const enriched = customers.map((c: any) => {
+      const valid = (c.taxInvoices || []).filter((i: any) => i.fulfilmentStatus !== 'CANCELLED');
+      if (valid.length > 0) {
+        const totalOrders = valid.length;
+        const totalSpent = valid
+          .filter((i: any) => i.paymentStatus === 'PAID')
+          .reduce((sum: number, i: any) => sum + (Number(i.grandTotal) || 0), 0);
+        const currentBalance = valid
+          .filter((i: any) => i.paymentStatus !== 'PAID')
+          .reduce((sum: number, i: any) => sum + (Number(i.grandTotal) || 0), 0);
+        const { taxInvoices, ...rest } = c;
+        return {
+          ...rest,
+          currentBalance,
+          totalOrders,
+          totalSpent,
+        };
+      }
+      const { taxInvoices, ...rest } = c;
+      return {
+        ...rest,
+        currentBalance: Math.max(0, c.currentBalance || 0),
+      };
+    });
+    return NextResponse.json(enriched);
   } catch (error) {
     try {
       const q = req.nextUrl.searchParams.get('q')?.trim()?.toLowerCase();

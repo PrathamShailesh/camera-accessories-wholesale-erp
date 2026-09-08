@@ -91,8 +91,23 @@ export default function CustomerDetailPage() {
     );
   }
 
-  const creditUsedPercent = Math.min(100, Math.round((customer.currentBalance / customer.creditLimit) * 100));
-  const estimatedProfit = (customer.totalSpent || 0) * 0.22; // ~22% average gross margin
+  const validInvoices = invoices.filter(
+    (inv) => inv.fulfilmentStatus !== 'CANCELLED' && (inv as any).status !== 'CANCELLED'
+  );
+  const ordersCount = validInvoices.length > 0 ? validInvoices.length : (customer.totalOrders || 0);
+  const totalRevenue = validInvoices.length > 0
+    ? validInvoices
+        .filter((inv) => inv.paymentStatus === 'PAID')
+        .reduce((sum, inv) => sum + (Number(inv.grandTotal) || 0), 0)
+    : (customer.totalSpent || 0);
+  const outstandingBalance = validInvoices.length > 0
+    ? validInvoices
+        .filter((inv) => inv.paymentStatus !== 'PAID')
+        .reduce((sum, inv) => sum + (Number(inv.grandTotal) || 0), 0)
+    : Math.max(0, customer.currentBalance || 0);
+
+  const creditUsedPercent = Math.min(100, Math.round((outstandingBalance / (customer.creditLimit || 1)) * 100));
+  const estimatedProfit = totalRevenue * 0.22; // ~22% average gross margin
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-16">
@@ -135,17 +150,17 @@ export default function CustomerDetailPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <KPICard
           label="Total Revenue"
-          value={formatUSD(customer.totalSpent)}
-          helperText={`${customer.totalOrders || 0} lifetime orders`}
+          value={formatUSD(totalRevenue)}
+          helperText={`${ordersCount} lifetime orders`}
         />
         <KPICard
           label="Orders Count"
-          value={customer.totalOrders || 0}
+          value={ordersCount}
           helperText="Completed & active"
         />
         <KPICard
           label="Outstanding Balance"
-          value={formatUSD(customer.currentBalance)}
+          value={formatUSD(outstandingBalance)}
           helperText={`Credit limit: ${formatUSD(customer.creditLimit)}`}
         />
         <KPICard
@@ -188,13 +203,14 @@ export default function CustomerDetailPage() {
             <TableHead>Issue Date</TableHead>
             <TableHead>Depot Hub</TableHead>
             <TableHead align="right">Amount (USD)</TableHead>
-            <TableHead>Fulfilment Status</TableHead>
+            <TableHead>Payment</TableHead>
+            <TableHead>Fulfilment</TableHead>
             <TableHead align="right">Action</TableHead>
           </TableHeader>
           <TableBody>
             {invoices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-400">
+                <TableCell colSpan={7} className="text-center py-8 text-slate-400">
                   No invoices generated yet for this customer account.
                 </TableCell>
               </TableRow>
@@ -205,6 +221,9 @@ export default function CustomerDetailPage() {
                   <TableCell className="text-slate-500">{formatDate(inv.issueDate)}</TableCell>
                   <TableCell className="text-slate-700">{inv.depotName}</TableCell>
                   <TableCell align="right" className="font-mono font-bold text-slate-900">{formatUSD(inv.grandTotal)}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={inv.paymentStatus || 'UNPAID'} />
+                  </TableCell>
                   <TableCell>
                     <StatusBadge status={inv.fulfilmentStatus} />
                   </TableCell>

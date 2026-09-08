@@ -562,14 +562,67 @@ class DataStore {
   }
 
   // --- CUSTOMERS ---
+  public syncCustomerMetrics(customerId: string): void {
+    this.checkReloadFromDisk();
+    const cust = this.customers.find((c) => c.id === customerId || c.customerCode === customerId);
+    if (!cust) return;
+    const custInvoices = this.invoices.filter(
+      (i) => (i.customerId === cust.id || i.customerId === cust.customerCode) && i.fulfilmentStatus !== 'CANCELLED'
+    );
+    cust.totalOrders = custInvoices.length;
+    cust.totalSpent = custInvoices
+      .filter((i) => i.paymentStatus === 'PAID')
+      .reduce((sum, i) => sum + (Number(i.grandTotal) || 0), 0);
+    cust.currentBalance = custInvoices
+      .filter((i) => i.paymentStatus !== 'PAID')
+      .reduce((sum, i) => sum + (Number(i.grandTotal) || 0), 0);
+    this.saveToDisk();
+  }
+
   public getCustomers(): Customer[] {
     this.checkReloadFromDisk();
-    return this.customers;
+    return this.customers.map((c) => {
+      const custInvoices = this.invoices.filter(
+        (i) => (i.customerId === c.id || i.customerId === c.customerCode) && i.fulfilmentStatus !== 'CANCELLED'
+      );
+      if (custInvoices.length > 0) {
+        return {
+          ...c,
+          totalOrders: custInvoices.length,
+          totalSpent: custInvoices
+            .filter((i) => i.paymentStatus === 'PAID')
+            .reduce((sum, i) => sum + (Number(i.grandTotal) || 0), 0),
+          currentBalance: custInvoices
+            .filter((i) => i.paymentStatus !== 'PAID')
+            .reduce((sum, i) => sum + (Number(i.grandTotal) || 0), 0),
+        };
+      }
+      return {
+        ...c,
+        currentBalance: Math.max(0, c.currentBalance || 0),
+      };
+    });
   }
 
   public getCustomerById(id: string): Customer | undefined {
     this.checkReloadFromDisk();
-    return this.customers.find((c) => c.id === id || c.customerCode === id);
+    const c = this.customers.find((c) => c.id === id || c.customerCode === id);
+    if (!c) return undefined;
+    const custInvoices = this.invoices.filter(
+      (i) => (i.customerId === c.id || i.customerId === c.customerCode) && i.fulfilmentStatus !== 'CANCELLED'
+    );
+    if (custInvoices.length > 0) {
+      c.totalOrders = custInvoices.length;
+      c.totalSpent = custInvoices
+        .filter((i) => i.paymentStatus === 'PAID')
+        .reduce((sum, i) => sum + (Number(i.grandTotal) || 0), 0);
+      c.currentBalance = custInvoices
+        .filter((i) => i.paymentStatus !== 'PAID')
+        .reduce((sum, i) => sum + (Number(i.grandTotal) || 0), 0);
+    } else {
+      c.currentBalance = Math.max(0, c.currentBalance || 0);
+    }
+    return c;
   }
 
   public createCustomer(data: any): Customer {
@@ -928,6 +981,9 @@ class DataStore {
       updatedAt: new Date().toISOString(),
     };
     this.invoices.unshift(inv);
+    if (inv.customerId) {
+      this.syncCustomerMetrics(inv.customerId);
+    }
     this.saveToDisk();
     return inv;
   }
@@ -937,6 +993,9 @@ class DataStore {
     const inv = this.getInvoiceById(id);
     if (!inv) return null;
     Object.assign(inv, data, { updatedAt: new Date().toISOString() });
+    if (inv.customerId) {
+      this.syncCustomerMetrics(inv.customerId);
+    }
     this.saveToDisk();
     return inv;
   }
@@ -945,7 +1004,10 @@ class DataStore {
     this.checkReloadFromDisk();
     const idx = this.invoices.findIndex((i) => i.id === id || i.invoiceNumber === id);
     if (idx === -1) return false;
-    this.invoices.splice(idx, 1);
+    const [deleted] = this.invoices.splice(idx, 1);
+    if (deleted?.customerId) {
+      this.syncCustomerMetrics(deleted.customerId);
+    }
     this.saveToDisk();
     return true;
   }

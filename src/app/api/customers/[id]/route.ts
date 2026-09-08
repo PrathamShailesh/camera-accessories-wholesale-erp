@@ -41,6 +41,50 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
+    // Compute live accurate totals from customer's invoices
+    const invoices = Array.isArray(customer.taxInvoices) ? customer.taxInvoices : [];
+    const validInvoices = invoices.filter(
+      (i: any) => i.fulfilmentStatus !== 'CANCELLED' && (i as any).status !== 'CANCELLED'
+    );
+    if (validInvoices.length > 0) {
+      const computedOrders = validInvoices.length;
+      const computedSpent = validInvoices
+        .filter((i: any) => i.paymentStatus === 'PAID')
+        .reduce((sum: number, i: any) => sum + (Number(i.grandTotal) || 0), 0);
+      const computedBalance = validInvoices
+        .filter((i: any) => i.paymentStatus !== 'PAID')
+        .reduce((sum: number, i: any) => sum + (Number(i.grandTotal) || 0), 0);
+
+      // If DB has drift or negative balance, self-heal in background
+      if (
+        customer.currentBalance !== computedBalance ||
+        customer.totalOrders !== computedOrders ||
+        customer.totalSpent !== computedSpent
+      ) {
+        prisma.customer.update({
+          where: { id: customer.id },
+          data: {
+            currentBalance: computedBalance,
+            totalOrders: computedOrders,
+            totalSpent: computedSpent,
+          },
+        }).catch(() => {});
+        try {
+          dataStore.updateCustomer(customer.id, {
+            currentBalance: computedBalance,
+            totalOrders: computedOrders,
+            totalSpent: computedSpent,
+          });
+        } catch {}
+      }
+
+      customer.currentBalance = computedBalance;
+      customer.totalOrders = computedOrders;
+      customer.totalSpent = computedSpent;
+    } else {
+      customer.currentBalance = Math.max(0, customer.currentBalance || 0);
+    }
+
     return NextResponse.json(customer);
   } catch (error) {
     console.error('Error fetching customer:', error);

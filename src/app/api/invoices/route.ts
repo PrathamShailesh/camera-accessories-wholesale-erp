@@ -198,6 +198,16 @@ export async function POST(req: NextRequest) {
         where: { id: 'global-settings' },
         data: { invoiceNextNumber: nextNumber + 1 },
       }).catch(() => {});
+
+      if (proforma.customerId) {
+        await prisma.customer.update({
+          where: { id: proforma.customerId },
+          data: {
+            totalOrders: { increment: 1 },
+            currentBalance: { increment: proforma.grandTotal || 0 },
+          },
+        }).catch(() => {});
+      }
     } catch (dbErr) {
       // Fallback to dataStore
       invoice = dataStore.createInvoice({
