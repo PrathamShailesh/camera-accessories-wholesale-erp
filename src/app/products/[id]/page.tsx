@@ -262,7 +262,7 @@ export default function ProductDetailPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 p-3.5 rounded-lg bg-surface border border-line text-xs font-mono">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-lg bg-surface border border-line text-xs font-mono">
             <div>
               <span className="text-muted block text-[10px] uppercase font-sans font-semibold">Cost Price</span>
               <span className="text-ink font-bold">{formatUSD(product.purchasePrice)}</span>
@@ -338,7 +338,8 @@ export default function ProductDetailPage() {
             No tracked serial numbers registered for this product model yet.
           </div>
         ) : (
-          <div className="overflow-x-auto border border-line rounded-lg">
+          <>
+          <div className="hidden md:block overflow-x-auto border border-line rounded-lg">
             <table className="w-full text-xs text-left">
               <thead className="bg-surface text-muted font-semibold border-b border-line">
                 <tr>
@@ -372,6 +373,32 @@ export default function ProductDetailPage() {
               </tbody>
             </table>
           </div>
+
+          <div className="md:hidden space-y-2 font-mono">
+            {serials.map((s) => (
+              <div key={s.id} className="p-3 rounded-lg border border-line bg-surface text-xs space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-ink">{s.serialNumber}</span>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      s.status === 'IN_STOCK'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : s.status === 'ALLOCATED'
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-surface-muted text-ink-secondary border border-line'
+                    }`}
+                  >
+                    {s.status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-ink-secondary">
+                  <span>Depot: {s.depotId}</span>
+                  <span className="text-muted">{s.invoiceNumber || s.invoiceId || '—'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          </>
         )}
       </Card>
 
@@ -400,7 +427,7 @@ export default function ProductDetailPage() {
             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
             required
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Brand"
               value={editForm.brand}
@@ -424,7 +451,7 @@ export default function ProductDetailPage() {
             onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
             rows={3}
           />
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Input
               label="Cost Price ($)"
               type="number"
@@ -456,7 +483,7 @@ export default function ProductDetailPage() {
 
           <div className="border-t border-line pt-3">
             <h4 className="font-semibold text-ink-secondary mb-2">Depot Stock Allocations</h4>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {depots.map((d) => (
                 <div key={d.id}>
                   <Input

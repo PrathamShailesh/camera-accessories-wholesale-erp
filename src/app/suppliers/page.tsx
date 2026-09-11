@@ -16,6 +16,7 @@ import { Supplier } from '@/types/erp';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button, IconButton } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { SearchInput, Input, Select, Textarea } from '@/components/ui/Input';
 import { Drawer, ConfirmDialog } from '@/components/ui/Modal';
@@ -237,63 +238,112 @@ export default function SuppliersPage() {
           }
         />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableHead>Supplier / Company</TableHead>
-            <TableHead>Contact Person</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead>Tax / VAT ID</TableHead>
-            <TableHead>Payment Terms</TableHead>
-            <TableHead align="right">Actions</TableHead>
-          </TableHeader>
-          <TableBody>
+        <>
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableHead>Supplier / Company</TableHead>
+                <TableHead>Contact Person</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Tax / VAT ID</TableHead>
+                <TableHead>Payment Terms</TableHead>
+                <TableHead align="right">Actions</TableHead>
+              </TableHeader>
+              <TableBody>
+                {suppliers.map((s) => (
+                  <TableRow key={s.id}>
+                    <TableCell>
+                      <div className="font-semibold text-ink">{s.name}</div>
+                      <div className="text-xs text-muted flex items-center gap-1.5 mt-0.5">
+                        <Mail className="h-3 w-3 text-muted" />
+                        <span>{s.email}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-ink-secondary">{s.contactPerson}</div>
+                      <div className="text-xs text-muted flex items-center gap-1.5 mt-0.5">
+                        <Phone className="h-3 w-3 text-muted" />
+                        <span>{s.phone}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 text-xs text-ink-secondary">
+                        <MapPin className="h-3.5 w-3.5 text-muted" />
+                        <span>{s.country || 'UAE'}</span>
+                      </div>
+                      {s.address && <div className="text-[11px] text-muted truncate max-w-xs">{s.address}</div>}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs text-muted">{s.taxId || 'N/A'}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge tone="neutral">{s.paymentTerms.replace('_', ' ')}</Badge>
+                    </TableCell>
+                    <TableCell align="right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <IconButton label="Edit Supplier" onClick={() => openEdit(s)}>
+                          <Edit2 className="h-3.5 w-3.5 text-muted" />
+                        </IconButton>
+                        <IconButton
+                          label="Delete Supplier"
+                          className="text-muted hover:text-danger hover:bg-danger-soft"
+                          onClick={() => setDeletingSupplier(s)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </IconButton>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="md:hidden space-y-3">
             {suppliers.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell>
-                  <div className="font-semibold text-ink">{s.name}</div>
-                  <div className="text-xs text-muted flex items-center gap-1.5 mt-0.5">
-                    <Mail className="h-3 w-3 text-muted" />
-                    <span>{s.email}</span>
+              <Card key={s.id} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-ink truncate">{s.name}</div>
+                    <div className="text-xs text-muted flex items-center gap-1.5 mt-0.5">
+                      <Mail className="h-3 w-3 text-muted shrink-0" />
+                      <span className="truncate">{s.email}</span>
+                    </div>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <div className="text-ink-secondary">{s.contactPerson}</div>
-                  <div className="text-xs text-muted flex items-center gap-1.5 mt-0.5">
+                  <Badge tone="neutral" className="shrink-0">{s.paymentTerms.replace('_', ' ')}</Badge>
+                </div>
+                <div className="text-xs text-ink-secondary">
+                  <div>{s.contactPerson}</div>
+                  <div className="text-muted flex items-center gap-1.5 mt-0.5">
                     <Phone className="h-3 w-3 text-muted" />
                     <span>{s.phone}</span>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1 text-xs text-ink-secondary">
+                </div>
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-line-soft">
+                  <span className="flex items-center gap-1 text-ink-secondary">
                     <MapPin className="h-3.5 w-3.5 text-muted" />
-                    <span>{s.country || 'UAE'}</span>
-                  </div>
-                  {s.address && <div className="text-[11px] text-muted truncate max-w-xs">{s.address}</div>}
-                </TableCell>
-                <TableCell>
-                  <span className="text-xs text-muted">{s.taxId || 'N/A'}</span>
-                </TableCell>
-                <TableCell>
-                  <Badge tone="neutral">{s.paymentTerms.replace('_', ' ')}</Badge>
-                </TableCell>
-                <TableCell align="right">
-                  <div className="flex items-center justify-end gap-1.5">
-                    <IconButton label="Edit Supplier" onClick={() => openEdit(s)}>
-                      <Edit2 className="h-3.5 w-3.5 text-muted" />
-                    </IconButton>
-                    <IconButton
-                      label="Delete Supplier"
-                      className="text-muted hover:text-danger hover:bg-danger-soft"
-                      onClick={() => setDeletingSupplier(s)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </IconButton>
-                  </div>
-                </TableCell>
-              </TableRow>
+                    {s.country || 'UAE'}
+                  </span>
+                  <span className="text-muted">{s.taxId || 'N/A'}</span>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(s)}>
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted hover:text-danger hover:bg-danger-soft px-2.5"
+                    onClick={() => setDeletingSupplier(s)}
+                    title="Delete Supplier"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </Card>
             ))}
-          </TableBody>
-        </Table>
+          </div>
+        </>
       )}
 
       {/* Create / Edit Drawer */}
