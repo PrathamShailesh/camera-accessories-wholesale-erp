@@ -21,6 +21,7 @@ import { ConfirmDialog } from '@/components/ui/Modal';
 import { ServiceInvoice } from '@/types/erp';
 import { formatUSD, formatDate } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
+import { Button, IconButton, LinkButton } from '@/components/ui/Button';
 
 export default function ServiceInvoiceDetailPage() {
   const params = useParams();
@@ -147,25 +148,21 @@ export default function ServiceInvoiceDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-12 text-center bg-white rounded-3xl border border-[#E5E7EB] max-w-4xl mx-auto my-8">
-        <RefreshCw className="h-6 w-6 animate-spin text-[#005E82] mx-auto" />
-        <p className="text-xs text-[#6B7280] mt-2">Loading service invoice details...</p>
+      <div className="p-12 text-center bg-white rounded-2xl border border-line max-w-4xl mx-auto my-8">
+        <RefreshCw className="h-6 w-6 animate-spin text-primary mx-auto" />
+        <p className="text-xs text-muted mt-2">Loading service invoice details...</p>
       </div>
     );
   }
 
   if (!invoice) {
     return (
-      <div className="p-12 text-center bg-white rounded-3xl border border-[#E5E7EB] max-w-4xl mx-auto my-8 space-y-3">
-        <FileText className="h-10 w-10 text-red-500 mx-auto" />
-        <h2 className="text-base font-bold text-[#111827]">Service Invoice Not Found</h2>
-        <Link
-          href="/service-invoices"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#005E82] text-white text-xs font-bold"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Return to Service Invoices</span>
-        </Link>
+      <div className="p-12 text-center bg-white rounded-2xl border border-line max-w-4xl mx-auto my-8 space-y-3">
+        <FileText className="h-10 w-10 text-danger mx-auto" />
+        <h2 className="text-base font-bold text-ink">Service Invoice Not Found</h2>
+        <LinkButton href="/service-invoices" iconLeft={<ArrowLeft className="h-4 w-4" />}>
+          Return to Service Invoices
+        </LinkButton>
       </div>
     );
   }
@@ -173,10 +170,10 @@ export default function ServiceInvoiceDetailPage() {
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto pb-24 animate-fade-in print:p-0 print:m-0 print:max-w-none">
       {/* Top Action Bar (Hidden when printing) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-3xl border border-[#E5E7EB] shadow-xs print:hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-line print:hidden">
         <Link
           href="/service-invoices"
-          className="flex items-center gap-2 text-xs font-semibold text-[#6B7280] hover:text-[#111827]"
+          className="flex items-center gap-2 text-xs font-semibold text-muted hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Service Invoices</span>
@@ -187,7 +184,7 @@ export default function ServiceInvoiceDetailPage() {
             value={invoice.status}
             onChange={(e) => handleStatusChange(e.target.value)}
             disabled={isUpdatingStatus}
-            className="px-3 py-1.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] text-xs font-bold font-mono text-[#005E82] focus:outline-none shadow-xs"
+            className="h-10 px-3.5 rounded-full bg-surface border border-line text-xs font-semibold text-primary focus:outline-none focus:ring-2 focus:ring-primary-ring"
           >
             <option value="DRAFT">DRAFT</option>
             <option value="ISSUED">ISSUED</option>
@@ -198,45 +195,32 @@ export default function ServiceInvoiceDetailPage() {
             <option value="CANCELLED">CANCELLED</option>
           </select>
 
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] hover:bg-[#F8FAFC] text-xs font-bold shadow-xs transition-all"
-          >
-            <Printer className="h-4 w-4" />
-            <span>Print PDF</span>
-          </button>
+          <Button variant="outline" onClick={handlePrint} iconLeft={<Printer className="h-4 w-4" />}>
+            Print PDF
+          </Button>
 
-          <button
-            type="button"
+          <Button
             onClick={handleSendEmail}
-            disabled={isSendingEmail}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#005E82] hover:bg-[#004B68] text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
+            loading={isSendingEmail}
+            iconLeft={!isSendingEmail ? <Mail className="h-4 w-4" /> : undefined}
           >
-            {isSendingEmail ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <Mail className="h-4 w-4" />
-            )}
-            <span>Email Customer</span>
-          </button>
+            Email Customer
+          </Button>
 
           {(invoice.status === 'DRAFT' || invoice.status === 'CANCELLED') && (
-            <button
-              type="button"
+            <IconButton
+              label="Delete Service Invoice"
+              className="border border-line text-muted hover:text-danger hover:bg-danger-soft"
               onClick={() => setIsDeleteOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold shadow-xs transition-all"
-              title="Delete Service Invoice"
             >
               <Trash2 className="h-4 w-4" />
-              <span>Delete</span>
-            </button>
+            </IconButton>
           )}
         </div>
       </div>
 
       {/* Printable Service Invoice Document */}
-      <div className="bg-white rounded-3xl border border-[#E5E7EB] p-8 sm:p-12 shadow-sm space-y-8 print:border-none print:shadow-none print:p-0">
+      <div className="bg-white rounded-2xl border border-line p-8 sm:p-12 space-y-8 print:border-none print:shadow-none print:p-0">
         {/* Header Branding */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pb-6 border-b border-[#E5E7EB]">
           <div>

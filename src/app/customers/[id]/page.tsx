@@ -173,7 +173,7 @@ export default function CustomerDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="p-5 space-y-2 text-xs">
           <div className="flex items-center gap-1.5 text-ink font-bold">
-            <MapPin className="h-4 w-4 text-brand-600" />
+            <MapPin className="h-4 w-4 text-primary" />
             <span>Billing Address</span>
           </div>
           <p className="text-ink-secondary leading-relaxed">{customer.billingAddress}</p>
@@ -190,7 +190,7 @@ export default function CustomerDetailPage() {
 
       {/* Transaction History */}
       <Card className="overflow-hidden space-y-0">
-        <div className="p-4 border-b border-line-soft bg-slate-50/50 flex items-center justify-between">
+        <div className="p-4 border-b border-line-soft bg-surface flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
             Invoices & Orders ({invoices.length})
           </h3>
@@ -216,7 +216,7 @@ export default function CustomerDetailPage() {
             ) : (
               invoices.map((inv) => (
                 <TableRow key={inv.id}>
-                  <TableCell className="font-mono font-bold text-brand-600">{inv.invoiceNumber}</TableCell>
+                  <TableCell className="font-mono font-bold text-primary">{inv.invoiceNumber}</TableCell>
                   <TableCell className="text-muted">{formatDate(inv.issueDate)}</TableCell>
                   <TableCell className="text-ink-secondary">{inv.depotName}</TableCell>
                   <TableCell align="right" className="font-mono font-bold text-ink">{formatUSD(inv.grandTotal)}</TableCell>

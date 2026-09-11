@@ -73,7 +73,7 @@ export default function ProfitabilityPage() {
       {/* Automated BI Insights */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-brand-600" />
+          <Sparkles className="h-4 w-4 text-primary" />
           <h2 className="text-xs font-bold uppercase tracking-wider text-muted">
             Business Intelligence Insights
           </h2>
@@ -99,7 +99,7 @@ export default function ProfitabilityPage() {
                 <div className="pt-3 border-t border-line-soft mt-2">
                   <Link
                     href={bi.actionLink}
-                    className="text-xs font-semibold text-brand-600 hover:underline flex items-center gap-1"
+                    className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
                   >
                     <span>{bi.actionLabel || 'Investigate in System'}</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -113,7 +113,7 @@ export default function ProfitabilityPage() {
 
       {/* Product Profitability Table */}
       <Card className="overflow-hidden">
-        <div className="p-4 border-b border-line-soft bg-slate-50/50 flex items-center justify-between">
+        <div className="p-4 border-b border-line-soft bg-surface flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
             Most Profitable Products & Margin Contribution
           </h3>
@@ -142,7 +142,7 @@ export default function ProfitabilityPage() {
                 <TableCell align="right" className="font-bold text-ink">{m.unitsSold}</TableCell>
                 <TableCell align="right" className="font-bold text-ink">{formatUSD(m.totalRevenue)}</TableCell>
                 <TableCell align="right" className="text-muted">{formatUSD(m.totalCost)}</TableCell>
-                <TableCell align="right" className="font-bold text-emerald-700">
+                <TableCell align="right" className="font-bold text-success">
                   {formatUSD(m.grossProfit)}
                 </TableCell>
                 <TableCell align="right">

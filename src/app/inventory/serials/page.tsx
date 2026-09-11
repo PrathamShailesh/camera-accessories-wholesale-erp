@@ -74,7 +74,7 @@ export default function SerialsPage() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-lg divide-x divide-y lg:divide-y-0 divide-line bg-surface">
+      <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-2xl divide-x divide-y lg:divide-y-0 divide-line bg-surface overflow-hidden">
         <div className="p-4">
           <div className="text-xs uppercase tracking-wider text-muted">Tracked Units</div>
           <div className="text-2xl font-semibold text-ink mt-1.5">{serials.length}</div>

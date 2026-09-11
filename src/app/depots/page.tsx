@@ -66,8 +66,8 @@ export default function DepotsPage() {
       />
 
       {error && (
-        <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+        <div className="p-3 rounded-2xl bg-danger-soft border border-danger-border text-danger text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
@@ -90,7 +90,7 @@ export default function DepotsPage() {
               <div>
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-primary/10 text-primary border border-primary/20">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-soft text-primary">
                       {d.code} {d.isCentralHub ? '· CENTRAL HQ' : ''}
                     </span>
                     <h3 className="text-lg font-bold text-ink mt-1.5">{d.name}</h3>
@@ -115,7 +115,7 @@ export default function DepotsPage() {
                   </div>
                   <div>
                     <span className="text-muted block text-[10px] uppercase font-sans font-semibold">In Fulfilment</span>
-                    <span className="text-amber-700 font-bold text-sm">{d.activeOrdersCount || 0} Orders</span>
+                    <span className="text-warning font-bold text-sm">{d.activeOrdersCount || 0} Orders</span>
                   </div>
                 </div>
 

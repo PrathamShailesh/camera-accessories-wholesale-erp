@@ -419,7 +419,7 @@ export default function ProformaDetailPage() {
             target="_blank"
             variant="outline"
             size="sm"
-            iconLeft={<ExternalLink className="h-3.5 w-3.5 text-brand-600" />}
+            iconLeft={<ExternalLink className="h-3.5 w-3.5 text-primary" />}
           >
             Customer Portal
           </LinkButton>
@@ -428,7 +428,7 @@ export default function ProformaDetailPage() {
             <Button
               size="sm"
               variant="outline"
-              iconLeft={<Mail className="h-3.5 w-3.5 text-brand-600" />}
+              iconLeft={<Mail className="h-3.5 w-3.5 text-primary" />}
               onClick={() => {
                 setEmailResult(null);
                 setErrorMessage('');
@@ -528,7 +528,7 @@ export default function ProformaDetailPage() {
         {/* Left 2 Columns: Items & Financials */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="overflow-hidden">
-            <div className="p-4 border-b border-line-soft bg-slate-50/50 flex items-center justify-between">
+            <div className="p-4 border-b border-line-soft bg-surface flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
                 Quotation Line Items ({proforma.items?.length || 0})
               </h3>
@@ -546,9 +546,9 @@ export default function ProformaDetailPage() {
                     <th className="py-2.5 px-4 text-right">Line Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line-soft">
                   {proforma.items?.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={item.id} className="hover:bg-surface transition-colors">
                       <td className="py-3 px-4">
                         <div className="font-semibold text-ink">{item.productName}</div>
                         <div className="text-[11px] font-mono text-muted mt-0.5">
@@ -574,7 +574,7 @@ export default function ProformaDetailPage() {
             </div>
 
             {/* Financial Summary */}
-            <div className="p-4 bg-slate-50/50 border-t border-line-soft flex flex-col items-end space-y-1.5 text-xs font-mono">
+            <div className="p-4 bg-surface border-t border-line-soft flex flex-col items-end space-y-1.5 text-xs font-mono">
               <div className="flex justify-between w-64 text-ink-secondary">
                 <span>Subtotal:</span>
                 <span className="text-ink font-medium">{formatUSD(proforma.subtotal)}</span>
@@ -595,7 +595,7 @@ export default function ProformaDetailPage() {
               </div>
               <div className="flex justify-between w-64 pt-2 border-t border-line text-sm font-bold text-ink">
                 <span>Grand Total (USD):</span>
-                <span className="text-brand-600 font-bold">{formatUSD(proforma.grandTotal)}</span>
+                <span className="text-primary font-bold">{formatUSD(proforma.grandTotal)}</span>
               </div>
             </div>
           </Card>
@@ -716,7 +716,7 @@ export default function ProformaDetailPage() {
               </div>
             ) : (
               <div className="space-y-5 text-sm text-ink-secondary">
-                <div className="rounded-lg border border-line divide-y divide-slate-100 text-sm">
+                <div className="rounded-lg border border-line divide-y divide-line-soft text-sm">
                   <div className="flex justify-between px-3.5 py-2.5">
                     <span className="text-muted">Customer</span>
                     <span className="font-semibold text-ink">{proforma.customerCompany}</span>
@@ -735,11 +735,11 @@ export default function ProformaDetailPage() {
                   </div>
                   <div className="flex justify-between px-3.5 py-2.5 bg-surface rounded-b-lg">
                     <span className="font-semibold text-ink">Total</span>
-                    <span className="font-bold text-brand-600">{formatUSD(proforma.grandTotal)}</span>
+                    <span className="font-bold text-primary">{formatUSD(proforma.grandTotal)}</span>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-brand-50 border border-brand-100 text-brand-900 text-xs leading-relaxed">
+                <div className="p-3 rounded-lg bg-primary-soft border border-primary/15 text-brand-900 text-xs leading-relaxed">
                   This will create a Tax Invoice and move this order into the depot fulfilment workflow.
                 </div>
 

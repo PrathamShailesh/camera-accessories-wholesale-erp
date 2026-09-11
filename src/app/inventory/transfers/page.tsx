@@ -147,7 +147,7 @@ export default function TransfersPage() {
       />
 
       {!canTransfer && !loading && (
-        <div className="rounded-lg border border-info-border bg-info-soft px-4 py-3 text-sm text-info">
+        <div className="rounded-2xl border border-info-border bg-info-soft px-4 py-3 text-sm text-info">
           Stock transfers move inventory between depots. You currently operate a single depot
           {depots[0] ? ` (${depots[0].name})` : ''}, so there is nowhere to transfer to. Add a second depot to
           enable transfers.

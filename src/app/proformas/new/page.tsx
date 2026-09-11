@@ -376,7 +376,7 @@ function ProformaBuilder() {
                 onClick={() => setCurrentStep(s.step)}
                 className={`flex items-center gap-2.5 p-2 rounded-md border text-left transition-colors ${
                   isCurrent
-                    ? 'border-brand-500 bg-brand-50/70 text-brand-900 font-semibold'
+                    ? 'border-brand-500 bg-primary-soft/70 text-brand-900 font-semibold'
                     : isCompleted
                       ? 'border-line bg-surface text-ink-secondary'
                       : 'border-transparent text-muted hover:bg-surface'
@@ -423,7 +423,7 @@ function ProformaBuilder() {
               <Button
                 variant="outline"
                 size="sm"
-                iconLeft={<UserPlus className="h-3.5 w-3.5 text-brand-600" />}
+                iconLeft={<UserPlus className="h-3.5 w-3.5 text-primary" />}
                 onClick={() => setIsQuickAddOpen(true)}
               >
                 + Quick Add Customer
@@ -438,7 +438,7 @@ function ProformaBuilder() {
               value={customerSearch}
               onChange={(e) => setCustomerSearch(e.target.value)}
               placeholder="Search by company name, contact person, customer code, email, or country..."
-              className="w-full rounded-md border border-line bg-slate-50/50 pl-9 pr-3 py-2 text-xs text-ink focus:bg-white"
+              className="w-full rounded-md border border-line bg-surface pl-9 pr-3 py-2 text-xs text-ink focus:bg-white"
             />
           </div>
 
@@ -451,8 +451,8 @@ function ProformaBuilder() {
                   onClick={() => setSelectedCustomerId(c.id)}
                   className={`p-3.5 rounded-lg border cursor-pointer transition-all ${
                     isSelected
-                      ? 'border-brand-500 bg-brand-50/60 shadow-xs'
-                      : 'border-line bg-white hover:border-line hover:bg-slate-50/80'
+                      ? 'border-brand-500 bg-primary-soft/60 shadow-xs'
+                      : 'border-line bg-white hover:border-line hover:bg-surface'
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -501,7 +501,7 @@ function ProformaBuilder() {
               value={productQuery}
               onChange={(e) => setProductQuery(e.target.value)}
               placeholder="Quick search Sony, Canon, DJI, SKU, lens category..."
-              className="w-full rounded-md border border-line bg-slate-50/50 pl-9 pr-3 py-2 text-xs text-ink focus:bg-white"
+              className="w-full rounded-md border border-line bg-surface pl-9 pr-3 py-2 text-xs text-ink focus:bg-white"
             />
           </div>
 
@@ -513,7 +513,7 @@ function ProformaBuilder() {
                 <div
                   key={p.id}
                   className={`p-3 rounded-lg border flex items-center gap-3 transition-colors ${
-                    inItems ? 'border-brand-300 bg-brand-50/40' : 'border-line bg-white hover:bg-surface'
+                    inItems ? 'border-brand-300 bg-primary-soft/40' : 'border-line bg-white hover:bg-surface'
                   }`}
                 >
                     <div className="h-12 w-12 rounded bg-surface-muted overflow-hidden border border-line shrink-0 flex items-center justify-center p-1">
@@ -554,7 +554,7 @@ function ProformaBuilder() {
               {items.map((item, idx) => {
                 const prod = products.find((p) => p.id === item.productId);
                 return (
-                  <div key={idx} className="flex items-center gap-3 p-2.5 rounded-md border border-line bg-slate-50/50 text-xs">
+                  <div key={idx} className="flex items-center gap-3 p-2.5 rounded-md border border-line bg-surface text-xs">
                     <div className="h-9 w-9 rounded bg-white overflow-hidden border border-line shrink-0 flex items-center justify-center p-0.5">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -621,7 +621,7 @@ function ProformaBuilder() {
             {items.map((item, idx) => {
               const prod = products.find((p) => p.id === item.productId);
               return (
-                <div key={idx} className="p-3.5 rounded-md border border-line bg-slate-50/50 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center text-xs">
+                <div key={idx} className="p-3.5 rounded-md border border-line bg-surface grid grid-cols-1 sm:grid-cols-12 gap-3 items-center text-xs">
                   <div className="sm:col-span-5 font-semibold text-ink">
                     {prod?.name} <span className="font-mono text-muted text-[11px]">({prod?.sku})</span>
                   </div>
@@ -709,7 +709,7 @@ function ProformaBuilder() {
             {items.map((item, idx) => {
               const prod = products.find((p) => p.id === item.productId);
               return (
-                <div key={idx} className="p-3.5 rounded-md border border-line bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div key={idx} className="p-3.5 rounded-md border border-line bg-surface flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                   <div>
                     <div className="font-semibold text-ink">{prod?.name}</div>
                     <div className="text-[11px] text-muted">Requested quantity: {item.quantity} units</div>
@@ -756,7 +756,7 @@ function ProformaBuilder() {
             <p className="text-xs text-muted mt-0.5">Verify customer profile, line item breakdown, and total values before creation</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs border border-line rounded-md p-4 bg-slate-50/50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs border border-line rounded-md p-4 bg-surface">
             <div>
               <span className="text-muted block">Customer Account</span>
               <span className="font-bold text-ink">{selectedCustomer?.companyName}</span>
@@ -788,7 +788,7 @@ function ProformaBuilder() {
             </div>
             <div className="flex justify-between text-sm font-bold text-ink pt-3 border-t border-line">
               <span>Grand Total (USD):</span>
-              <span className="text-brand-600">{formatUSD(grandTotal)}</span>
+              <span className="text-primary">{formatUSD(grandTotal)}</span>
             </div>
           </div>
 
@@ -827,7 +827,7 @@ function ProformaBuilder() {
             </div>
             <div className="flex justify-between text-ink-secondary">
               <span>Grand Total:</span>
-              <span className="font-mono font-bold text-brand-600">{formatUSD(grandTotal)}</span>
+              <span className="font-mono font-bold text-primary">{formatUSD(grandTotal)}</span>
             </div>
           </div>
 
@@ -852,7 +852,7 @@ function ProformaBuilder() {
           <div className="relative w-full max-w-lg rounded-xl border border-line bg-white shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-line-soft">
               <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-brand-600" />
+                <Users className="h-5 w-5 text-primary" />
                 <h3 className="text-sm font-bold text-ink">Quick Add Wholesale Customer</h3>
               </div>
               <button onClick={() => setIsQuickAddOpen(false)} className="text-muted hover:text-ink-secondary">

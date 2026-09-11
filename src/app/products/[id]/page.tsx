@@ -194,7 +194,7 @@ export default function ProductDetailPage() {
         title={
           <span className="inline-flex items-center gap-2.5">
             {product.name}
-            <span className="font-mono text-xs text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded border border-brand-200 align-middle">
+            <span className="font-mono text-xs text-primary font-bold bg-primary-soft px-2 py-0.5 rounded border border-primary/20 align-middle">
               {product.sku}
             </span>
           </span>
@@ -318,7 +318,7 @@ export default function ProductDetailPage() {
       <Card className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Hash className="h-4 w-4 text-brand-600" />
+            <Hash className="h-4 w-4 text-primary" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-ink">
               Tracked Serial Numbers ({serials.length})
             </h3>
@@ -327,14 +327,14 @@ export default function ProductDetailPage() {
             href={`/inventory/serials?productId=${product.id}`}
             variant="ghost"
             size="sm"
-            className="text-xs text-brand-600"
+            className="text-xs text-primary"
           >
             Manage Serials
           </LinkButton>
         </div>
 
         {serials.length === 0 ? (
-          <div className="py-8 text-center text-muted text-xs bg-slate-50/50 rounded-lg border border-dashed border-line">
+          <div className="py-8 text-center text-muted text-xs bg-surface rounded-lg border border-dashed border-line">
             No tracked serial numbers registered for this product model yet.
           </div>
         ) : (
@@ -348,9 +348,9 @@ export default function ProductDetailPage() {
                   <th className="p-2.5">Allocated Invoice</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-mono">
+              <tbody className="divide-y divide-line-soft font-mono">
                 {serials.map((s) => (
-                  <tr key={s.id} className="hover:bg-slate-50/50">
+                  <tr key={s.id} className="hover:bg-surface">
                     <td className="p-2.5 font-bold text-ink">{s.serialNumber}</td>
                     <td className="p-2.5 text-ink-secondary">{s.depotId}</td>
                     <td className="p-2.5">

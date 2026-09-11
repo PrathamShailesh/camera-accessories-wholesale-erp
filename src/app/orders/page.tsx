@@ -130,7 +130,7 @@ export default function OrdersPipelinePage() {
             const Icon = stage.icon;
             const data = stageData[stage.key];
             return (
-              <div key={stage.key} className="flex flex-col rounded-lg border border-line bg-surface">
+              <div key={stage.key} className="flex flex-col rounded-2xl border border-line bg-surface overflow-hidden">
                 <div className="px-4 py-3.5 border-b border-line">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export default function OrdersPipelinePage() {
                         <Link
                           key={item.id}
                           href={href}
-                          className="block rounded-md border border-line bg-surface px-3 py-2.5 hover:border-primary transition-colors"
+                          className="block rounded-xl border border-line bg-surface px-3 py-2.5 hover:border-primary transition-colors"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-mono text-xs font-semibold text-primary truncate">{number}</span>

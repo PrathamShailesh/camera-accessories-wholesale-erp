@@ -131,7 +131,7 @@ export default function ShipmentDetailPage() {
                 href={shipment.trackingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-xs"
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-primary hover:bg-primary-hover text-white text-xs font-semibold"
               >
                 Track Live <ExternalLink className="h-3.5 w-3.5" />
               </a>
@@ -141,7 +141,7 @@ export default function ShipmentDetailPage() {
                 variant="outline"
                 size="sm"
                 loading={isMarkingDelivered}
-                iconLeft={<CheckCircle2 className="h-4 w-4 text-emerald-600" />}
+                iconLeft={<CheckCircle2 className="h-4 w-4 text-success" />}
                 onClick={handleMarkDelivered}
               >
                 Mark Delivered
@@ -182,7 +182,7 @@ export default function ShipmentDetailPage() {
             </div>
             <div className="flex justify-between py-1 border-b border-line-soft">
               <span className="text-muted font-sans">Airway Bill Number</span>
-              <span className="text-sky-700 font-bold">{shipment.airwayBillNumber}</span>
+              <span className="text-primary font-bold">{shipment.airwayBillNumber}</span>
             </div>
             <div className="flex justify-between py-1">
               <span className="text-muted font-sans">Dispatched Date</span>
@@ -209,7 +209,7 @@ export default function ShipmentDetailPage() {
               <div className="p-3 rounded-lg border border-line-soft space-y-1.5 font-mono text-xs">
                 <div className="flex justify-between">
                   <span className="text-muted font-sans">Linked Invoice:</span>
-                  <Link href={`/invoices/${invoice.id}`} className="text-brand-600 font-bold hover:underline">
+                  <Link href={`/invoices/${invoice.id}`} className="text-primary font-bold hover:underline">
                     {invoice.invoiceNumber}
                   </Link>
                 </div>

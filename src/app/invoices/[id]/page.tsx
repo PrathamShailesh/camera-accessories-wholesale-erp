@@ -285,7 +285,7 @@ export default function InvoiceDetailPage() {
             <Button
               size="sm"
               variant="outline"
-              iconLeft={<UploadCloud className="h-3.5 w-3.5 text-brand-600" />}
+              iconLeft={<UploadCloud className="h-3.5 w-3.5 text-primary" />}
               onClick={() => setIsUploadModalOpen(true)}
             >
               Attach Document
@@ -349,7 +349,7 @@ export default function InvoiceDetailPage() {
         {/* Main Document Body */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="overflow-hidden">
-            <div className="p-4 border-b border-line-soft bg-slate-50/50 flex items-center justify-between">
+            <div className="p-4 border-b border-line-soft bg-surface flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
                 Tax Invoice Items ({invoice.items?.length || 0})
               </h3>
@@ -367,9 +367,9 @@ export default function InvoiceDetailPage() {
                     {!isDepotUser && <th className="py-2.5 px-4 text-right">Total</th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line-soft">
                   {(invoice.items || []).map((item, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={idx} className="hover:bg-surface transition-colors">
                       <td className="py-3 px-4">
                         <div className="font-semibold text-ink">{item.productName}</div>
                         <div className="text-[11px] font-mono text-muted mt-0.5">
@@ -382,7 +382,7 @@ export default function InvoiceDetailPage() {
                             {item.allocatedSerials.map((sn) => (
                               <span
                                 key={sn}
-                                className="px-1.5 py-0.5 rounded bg-brand-50 border border-brand-100 text-brand-700 font-mono text-[10px] font-semibold"
+                                className="px-1.5 py-0.5 rounded bg-primary-soft border border-primary/15 text-primary font-mono text-[10px] font-semibold"
                               >
                                 {sn}
                               </span>
@@ -412,7 +412,7 @@ export default function InvoiceDetailPage() {
             </div>
 
             {!isDepotUser && (
-              <div className="p-4 bg-slate-50/50 border-t border-line-soft flex flex-col items-end space-y-1.5 text-xs font-mono">
+              <div className="p-4 bg-surface border-t border-line-soft flex flex-col items-end space-y-1.5 text-xs font-mono">
                 <div className="flex justify-between w-64 text-ink-secondary">
                   <span>Subtotal:</span>
                   <span className="text-ink font-medium">{formatUSD(invoice.subtotal)}</span>
@@ -433,7 +433,7 @@ export default function InvoiceDetailPage() {
                 </div>
                 <div className="flex justify-between w-64 pt-2 border-t border-line text-sm font-bold text-ink">
                   <span>Grand Total (USD):</span>
-                  <span className="text-brand-600 font-bold">{formatUSD(invoice.grandTotal)}</span>
+                  <span className="text-primary font-bold">{formatUSD(invoice.grandTotal)}</span>
                 </div>
               </div>
             )}
@@ -445,7 +445,7 @@ export default function InvoiceDetailPage() {
               <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
                 Cloudinary Documents ({documents.length})
               </h3>
-              <button onClick={() => setIsUploadModalOpen(true)} className="text-xs text-brand-600 font-medium hover:underline">
+              <button onClick={() => setIsUploadModalOpen(true)} className="text-xs text-primary font-medium hover:underline">
                 + Upload Attachment
               </button>
             </div>
@@ -459,13 +459,13 @@ export default function InvoiceDetailPage() {
                     href={doc.cloudinaryUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2.5 rounded-md border border-line bg-slate-50/50 hover:bg-surface flex items-center justify-between group transition-colors"
+                    className="p-2.5 rounded-md border border-line bg-surface hover:bg-surface flex items-center justify-between group transition-colors"
                   >
                     <div>
-                      <div className="text-xs font-semibold text-ink group-hover:text-brand-600">{doc.title}</div>
+                      <div className="text-xs font-semibold text-ink group-hover:text-primary">{doc.title}</div>
                       <span className="text-[10px] text-muted font-mono">{doc.category}</span>
                     </div>
-                    <ExternalLink className="h-3.5 w-3.5 text-muted group-hover:text-brand-600 shrink-0" />
+                    <ExternalLink className="h-3.5 w-3.5 text-muted group-hover:text-primary shrink-0" />
                   </a>
                 ))
               )}
@@ -499,9 +499,9 @@ export default function InvoiceDetailPage() {
           </Card>
 
           {shipment && (
-            <Card className="p-5 space-y-3 border-brand-200 bg-brand-50/30">
+            <Card className="p-5 space-y-3 border-primary/20 bg-primary-soft/30">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-brand-700">Shipment Dispatched</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-primary">Shipment Dispatched</span>
                 <StatusBadge status={shipment.status} />
               </div>
               <div className="space-y-1.5 text-xs text-ink-secondary font-mono">
@@ -511,7 +511,7 @@ export default function InvoiceDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>AWB Number:</span>
-                  <span className="font-bold text-brand-600">{shipment.airwayBillNumber}</span>
+                  <span className="font-bold text-primary">{shipment.airwayBillNumber}</span>
                 </div>
               </div>
               <a
