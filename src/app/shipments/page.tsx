@@ -86,7 +86,7 @@ export default function ShipmentsPage() {
         description="Dispatched orders, airway bills, and delivery tracking."
       />
 
-      <div className="grid grid-cols-3 border border-line rounded-lg divide-x divide-line bg-surface">
+      <div className="grid grid-cols-1 sm:grid-cols-3 border border-line rounded-lg divide-x-0 sm:divide-x divide-y sm:divide-y-0 divide-line bg-surface">
         <div className="p-4">
           <div className="text-xs uppercase tracking-wider text-muted">Total Shipments</div>
           <div className="text-2xl font-semibold text-ink mt-1.5">{shipments.length}</div>
@@ -127,7 +127,8 @@ export default function ShipmentsPage() {
           action={shipments.length === 0 && <LinkButton href="/depot/ship">Go to Dispatch</LinkButton>}
         />
       ) : (
-        <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
+        <>
+        <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Shipment</TableHead>
@@ -187,6 +188,53 @@ export default function ShipmentsPage() {
             </TableBody>
           </Table>
         </Card>
+
+        <div className="md:hidden space-y-3">
+          {filtered.map((s) => (
+            <Card key={s.id} className="p-4 space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-mono font-semibold text-ink text-sm">{s.shipmentNumber}</div>
+                  <div className="text-xs text-muted truncate">{s.customerCompany}</div>
+                </div>
+                <StatusBadge status={s.status} />
+              </div>
+              <div className="text-xs text-ink-secondary">
+                <div>{(s.courier || '').replace(/_/g, ' ')}</div>
+                <div className="text-muted font-mono mt-0.5">{s.airwayBillNumber}</div>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                <Link href={`/invoices/${s.invoiceId}`} className="font-mono text-primary hover:underline">
+                  {s.invoiceNumber}
+                </Link>
+                <span className="text-muted">{formatDate(((s as any).dispatchedAt ?? s.shippingDate) as any)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 pt-1">
+                {s.trackingUrl ? (
+                  <a
+                    href={s.trackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  >
+                    Track <ExternalLink className="h-3 w-3" />
+                  </a>
+                ) : <span />}
+                {s.status !== 'DELIVERED' && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    loading={updatingId === s.id}
+                    onClick={() => handleMarkDelivered(s.id)}
+                  >
+                    Mark Delivered
+                  </Button>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+        </>
       )}
     </div>
   );

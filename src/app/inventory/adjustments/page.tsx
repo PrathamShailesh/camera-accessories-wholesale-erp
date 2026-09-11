@@ -190,7 +190,8 @@ export default function StockAdjustmentsPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
+        <>
+        <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Product</TableHead>
@@ -230,6 +231,37 @@ export default function StockAdjustmentsPage() {
             </TableBody>
           </Table>
         </Card>
+
+        <div className="md:hidden space-y-3">
+          {filtered.map((adj) => (
+            <Card key={adj.id} className="p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-semibold text-ink truncate">{adj.productName}</div>
+                  <div className="text-xs text-muted font-mono mt-0.5">{adj.productSku}</div>
+                </div>
+                <span
+                  className={`font-mono font-semibold text-sm shrink-0 ${adj.deltaQty >= 0 ? 'text-success' : 'text-danger'}`}
+                >
+                  {adj.deltaQty >= 0 ? '+' : ''}
+                  {adj.deltaQty}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted">{adj.depotName}</span>
+                <Badge tone={adj.reason === 'DAMAGED' || adj.reason === 'DEFECTIVE' ? 'danger' : 'neutral'}>
+                  {(adj.reason || '').replace(/_/g, ' ')}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft text-muted">
+                <span>New Qty: <span className="font-mono text-ink-secondary">{adj.newQty}</span></span>
+                <span>{adj.user}</span>
+              </div>
+              <div className="text-[11px] text-muted">{formatDateTime(adj.createdAt)}</div>
+            </Card>
+          ))}
+        </div>
+        </>
       )}
 
       <Drawer

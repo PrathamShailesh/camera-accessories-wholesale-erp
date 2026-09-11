@@ -129,7 +129,8 @@ export default function InventoryPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
+        <>
+        <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Product</TableHead>
@@ -182,6 +183,52 @@ export default function InventoryPage() {
             </TableBody>
           </Table>
         </Card>
+
+        <div className="md:hidden space-y-3">
+          {filtered.map((p) => {
+            const total = p.totalStock || 0;
+            const isLow = total <= (p.minStockLevel ?? 0);
+            return (
+              <Card key={p.id} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-ink truncate">{p.name}</div>
+                    <div className="text-xs text-muted font-mono mt-0.5">
+                      {p.sku}
+                      {p.trackSerial ? ' · serial tracked' : ''}
+                    </div>
+                    <div className="text-xs text-muted mt-0.5">{p.brand}</div>
+                  </div>
+                  {isLow ? (
+                    <Badge tone="warning" className="shrink-0">{total} units</Badge>
+                  ) : (
+                    <span className="font-mono font-semibold text-ink shrink-0">{total} units</span>
+                  )}
+                </div>
+                {depots.length > 0 && (
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs pt-1.5 border-t border-line-soft">
+                    {depots.map((d) => {
+                      const qty = p.depotBreakdown?.[d.id] || 0;
+                      return (
+                        <div key={d.id} className="flex items-center justify-between">
+                          <span className="text-muted truncate">{d.name}</span>
+                          <span className={qty > 0 ? 'font-mono font-semibold text-ink' : 'font-mono text-muted'}>
+                            {qty}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                  <span className="text-muted">Wholesale Value</span>
+                  <span className="font-mono font-semibold text-ink">{formatUSD(total * p.wholesalePrice)}</span>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+        </>
       )}
     </div>
   );
