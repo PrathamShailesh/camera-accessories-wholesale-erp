@@ -147,7 +147,7 @@ export default function DepotDashboard() {
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={loadData}
-              className="flex items-center justify-center gap-1.5 h-9 w-9 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5 rounded-full border border-line bg-white text-ink-secondary hover:text-ink text-xs hover:bg-surface active:bg-surface-muted transition-colors"
+              className="flex items-center justify-center gap-1.5 h-11 w-11 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5 rounded-full border border-line bg-white text-ink-secondary hover:text-ink text-xs hover:bg-surface active:bg-surface-muted transition-colors"
               title="Refresh"
             >
               <RefreshCw className="h-3.5 w-3.5" />
@@ -207,7 +207,7 @@ export default function DepotDashboard() {
             placeholder="Search invoice, customer, SKU, serial..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 sm:pl-10 pr-14 py-2.5 sm:py-2.5 rounded-full bg-surface border border-line text-ink placeholder-muted text-xs focus:border-primary focus:bg-white focus:outline-none transition-colors"
+            className="w-full pl-9 sm:pl-10 pr-14 py-3 sm:py-2.5 min-h-11 sm:min-h-0 rounded-full bg-surface border border-line text-ink placeholder-muted text-xs focus:border-primary focus:bg-white focus:outline-none transition-colors"
           />
           {searchQuery && (
             <button
@@ -223,7 +223,7 @@ export default function DepotDashboard() {
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1 sm:mx-0 sm:px-0">
           <button
             onClick={() => setFilterStatus('ALL')}
-            className={`px-3 py-2 rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${
+            className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${
               filterStatus === 'ALL'
                 ? 'bg-primary text-white shadow-xs'
                 : 'bg-white text-ink-secondary hover:text-ink border border-line hover:bg-surface'
@@ -233,7 +233,7 @@ export default function DepotDashboard() {
           </button>
           <button
             onClick={() => setFilterStatus('READY_FOR_PACKING')}
-            className={`px-3 py-2 rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${
+            className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${
               filterStatus === 'READY_FOR_PACKING'
                 ? 'bg-warning text-white shadow-xs'
                 : 'bg-white text-ink-secondary hover:text-warning border border-line hover:bg-surface'
@@ -243,7 +243,7 @@ export default function DepotDashboard() {
           </button>
           <button
             onClick={() => setFilterStatus('IN_PACKING')}
-            className={`px-3 py-2 rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${
+            className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${
               filterStatus === 'IN_PACKING'
                 ? 'bg-orange text-white shadow-xs'
                 : 'bg-white text-ink-secondary hover:text-orange border border-line hover:bg-surface'
@@ -253,7 +253,7 @@ export default function DepotDashboard() {
           </button>
           <button
             onClick={() => setFilterStatus('DISPATCHED')}
-            className={`px-3 py-2 rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${
+            className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 active:scale-95 ${
               filterStatus === 'DISPATCHED'
                 ? 'bg-success text-white shadow-xs'
                 : 'bg-white text-ink-secondary hover:text-success border border-line hover:bg-surface'

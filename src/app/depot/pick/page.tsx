@@ -217,7 +217,7 @@ function DepotPickContent() {
 
         <button
           onClick={() => loadData()}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-line bg-white text-ink-secondary hover:text-ink text-xs hover:bg-surface self-start sm:self-auto transition-colors shadow-xs"
+          className="flex items-center gap-1.5 px-3 py-1.5 min-h-11 sm:min-h-0 rounded-xl border border-line bg-white text-ink-secondary hover:text-ink text-xs hover:bg-surface self-start sm:self-auto transition-colors shadow-xs"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           <span>Refresh Queue</span>
@@ -235,7 +235,7 @@ function DepotPickContent() {
               placeholder="Search by Invoice #, Customer Name, SKU code, or Serial Barcode..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-surface border border-line text-ink placeholder-muted text-xs focus:border-primary focus:bg-white focus:outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 min-h-11 sm:min-h-0 rounded-2xl bg-surface border border-line text-ink placeholder-muted text-xs focus:border-primary focus:bg-white focus:outline-none transition-colors"
             />
             {searchQuery && (
               <button
@@ -312,7 +312,7 @@ function DepotPickContent() {
                     <button
                       type="button"
                       onClick={() => toggleSelectInvoice(invoice.id)}
-                      className="mt-1 p-1 rounded-lg hover:bg-surface text-muted hover:text-ink transition-colors"
+                      className="mt-1 p-1 min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 inline-flex items-center justify-center rounded-lg hover:bg-surface text-muted hover:text-ink transition-colors"
                       title="Select for batch picking"
                     >
                       {isSelected ? (
@@ -344,7 +344,7 @@ function DepotPickContent() {
                     <button
                       type="button"
                       onClick={() => window.print()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-line bg-white hover:bg-surface text-ink-secondary hover:text-ink text-xs font-semibold transition-colors shadow-xs"
+                      className="flex items-center gap-1.5 px-3 py-1.5 min-h-11 sm:min-h-0 rounded-xl border border-line bg-white hover:bg-surface text-ink-secondary hover:text-ink text-xs font-semibold transition-colors shadow-xs"
                     >
                       <Printer className="h-3.5 w-3.5" />
                       <span>Print Pick Slip</span>
@@ -463,14 +463,14 @@ function DepotPickContent() {
           <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
               onClick={() => setSelectedInvoiceIds(new Set())}
-              className="px-3 py-2 rounded-xl text-xs font-semibold text-muted hover:text-ink"
+              className="px-3 py-2 min-h-11 sm:min-h-0 rounded-xl text-xs font-semibold text-muted hover:text-ink"
             >
               Deselect All
             </button>
             <button
               onClick={handleBatchPickSelected}
               disabled={isBatchPicking}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2 min-h-11 sm:min-h-0 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
             >
               {isBatchPicking ? (
                 <>

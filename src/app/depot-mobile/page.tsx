@@ -192,7 +192,7 @@ export default function DepotMobilePage() {
           <select
             value={selectedDepotId}
             onChange={(e) => setSelectedDepotId(e.target.value)}
-            className="rounded-full border border-line bg-surface px-3.5 py-1.5 text-xs text-ink focus:outline-none focus:border-primary"
+            className="rounded-full border border-line bg-surface px-3.5 py-1.5 min-h-11 sm:min-h-0 text-xs text-ink focus:outline-none focus:border-primary"
           >
             {depots.map((d) => (
               <option key={d.id} value={d.id}>
@@ -317,14 +317,14 @@ export default function DepotMobilePage() {
                 <div className="flex items-center justify-end gap-2 pt-1">
                   <Link
                     href={`/invoices/${inv.id}`}
-                    className="px-3 py-2 rounded-full bg-surface hover:bg-line text-xs text-ink-secondary hover:text-ink font-medium border border-line"
+                    className="px-3 py-2 min-h-11 sm:min-h-0 rounded-full bg-surface hover:bg-line text-xs text-ink-secondary hover:text-ink font-medium border border-line"
                   >
                     View Details
                   </Link>
                   <button
                     onClick={() => handlePickOrder(inv)}
                     disabled={busyInvoiceId === inv.id}
-                    className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all"
+                    className="flex items-center gap-1.5 px-5 py-2 min-h-11 sm:min-h-0 rounded-full bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all"
                   >
                     <CheckCircle2 className="h-4 w-4" />
                     <span>{busyInvoiceId === inv.id ? 'Saving…' : 'Confirm Pick & Move to Packing'}</span>
@@ -395,12 +395,12 @@ export default function DepotMobilePage() {
                           placeholder="e.g. DHL-9482103847"
                           value={awbInput}
                           onChange={(e) => setAwbInput(e.target.value)}
-                          className="flex-1 rounded-full border border-line bg-white px-3.5 py-1.5 text-xs text-ink font-mono focus:border-primary focus:outline-none"
+                          className="flex-1 rounded-full border border-line bg-white px-3.5 py-1.5 min-h-11 sm:min-h-0 text-xs text-ink font-mono focus:border-primary focus:outline-none"
                         />
                         <button
                           onClick={() => handleQuickShip(inv)}
                           disabled={busyInvoiceId === inv.id}
-                          className="px-4 py-1.5 rounded-full bg-primary hover:bg-primary-hover text-white font-bold text-xs whitespace-nowrap"
+                          className="px-4 py-1.5 min-h-11 sm:min-h-0 rounded-full bg-primary hover:bg-primary-hover text-white font-bold text-xs whitespace-nowrap"
                         >
                           {busyInvoiceId === inv.id ? 'Shipping…' : 'Ship AWB'}
                         </button>

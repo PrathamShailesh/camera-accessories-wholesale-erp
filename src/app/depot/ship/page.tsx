@@ -344,7 +344,7 @@ export default function DepotShipPage() {
 
         <button
           onClick={loadData}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-line bg-white text-ink-secondary hover:text-ink text-xs hover:bg-surface self-start sm:self-auto transition-colors shadow-xs"
+          className="flex items-center gap-1.5 px-3 py-1.5 min-h-11 sm:min-h-0 rounded-xl border border-line bg-white text-ink-secondary hover:text-ink text-xs hover:bg-surface self-start sm:self-auto transition-colors shadow-xs"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           <span>Refresh Queue</span>
@@ -362,7 +362,7 @@ export default function DepotShipPage() {
               placeholder="Search by Invoice #, Customer, AWB Tracking #, or Courier name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-surface border border-line text-ink placeholder-muted text-xs focus:border-primary focus:bg-white focus:outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 min-h-11 sm:min-h-0 rounded-2xl bg-surface border border-line text-ink placeholder-muted text-xs focus:border-primary focus:bg-white focus:outline-none transition-colors"
             />
             {searchQuery && (
               <button
@@ -378,7 +378,7 @@ export default function DepotShipPage() {
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
             <button
               onClick={() => setFilterType('ALL')}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'ALL'
                   ? 'bg-primary text-white shadow-xs'
                   : 'bg-white text-ink-secondary hover:text-ink border border-line hover:bg-surface'
@@ -388,7 +388,7 @@ export default function DepotShipPage() {
             </button>
             <button
               onClick={() => setFilterType('READY_TO_SHIP')}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'READY_TO_SHIP'
                   ? 'bg-orange text-white shadow-xs'
                   : 'bg-white text-ink-secondary hover:text-orange border border-line hover:bg-surface'
@@ -398,7 +398,7 @@ export default function DepotShipPage() {
             </button>
             <button
               onClick={() => setFilterType('DISPATCHED')}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'DISPATCHED'
                   ? 'bg-success text-white shadow-xs'
                   : 'bg-white text-ink-secondary hover:text-success border border-line hover:bg-surface'
@@ -530,7 +530,7 @@ export default function DepotShipPage() {
                           onChange={(e) =>
                             setCourierInputs((prev) => ({ ...prev, [invoice.id]: e.target.value }))
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-line text-ink text-xs focus:border-primary focus:outline-none shadow-xs"
+                          className="w-full px-3 py-2 min-h-11 sm:min-h-0 rounded-xl bg-white border border-line text-ink text-xs focus:border-primary focus:outline-none shadow-xs"
                         >
                           <option value="DHL_EXPRESS">DHL Express Worldwide</option>
                           <option value="FEDEX_PRIORITY">FedEx International Priority</option>
@@ -560,7 +560,7 @@ export default function DepotShipPage() {
                           onChange={(e) =>
                             setAwbInputs((prev) => ({ ...prev, [invoice.id]: e.target.value }))
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-line text-ink text-xs font-mono focus:border-primary focus:outline-none shadow-xs"
+                          className="w-full px-3 py-2 min-h-11 sm:min-h-0 rounded-xl bg-white border border-line text-ink text-xs font-mono focus:border-primary focus:outline-none shadow-xs"
                         />
                       </div>
                     </div>
@@ -598,7 +598,7 @@ export default function DepotShipPage() {
                             <button
                               type="button"
                               onClick={() => removeAwbDocument(invoice.id)}
-                              className="px-2.5 py-1 rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs"
+                              className="px-2.5 py-1 min-h-11 sm:min-h-0 rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs"
                               title="Replace file"
                             >
                               <X className="h-3.5 w-3.5" />

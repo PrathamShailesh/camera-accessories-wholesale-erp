@@ -425,7 +425,7 @@ export default function DepotPackPage() {
 
         <button
           onClick={loadData}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-line bg-white text-ink-secondary hover:text-ink text-xs hover:bg-surface self-start sm:self-auto transition-colors shadow-xs"
+          className="flex items-center gap-1.5 px-3 py-1.5 min-h-11 sm:min-h-0 rounded-xl border border-line bg-white text-ink-secondary hover:text-ink text-xs hover:bg-surface self-start sm:self-auto transition-colors shadow-xs"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           <span>Refresh Queue</span>
@@ -443,7 +443,7 @@ export default function DepotPackPage() {
               placeholder="Search by Invoice # (e.g. INV-2026-00001), Customer, SKU, or Serial Barcode..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-surface border border-line text-ink placeholder-muted text-xs focus:border-primary focus:bg-white focus:outline-none transition-colors font-sans"
+              className="w-full pl-10 pr-4 py-2.5 min-h-11 sm:min-h-0 rounded-2xl bg-surface border border-line text-ink placeholder-muted text-xs focus:border-primary focus:bg-white focus:outline-none transition-colors font-sans"
             />
             {searchQuery && (
               <button
@@ -459,7 +459,7 @@ export default function DepotPackPage() {
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
             <button
               onClick={() => setFilterType('ALL')}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'ALL'
                   ? 'bg-primary text-white shadow-xs'
                   : 'bg-white text-ink-secondary hover:text-ink border border-line hover:bg-surface'
@@ -469,7 +469,7 @@ export default function DepotPackPage() {
             </button>
             <button
               onClick={() => setFilterType('UNPACKED')}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'UNPACKED'
                   ? 'bg-warning text-white shadow-xs'
                   : 'bg-white text-ink-secondary hover:text-warning border border-line hover:bg-surface'
@@ -479,7 +479,7 @@ export default function DepotPackPage() {
             </button>
             <button
               onClick={() => setFilterType('PHOTO_ATTACHED')}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'PHOTO_ATTACHED'
                   ? 'bg-primary text-white shadow-xs'
                   : 'bg-white text-ink-secondary hover:text-primary border border-line hover:bg-surface'
@@ -489,7 +489,7 @@ export default function DepotPackPage() {
             </button>
             <button
               onClick={() => setFilterType('PACKED')}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'PACKED'
                   ? 'bg-success text-white shadow-xs'
                   : 'bg-white text-ink-secondary hover:text-success border border-line hover:bg-surface'
@@ -718,7 +718,7 @@ export default function DepotPackPage() {
                           <button
                             type="button"
                             onClick={() => openCameraModal(invoice)}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-xs transition-all"
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 min-h-11 sm:min-h-0 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-xs transition-all"
                           >
                             <Camera className="h-4 w-4" />
                             <span>Click Photo with Camera</span>
@@ -731,7 +731,7 @@ export default function DepotPackPage() {
                               setActiveInvoiceForPhoto(invoice);
                               mobileCameraInputRef.current?.click();
                             }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-line bg-white hover:bg-surface text-ink-secondary text-xs font-semibold shadow-xs"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-11 sm:min-h-0 rounded-xl border border-line bg-white hover:bg-surface text-ink-secondary text-xs font-semibold shadow-xs"
                             title="Open native device camera"
                           >
                             <Upload className="h-3.5 w-3.5" />
@@ -795,7 +795,7 @@ export default function DepotPackPage() {
                               [invoice.id]: parseFloat(e.target.value) || 1,
                             })
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-line text-ink text-xs font-mono focus:border-primary focus:outline-none disabled:opacity-60 shadow-xs"
+                          className="w-full px-3 py-2 min-h-11 sm:min-h-0 rounded-xl bg-white border border-line text-ink text-xs font-mono focus:border-primary focus:outline-none disabled:opacity-60 shadow-xs"
                         />
                       </div>
 
@@ -814,7 +814,7 @@ export default function DepotPackPage() {
                               [invoice.id]: parseInt(e.target.value) || 1,
                             })
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-line text-ink text-xs font-mono focus:border-primary focus:outline-none disabled:opacity-60 shadow-xs"
+                          className="w-full px-3 py-2 min-h-11 sm:min-h-0 rounded-xl bg-white border border-line text-ink text-xs font-mono focus:border-primary focus:outline-none disabled:opacity-60 shadow-xs"
                         />
                       </div>
                     </div>
@@ -883,14 +883,14 @@ export default function DepotPackPage() {
           <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
               onClick={() => setSelectedInvoiceIds(new Set())}
-              className="px-3 py-2 rounded-xl text-xs font-semibold text-muted hover:text-ink"
+              className="px-3 py-2 min-h-11 sm:min-h-0 rounded-xl text-xs font-semibold text-muted hover:text-ink"
             >
               Deselect All
             </button>
             <button
               onClick={handleBatchPackSelected}
               disabled={isBatchPacking}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-orange hover:bg-orange-hover text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2 min-h-11 sm:min-h-0 rounded-xl bg-orange hover:bg-orange-hover text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
             >
               {isBatchPacking ? (
                 <>
@@ -912,8 +912,8 @@ export default function DepotPackPage() {
       {/* INTERACTIVE LIVE CAMERA VIEWFINDER MODAL                              */}
       {/* ===================================================================== */}
       {isCameraModalOpen && activeInvoiceForPhoto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-3xl border border-line bg-white shadow-2xl flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="relative w-full max-w-lg max-h-[calc(100dvh-1.5rem)] rounded-3xl border border-line bg-white shadow-2xl flex flex-col overflow-x-hidden overflow-y-auto">
             {/* Modal Header */}
             <div className="p-4 border-b border-line flex items-center justify-between bg-surface">
               <div className="flex items-center gap-2.5">
@@ -933,7 +933,7 @@ export default function DepotPackPage() {
                   <button
                     type="button"
                     onClick={toggleCameraFacing}
-                    className="p-2 rounded-xl text-muted hover:text-ink hover:bg-line transition-colors"
+                    className="p-2 min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 inline-flex items-center justify-center rounded-xl text-muted hover:text-ink hover:bg-line transition-colors"
                     title="Flip camera"
                   >
                     <FlipHorizontal className="h-4 w-4" />
@@ -942,7 +942,7 @@ export default function DepotPackPage() {
                 <button
                   type="button"
                   onClick={closeCameraModal}
-                  className="p-2 rounded-xl text-muted hover:text-ink hover:bg-line transition-colors"
+                  className="p-2 min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 inline-flex items-center justify-center rounded-xl text-muted hover:text-ink hover:bg-line transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -1013,7 +1013,7 @@ export default function DepotPackPage() {
                     type="button"
                     onClick={() => startCamera(cameraFacingMode)}
                     disabled={isUploadingPhoto}
-                    className="px-4 py-2.5 rounded-xl border border-line bg-white hover:bg-line text-ink text-xs font-semibold transition-colors disabled:opacity-50 shadow-xs"
+                    className="px-4 py-2.5 min-h-11 sm:min-h-0 rounded-xl border border-line bg-white hover:bg-line text-ink text-xs font-semibold transition-colors disabled:opacity-50 shadow-xs"
                   >
                     Retake Snapshot
                   </button>
@@ -1022,7 +1022,7 @@ export default function DepotPackPage() {
                     type="button"
                     onClick={() => uploadCapturedPhoto(capturedImageData, activeInvoiceForPhoto)}
                     disabled={isUploadingPhoto}
-                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-success hover:bg-success/90 text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
+                    className="flex items-center gap-2 px-6 py-2.5 min-h-11 sm:min-h-0 rounded-xl bg-success hover:bg-success/90 text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
                   >
                     {isUploadingPhoto ? (
                       <>
@@ -1065,7 +1065,7 @@ export default function DepotPackPage() {
                 <button
                   type="button"
                   onClick={closeCameraModal}
-                  className="w-full py-2.5 rounded-xl bg-line text-ink text-xs font-semibold hover:bg-line"
+                  className="w-full py-2.5 min-h-11 sm:min-h-0 rounded-xl bg-line text-ink text-xs font-semibold hover:bg-line"
                 >
                   Close
                 </button>

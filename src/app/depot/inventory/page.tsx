@@ -100,7 +100,7 @@ export default function DepotInventoryPage() {
 
         <button
           onClick={loadData}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-line bg-white text-ink-secondary hover:text-ink text-xs hover:bg-surface self-start sm:self-auto transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 min-h-11 sm:min-h-0 rounded-full border border-line bg-white text-ink-secondary hover:text-ink text-xs hover:bg-surface self-start sm:self-auto transition-colors"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           <span>Refresh Stock</span>
@@ -118,7 +118,7 @@ export default function DepotInventoryPage() {
               placeholder="Search by Product Name, SKU code, Brand, Category, or Barcode..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-full bg-surface border border-line text-ink placeholder-muted text-xs focus:border-primary focus:bg-white focus:outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 min-h-11 sm:min-h-0 rounded-full bg-surface border border-line text-ink placeholder-muted text-xs focus:border-primary focus:bg-white focus:outline-none transition-colors"
             />
             {searchQuery && (
               <button
@@ -134,7 +134,7 @@ export default function DepotInventoryPage() {
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
             <button
               onClick={() => setFilterType('ALL')}
-              className={`px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'ALL'
                   ? 'bg-primary text-white shadow-xs'
                   : 'bg-white text-ink-secondary hover:text-ink border border-line hover:bg-surface'
@@ -144,7 +144,7 @@ export default function DepotInventoryPage() {
             </button>
             <button
               onClick={() => setFilterType('IN_STOCK')}
-              className={`px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'IN_STOCK'
                   ? 'bg-success text-white shadow-xs'
                   : 'bg-white text-ink-secondary hover:text-success border border-line hover:bg-surface'
@@ -154,7 +154,7 @@ export default function DepotInventoryPage() {
             </button>
             <button
               onClick={() => setFilterType('LOW_STOCK')}
-              className={`px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'LOW_STOCK'
                   ? 'bg-warning text-white shadow-xs'
                   : 'bg-white text-ink-secondary hover:text-warning border border-line hover:bg-surface'
@@ -164,7 +164,7 @@ export default function DepotInventoryPage() {
             </button>
             <button
               onClick={() => setFilterType('OUT_OF_STOCK')}
-              className={`px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3 py-2 min-h-11 sm:min-h-0 inline-flex items-center rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'OUT_OF_STOCK'
                   ? 'bg-danger text-white shadow-xs'
                   : 'bg-white text-ink-secondary hover:text-danger border border-line hover:bg-surface'
@@ -201,7 +201,8 @@ export default function DepotInventoryPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-surface border-b border-line text-[10px] font-mono uppercase text-muted">
                 <tr>
@@ -274,6 +275,52 @@ export default function DepotInventoryPage() {
               </tbody>
             </table>
           </div>
+
+          <div className="md:hidden divide-y divide-line">
+            {filteredProducts.map((product) => {
+              const stock = product.depotBreakdown?.[depotId] || 0;
+              const isOut = stock === 0;
+              const isLow = stock > 0 && stock <= (product.minStockLevel || 10);
+
+              return (
+                <div key={product.id} className="p-4 flex items-center gap-3">
+                  <img
+                    src="/placeholder-product.svg"
+                    alt={product.name}
+                    loading="lazy"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder-product.svg';
+                    }}
+                    className="h-11 w-11 rounded-xl object-contain p-0.5 border border-line bg-surface shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-ink line-clamp-1 text-sm">{product.name}</p>
+                    <p className="text-[11px] text-muted font-mono mt-0.5">
+                      {product.brand} {product.model ? `• ${product.model}` : ''}
+                    </p>
+                    <p className="text-[11px] font-mono font-bold text-primary mt-0.5">{product.sku}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="font-mono text-base font-bold text-ink block">{stock}</span>
+                    {isOut ? (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold font-mono bg-danger-soft text-danger border border-danger-border">
+                        OUT
+                      </span>
+                    ) : isLow ? (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold font-mono bg-warning-soft text-warning border border-warning-border">
+                        LOW
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold font-mono bg-success-soft text-success border border-success-border">
+                        IN STOCK
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          </>
         )}
       </div>
     </div>
