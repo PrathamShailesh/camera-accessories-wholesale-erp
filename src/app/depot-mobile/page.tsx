@@ -163,7 +163,7 @@ export default function DepotMobilePage() {
   return (
     <div className="space-y-4 animate-fade-in pb-20 max-w-3xl mx-auto">
       {/* Mobile Header */}
-      <div className="p-4 rounded-2xl border border-[#E5E7EB] bg-white shadow-xs flex items-center justify-between">
+      <div className="p-4 rounded-2xl border border-line bg-white shadow-xs flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -176,12 +176,12 @@ export default function DepotMobilePage() {
           />
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold font-mono text-[#005E82] uppercase tracking-wider">
+              <span className="text-xs font-bold font-mono text-primary uppercase tracking-wider">
                 Depot Fulfilment App
               </span>
-              <span className="h-2 w-2 rounded-full bg-[#15803D] animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
             </div>
-            <h1 className="text-base font-bold text-[#111827] leading-tight">
+            <h1 className="text-base font-bold text-ink leading-tight">
               {activeDepotObj?.name || 'Central Logistics Hub'}
             </h1>
           </div>
@@ -192,7 +192,7 @@ export default function DepotMobilePage() {
           <select
             value={selectedDepotId}
             onChange={(e) => setSelectedDepotId(e.target.value)}
-            className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-2.5 py-1.5 text-xs text-[#111827] focus:outline-none focus:border-[#005E82]"
+            className="rounded-full border border-line bg-surface px-3.5 py-1.5 text-xs text-ink focus:outline-none focus:border-primary"
           >
             {depots.map((d) => (
               <option key={d.id} value={d.id}>
@@ -204,20 +204,20 @@ export default function DepotMobilePage() {
       </div>
 
       {actionError && (
-        <div className="rounded-xl border border-[#DC2626]/30 bg-[#DC2626]/10 px-3 py-2 text-xs text-[#DC2626] flex items-center gap-2">
+        <div className="rounded-2xl border border-danger-border bg-danger-soft px-3 py-2 text-xs text-danger flex items-center gap-2">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{actionError}</span>
         </div>
       )}
 
       {/* Touch-Friendly Workflow Navigation Tabs */}
-      <div className="grid grid-cols-3 gap-2 bg-[#F8FAFC] p-1.5 rounded-2xl border border-[#E5E7EB]">
+      <div className="grid grid-cols-3 gap-2 bg-surface p-1.5 rounded-2xl border border-line">
         <button
           onClick={() => setActiveTab('READY')}
-          className={`py-2.5 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+          className={`py-2.5 rounded-full text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
             activeTab === 'READY'
-              ? 'bg-[#B45309] text-white shadow-xs'
-              : 'text-[#4B5563] hover:text-[#111827]'
+              ? 'bg-warning text-white shadow-xs'
+              : 'text-ink-secondary hover:text-ink'
           }`}
         >
           <div className="flex items-center gap-1.5">
@@ -229,10 +229,10 @@ export default function DepotMobilePage() {
 
         <button
           onClick={() => setActiveTab('PACKING')}
-          className={`py-2.5 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+          className={`py-2.5 rounded-full text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
             activeTab === 'PACKING'
-              ? 'bg-[#F15A29] text-white shadow-xs'
-              : 'text-[#4B5563] hover:text-[#111827]'
+              ? 'bg-orange text-white shadow-xs'
+              : 'text-ink-secondary hover:text-ink'
           }`}
         >
           <div className="flex items-center gap-1.5">
@@ -244,10 +244,10 @@ export default function DepotMobilePage() {
 
         <button
           onClick={() => setActiveTab('DISPATCH')}
-          className={`py-2.5 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
+          className={`py-2.5 rounded-full text-xs font-bold transition-all flex flex-col items-center gap-0.5 ${
             activeTab === 'DISPATCH'
-              ? 'bg-[#005E82] text-white shadow-xs'
-              : 'text-[#4B5563] hover:text-[#111827]'
+              ? 'bg-primary text-white shadow-xs'
+              : 'text-ink-secondary hover:text-ink'
           }`}
         >
           <div className="flex items-center gap-1.5">
@@ -262,23 +262,23 @@ export default function DepotMobilePage() {
       {activeTab === 'READY' && (
         <div className="space-y-3">
           {readyToPick.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-2xl border border-[#E5E7EB] text-[#6B7280] text-xs shadow-xs">
-              <CheckCircle2 className="h-8 w-8 text-[#15803D] mx-auto mb-2" />
+            <div className="p-12 text-center bg-white rounded-2xl border border-line text-muted text-xs shadow-xs">
+              <CheckCircle2 className="h-8 w-8 text-success mx-auto mb-2" />
               <span>No pending orders waiting to be picked at this depot.</span>
             </div>
           ) : (
             readyToPick.map((inv) => (
               <div
                 key={inv.id}
-                className="bg-white p-4 rounded-2xl border border-[#E5E7EB] space-y-3 shadow-xs hover:border-[#005E82]/30 transition-all"
+                className="bg-white p-4 rounded-2xl border border-line space-y-3 shadow-xs hover:border-primary/30 transition-all"
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-[10px] font-mono font-bold text-[#B45309] bg-[#B45309]/10 px-2 py-0.5 rounded border border-[#B45309]/20">
+                    <span className="text-[10px] font-mono font-bold text-warning bg-warning-soft px-2 py-0.5 rounded border border-warning-border">
                       NEW ORDER • READY TO PICK
                     </span>
-                    <h3 className="text-sm font-bold text-[#111827] mt-1.5">{inv.customerCompany}</h3>
-                    <p className="text-xs font-mono text-[#6B7280]">Invoice: {inv.invoiceNumber}</p>
+                    <h3 className="text-sm font-bold text-ink mt-1.5">{inv.customerCompany}</h3>
+                    <p className="text-xs font-mono text-muted">Invoice: {inv.invoiceNumber}</p>
                   </div>
                   <button
                     onClick={() => {
@@ -286,28 +286,28 @@ export default function DepotMobilePage() {
                       setIsSlipOpen(true);
                     }}
                     title="Print Pick List"
-                    className="p-2 text-[#4B5563] hover:text-[#111827] rounded-lg bg-[#F8FAFC] border border-[#E5E7EB]"
+                    className="p-2 text-ink-secondary hover:text-ink rounded-full bg-surface border border-line"
                   >
                     <Printer className="h-4 w-4" />
                   </button>
                 </div>
 
                 {/* Items to Pick */}
-                <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] space-y-2">
-                  <div className="text-[11px] font-bold uppercase text-[#6B7280] font-mono">
+                <div className="p-3 rounded-xl bg-surface border border-line space-y-2">
+                  <div className="text-[11px] font-bold uppercase text-muted font-mono">
                     Items & Serial Allocations:
                   </div>
                   {(inv.items || []).map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-[#E5E7EB] last:border-0">
+                    <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-line last:border-0">
                       <div>
-                        <span className="font-semibold text-[#111827]">{item.productName}</span>
+                        <span className="font-semibold text-ink">{item.productName}</span>
                         {item.allocatedSerials && item.allocatedSerials.length > 0 && (
-                          <div className="text-[10px] font-mono text-[#005E82] mt-0.5">
+                          <div className="text-[10px] font-mono text-primary mt-0.5">
                             Allocate Serials: {item.allocatedSerials.join(', ')}
                           </div>
                         )}
                       </div>
-                      <span className="font-mono font-bold text-[#15803D] bg-[#15803D]/10 px-2 py-0.5 rounded">
+                      <span className="font-mono font-bold text-success bg-success-soft px-2 py-0.5 rounded">
                         Qty: {item.quantity}
                       </span>
                     </div>
@@ -317,14 +317,14 @@ export default function DepotMobilePage() {
                 <div className="flex items-center justify-end gap-2 pt-1">
                   <Link
                     href={`/invoices/${inv.id}`}
-                    className="px-3 py-2 rounded-xl bg-[#F8FAFC] hover:bg-[#E5E7EB] text-xs text-[#4B5563] hover:text-[#111827] font-medium border border-[#E5E7EB]"
+                    className="px-3 py-2 rounded-full bg-surface hover:bg-line text-xs text-ink-secondary hover:text-ink font-medium border border-line"
                   >
                     View Details
                   </Link>
                   <button
                     onClick={() => handlePickOrder(inv)}
                     disabled={busyInvoiceId === inv.id}
-                    className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#005E82] hover:bg-[#004B68] text-white text-xs font-bold shadow-xs transition-all"
+                    className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all"
                   >
                     <CheckCircle2 className="h-4 w-4" />
                     <span>{busyInvoiceId === inv.id ? 'Saving…' : 'Confirm Pick & Move to Packing'}</span>
@@ -340,35 +340,35 @@ export default function DepotMobilePage() {
       {activeTab === 'PACKING' && (
         <div className="space-y-3">
           {inPacking.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-2xl border border-[#E5E7EB] text-[#6B7280] text-xs shadow-xs">
+            <div className="p-12 text-center bg-white rounded-2xl border border-line text-muted text-xs shadow-xs">
               <span>No orders currently on the packing tables.</span>
             </div>
           ) : (
             inPacking.map((inv) => (
               <div
                 key={inv.id}
-                className="bg-white p-4 rounded-2xl border border-[#E5E7EB] space-y-3 shadow-xs hover:border-[#005E82]/30 transition-all"
+                className="bg-white p-4 rounded-2xl border border-line space-y-3 shadow-xs hover:border-primary/30 transition-all"
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-[10px] font-mono font-bold text-[#F15A29] bg-[#F15A29]/10 px-2 py-0.5 rounded border border-[#F15A29]/20">
+                    <span className="text-[10px] font-mono font-bold text-orange bg-orange-soft px-2 py-0.5 rounded border border-orange/20">
                       {inv.fulfilmentStatus === 'PACKED' ? 'PACKED • READY FOR AWB' : 'PACKING IN PROGRESS'}
                     </span>
-                    <h3 className="text-sm font-bold text-[#111827] mt-1.5">{inv.customerCompany}</h3>
-                    <p className="text-xs font-mono text-[#6B7280]">Invoice: {inv.invoiceNumber}</p>
+                    <h3 className="text-sm font-bold text-ink mt-1.5">{inv.customerCompany}</h3>
+                    <p className="text-xs font-mono text-muted">Invoice: {inv.invoiceNumber}</p>
                   </div>
                 </div>
 
                 {/* Direct Action Bar */}
-                <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] space-y-3 text-xs">
+                <div className="p-3 rounded-xl bg-surface border border-line space-y-3 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-[#6B7280]">Box Photo Inspection:</span>
+                    <span className="text-muted">Box Photo Inspection:</span>
                     <button
                       onClick={() => {
                         setSelectedInvoice(inv);
                         setIsCameraUploadOpen(true);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white border border-[#E5E7EB] hover:bg-[#E5E7EB] text-[#005E82] font-semibold text-[11px] shadow-xs"
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-line hover:bg-line text-primary font-semibold text-[11px]"
                     >
                       <Camera className="h-3.5 w-3.5" />
                       <span>Take Photo / Upload</span>
@@ -379,14 +379,14 @@ export default function DepotMobilePage() {
                     <button
                       onClick={() => handlePackOrder(inv)}
                       disabled={busyInvoiceId === inv.id}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#F15A29] hover:bg-[#D9471B] text-white font-bold shadow-xs text-xs"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full bg-orange hover:bg-orange-hover text-white font-bold text-xs"
                     >
                       <Package className="h-4 w-4" />
                       <span>{busyInvoiceId === inv.id ? 'Saving…' : 'Mark Packed & Verified'}</span>
                     </button>
                   ) : (
-                    <div className="space-y-2 pt-2 border-t border-[#E5E7EB]">
-                      <label className="block text-[11px] font-medium text-[#4B5563]">
+                    <div className="space-y-2 pt-2 border-t border-line">
+                      <label className="block text-[11px] font-medium text-ink-secondary">
                         Quick Airway Bill Dispatch:
                       </label>
                       <div className="flex gap-2">
@@ -395,12 +395,12 @@ export default function DepotMobilePage() {
                           placeholder="e.g. DHL-9482103847"
                           value={awbInput}
                           onChange={(e) => setAwbInput(e.target.value)}
-                          className="flex-1 rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs text-[#111827] font-mono focus:border-[#005E82] focus:outline-none shadow-xs"
+                          className="flex-1 rounded-full border border-line bg-white px-3.5 py-1.5 text-xs text-ink font-mono focus:border-primary focus:outline-none"
                         />
                         <button
                           onClick={() => handleQuickShip(inv)}
                           disabled={busyInvoiceId === inv.id}
-                          className="px-4 py-1.5 rounded-lg bg-[#005E82] hover:bg-[#004B68] text-white font-bold text-xs shadow-xs whitespace-nowrap"
+                          className="px-4 py-1.5 rounded-full bg-primary hover:bg-primary-hover text-white font-bold text-xs whitespace-nowrap"
                         >
                           {busyInvoiceId === inv.id ? 'Shipping…' : 'Ship AWB'}
                         </button>
@@ -420,22 +420,22 @@ export default function DepotMobilePage() {
           {dispatched.map((inv) => (
             <div
               key={inv.id}
-              className="bg-white p-4 rounded-2xl border border-[#E5E7EB] space-y-2 text-xs shadow-xs"
+              className="bg-white p-4 rounded-2xl border border-line space-y-2 text-xs shadow-xs"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <h4 className="font-bold text-[#111827]">{inv.customerCompany}</h4>
-                  <p className="font-mono text-[#6B7280] text-[11px]">Invoice: {inv.invoiceNumber}</p>
+                  <h4 className="font-bold text-ink">{inv.customerCompany}</h4>
+                  <p className="font-mono text-muted text-[11px]">Invoice: {inv.invoiceNumber}</p>
                 </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#15803D]/10 text-[#15803D] border border-[#15803D]/20">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-success-soft text-success border border-success-border">
                   {inv.fulfilmentStatus}
                 </span>
               </div>
-              <p className="text-[11px] text-[#6B7280]">{inv.shippingAddress}</p>
+              <p className="text-[11px] text-muted">{inv.shippingAddress}</p>
               <div className="pt-2 flex justify-end">
                 <Link
                   href={`/invoices/${inv.id}`}
-                  className="text-[11px] text-[#005E82] hover:underline font-semibold flex items-center gap-1"
+                  className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1"
                 >
                   <span>View Shipment Tracking</span>
                   <ChevronRight className="h-3.5 w-3.5" />

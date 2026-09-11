@@ -329,22 +329,22 @@ export default function DepotShipPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <Truck className="h-6 w-6 text-[#005E82]" />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#111827]">
+            <Truck className="h-6 w-6 text-primary" />
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-ink">
               Shipments & Courier Dispatch
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-[#005E82]/10 text-[#005E82] border border-[#005E82]/20 font-bold">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-primary-soft text-primary border border-primary/20 font-bold">
               {invoices.length} Shipments
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-[#4B5563] mt-1">
+          <p className="text-xs sm:text-sm text-ink-secondary mt-1">
             Depot dispatch bay: Assign Airway Bill (AWB) numbers, choose freight couriers, and generate live tracking links for handover.
           </p>
         </div>
 
         <button
           onClick={loadData}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white text-[#4B5563] hover:text-[#111827] text-xs hover:bg-[#F8FAFC] self-start sm:self-auto transition-colors shadow-xs"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-line bg-white text-ink-secondary hover:text-ink text-xs hover:bg-surface self-start sm:self-auto transition-colors shadow-xs"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           <span>Refresh Queue</span>
@@ -352,22 +352,22 @@ export default function DepotShipPage() {
       </div>
 
       {/* Search & Filter Toolbar */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-white border border-[#E5E7EB] space-y-3 shadow-xs">
+      <div className="p-4 sm:p-5 rounded-3xl bg-white border border-line space-y-3 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Quick Search */}
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
             <input
               type="text"
               placeholder="Search by Invoice #, Customer, AWB Tracking #, or Courier name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] placeholder-[#9CA3AF] text-xs focus:border-[#005E82] focus:bg-white focus:outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-surface border border-line text-ink placeholder-muted text-xs focus:border-primary focus:bg-white focus:outline-none transition-colors"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#6B7280] hover:text-[#111827]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted hover:text-ink"
               >
                 Clear
               </button>
@@ -380,8 +380,8 @@ export default function DepotShipPage() {
               onClick={() => setFilterType('ALL')}
               className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'ALL'
-                  ? 'bg-[#005E82] text-white shadow-xs'
-                  : 'bg-white text-[#4B5563] hover:text-[#111827] border border-[#E5E7EB] hover:bg-[#F8FAFC]'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'bg-white text-ink-secondary hover:text-ink border border-line hover:bg-surface'
               }`}
             >
               All ({invoices.length})
@@ -390,8 +390,8 @@ export default function DepotShipPage() {
               onClick={() => setFilterType('READY_TO_SHIP')}
               className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'READY_TO_SHIP'
-                  ? 'bg-[#F15A29] text-white shadow-xs'
-                  : 'bg-white text-[#4B5563] hover:text-[#F15A29] border border-[#E5E7EB] hover:bg-[#F8FAFC]'
+                  ? 'bg-orange text-white shadow-xs'
+                  : 'bg-white text-ink-secondary hover:text-orange border border-line hover:bg-surface'
               }`}
             >
               Ready to Ship ({packedOrders.length})
@@ -400,8 +400,8 @@ export default function DepotShipPage() {
               onClick={() => setFilterType('DISPATCHED')}
               className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
                 filterType === 'DISPATCHED'
-                  ? 'bg-[#15803D] text-white shadow-xs'
-                  : 'bg-white text-[#4B5563] hover:text-[#15803D] border border-[#E5E7EB] hover:bg-[#F8FAFC]'
+                  ? 'bg-success text-white shadow-xs'
+                  : 'bg-white text-ink-secondary hover:text-success border border-line hover:bg-surface'
               }`}
             >
               Dispatched ({shippedOrders.length})
@@ -412,15 +412,15 @@ export default function DepotShipPage() {
 
       {/* Orders List */}
       {isLoading ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-[#E5E7EB] space-y-3 shadow-xs">
-          <RefreshCw className="h-6 w-6 animate-spin text-[#005E82] mx-auto" />
-          <p className="text-xs text-[#6B7280]">Loading dispatch queue...</p>
+        <div className="text-center py-16 bg-white rounded-2xl border border-line space-y-3 shadow-xs">
+          <RefreshCw className="h-6 w-6 animate-spin text-primary mx-auto" />
+          <p className="text-xs text-muted">Loading dispatch queue...</p>
         </div>
       ) : filteredInvoices.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-3xl border border-[#E5E7EB] space-y-3 shadow-xs">
-          <CheckCircle2 className="h-12 w-12 text-[#15803D] mx-auto opacity-80" />
-          <h3 className="text-base font-bold text-[#111827]">No Shipments Found</h3>
-          <p className="text-xs text-[#6B7280] max-w-md mx-auto">
+        <div className="text-center py-16 bg-white rounded-3xl border border-line space-y-3 shadow-xs">
+          <CheckCircle2 className="h-12 w-12 text-success mx-auto opacity-80" />
+          <h3 className="text-base font-bold text-ink">No Shipments Found</h3>
+          <p className="text-xs text-muted max-w-md mx-auto">
             {searchQuery
               ? `No shipments matched "${searchQuery}". Clear search to view all.`
               : 'There are no packed shipments ready for courier dispatch in this view.'}
@@ -439,36 +439,36 @@ export default function DepotShipPage() {
             return (
               <div
                 key={invoice.id}
-                className="bg-white rounded-3xl border border-[#E5E7EB] p-5 sm:p-6 space-y-5 shadow-xs hover:border-[#005E82]/30 hover:shadow-md transition-all"
+                className="bg-white rounded-3xl border border-line p-5 sm:p-6 space-y-5 shadow-xs hover:border-primary/30 hover:shadow-md transition-all"
               >
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E5E7EB]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-line">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-bold text-[#005E82]">
+                      <span className="font-mono text-sm font-bold text-primary">
                         #{invoice.invoiceNumber}
                       </span>
                       <span
                         className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono ${
                           isShipped
-                            ? 'bg-[#15803D]/10 text-[#15803D] border border-[#15803D]/20'
-                            : 'bg-[#F15A29]/10 text-[#F15A29] border border-[#F15A29]/20'
+                            ? 'bg-success-soft text-success border border-success-border'
+                            : 'bg-orange-soft text-orange border border-orange/20'
                         }`}
                       >
                         {isShipped ? 'DISPATCHED & IN TRANSIT' : 'PACKED & READY FOR AWB'}
                       </span>
                     </div>
-                    <h3 className="text-base font-bold text-[#111827] mt-1">
+                    <h3 className="text-base font-bold text-ink mt-1">
                       {invoice.customerCompany}
                     </h3>
-                    <p className="text-xs text-[#6B7280]">
+                    <p className="text-xs text-muted">
                       Destination: {invoice.shippingAddress || 'International Cargo Hub'} • Total: {formatUSD(invoice.grandTotal)}
                     </p>
                   </div>
 
                   <div className="text-right text-xs">
-                    <span className="text-[#6B7280] block text-[11px]">Weight & Boxes</span>
-                    <span className="text-[#111827] font-mono font-bold">
+                    <span className="text-muted block text-[11px]">Weight & Boxes</span>
+                    <span className="text-ink font-mono font-bold">
                       {invoice.packingDetails?.totalWeightKg || 4.5} KG ({invoice.packingDetails?.packageCount || 1} Box)
                     </span>
                   </div>
@@ -476,27 +476,27 @@ export default function DepotShipPage() {
 
                 {/* Shipped Tracking Details if Dispatched */}
                 {isShipped ? (
-                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] space-y-2 text-xs">
+                  <div className="p-4 rounded-2xl bg-surface border border-line space-y-2 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-[#6B7280]">Courier Carrier:</span>
-                      <span className="font-bold text-[#111827] font-mono">
+                      <span className="text-muted">Courier Carrier:</span>
+                      <span className="font-bold text-ink font-mono">
                         {(invoice.shippingDetails?.courier || (invoice as any).shipment?.courier || 'DHL_EXPRESS').replace(/_/g, ' ')}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[#6B7280]">Airway Bill (AWB) #:</span>
-                      <span className="font-bold text-[#005E82] font-mono text-sm">
+                      <span className="text-muted">Airway Bill (AWB) #:</span>
+                      <span className="font-bold text-primary font-mono text-sm">
                         {invoice.shippingDetails?.airwayBillNumber || (invoice as any).shipment?.airwayBillNumber || 'N/A'}
                       </span>
                     </div>
                     {(invoice.shippingDetails?.awbDocumentUrl || awbDocUrls[invoice.id] || (invoice as any).shipment?.awbDocumentUrl) && (
                       <div className="flex items-center justify-between pt-1">
-                        <span className="text-[#6B7280]">AWB Document:</span>
+                        <span className="text-muted">AWB Document:</span>
                         <a
                           href={invoice.shippingDetails?.awbDocumentUrl || awbDocUrls[invoice.id] || (invoice as any).shipment?.awbDocumentUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-[#005E82] font-semibold hover:underline font-mono"
+                          className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline font-mono"
                         >
                           <FileText className="h-3.5 w-3.5" />
                           <span>View Airway Bill PDF/Image</span>
@@ -504,12 +504,12 @@ export default function DepotShipPage() {
                       </div>
                     )}
                     {(invoice.shippingDetails?.trackingUrl || (invoice as any).shipment?.trackingUrl) && (
-                      <div className="pt-2 border-t border-[#E5E7EB] flex justify-end">
+                      <div className="pt-2 border-t border-line flex justify-end">
                         <a
                           href={invoice.shippingDetails?.trackingUrl || (invoice as any).shipment?.trackingUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center gap-1.5 text-xs text-[#005E82] hover:underline font-semibold font-mono"
+                          className="flex items-center gap-1.5 text-xs text-primary hover:underline font-semibold font-mono"
                         >
                           <span>Track with Courier Carrier</span>
                           <ExternalLink className="h-3.5 w-3.5" />
@@ -519,10 +519,10 @@ export default function DepotShipPage() {
                   </div>
                 ) : (
                   /* Courier & AWB Assignment Form for Ready to Ship */
-                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] space-y-3 text-xs">
+                  <div className="p-4 rounded-2xl bg-surface border border-line space-y-3 text-xs">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[11px] font-medium text-[#6B7280] mb-1">
+                        <label className="block text-[11px] font-medium text-muted mb-1">
                           Freight Courier Carrier
                         </label>
                         <select
@@ -530,7 +530,7 @@ export default function DepotShipPage() {
                           onChange={(e) =>
                             setCourierInputs((prev) => ({ ...prev, [invoice.id]: e.target.value }))
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs focus:border-[#005E82] focus:outline-none shadow-xs"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-line text-ink text-xs focus:border-primary focus:outline-none shadow-xs"
                         >
                           <option value="DHL_EXPRESS">DHL Express Worldwide</option>
                           <option value="FEDEX_PRIORITY">FedEx International Priority</option>
@@ -542,13 +542,13 @@ export default function DepotShipPage() {
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="block text-[11px] font-medium text-[#6B7280]">
+                          <label className="block text-[11px] font-medium text-muted">
                             Airway Bill (AWB) Number *
                           </label>
                           <button
                             type="button"
                             onClick={() => generateAwb(invoice.id, courierVal.split('_')[0])}
-                            className="text-[10px] font-mono text-[#005E82] hover:underline font-semibold"
+                            className="text-[10px] font-mono text-primary hover:underline font-semibold"
                           >
                             Auto-Generate AWB
                           </button>
@@ -560,21 +560,21 @@ export default function DepotShipPage() {
                           onChange={(e) =>
                             setAwbInputs((prev) => ({ ...prev, [invoice.id]: e.target.value }))
                           }
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs font-mono focus:border-[#005E82] focus:outline-none shadow-xs"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-line text-ink text-xs font-mono focus:border-primary focus:outline-none shadow-xs"
                         />
                       </div>
                     </div>
 
                     {/* Airway Bill (AWB) Document Upload Field */}
                     <div className="space-y-1.5 pt-1">
-                      <label className="block text-[11px] font-medium text-[#6B7280]">
+                      <label className="block text-[11px] font-medium text-muted">
                         Upload Airway Bill (AWB Document) *
                       </label>
 
                       {awbDocUrls[invoice.id] ? (
-                        <div className="flex items-center justify-between p-3 rounded-xl bg-[#15803D]/10 border border-[#15803D]/30 text-xs text-[#15803D]">
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-success-soft border border-success/30 text-xs text-success">
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <FileCheck className="h-5 w-5 text-[#15803D] shrink-0" />
+                            <FileCheck className="h-5 w-5 text-success shrink-0" />
                             <div className="min-w-0">
                               <span className="font-semibold block truncate">
                                 {awbDocNames[invoice.id] || 'Airway_Bill_Document.pdf'}
@@ -590,7 +590,7 @@ export default function DepotShipPage() {
                               href={awbDocUrls[invoice.id]}
                               target="_blank"
                               rel="noreferrer"
-                              className="px-2.5 py-1 rounded-lg bg-white border border-[#15803D]/30 text-[#15803D] hover:bg-[#15803D] hover:text-white transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs"
+                              className="px-2.5 py-1 rounded-lg bg-white border border-success/30 text-success hover:bg-success hover:text-white transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs"
                             >
                               <Eye className="h-3.5 w-3.5" />
                               <span>View</span>
@@ -610,8 +610,8 @@ export default function DepotShipPage() {
                         <label
                           className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer ${
                             isUploadingAwb[invoice.id]
-                              ? 'border-[#005E82] bg-[#005E82]/5'
-                              : 'border-[#E5E7EB] hover:border-[#005E82] hover:bg-white bg-white/50'
+                              ? 'border-primary bg-primary/5'
+                              : 'border-line hover:border-primary hover:bg-white bg-white/50'
                           }`}
                         >
                           <input
@@ -622,17 +622,17 @@ export default function DepotShipPage() {
                             disabled={Boolean(isUploadingAwb[invoice.id])}
                           />
                           {isUploadingAwb[invoice.id] ? (
-                            <div className="flex items-center gap-2 text-xs font-semibold text-[#005E82]">
-                              <RefreshCw className="h-4 w-4 animate-spin text-[#005E82]" />
+                            <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                              <RefreshCw className="h-4 w-4 animate-spin text-primary" />
                               <span>Uploading Airway Bill to Cloud Storage...</span>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center text-center gap-1">
-                              <Upload className="h-5 w-5 text-[#005E82]" />
-                              <span className="text-xs font-semibold text-[#111827]">
+                              <Upload className="h-5 w-5 text-primary" />
+                              <span className="text-xs font-semibold text-ink">
                                 Click to Upload Airway Bill (AWB)
                               </span>
-                              <span className="text-[10px] text-[#6B7280]">
+                              <span className="text-[10px] text-muted">
                                 Supports PDF, JPG, JPEG, PNG (max 10MB)
                               </span>
                             </div>
@@ -646,7 +646,7 @@ export default function DepotShipPage() {
                         type="button"
                         onClick={() => handleQuickShip(invoice)}
                         disabled={inProgress || !awbVal.trim() || !awbDocUrls[invoice.id]}
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#005E82] hover:bg-[#004B68] text-white text-sm font-bold shadow-xs transition-all disabled:opacity-50 active:scale-98"
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary hover:bg-primary-hover text-white text-sm font-bold shadow-xs transition-all disabled:opacity-50 active:scale-98"
                       >
                         {inProgress ? (
                           <>

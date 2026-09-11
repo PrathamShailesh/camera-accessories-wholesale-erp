@@ -155,7 +155,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="flex items-center justify-center gap-1.5">
-            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-primary-soft text-primary">
               Enterprise ERP
             </span>
           </div>
@@ -165,28 +165,28 @@ export default function LoginPage() {
         </div>
 
         {/* White Enterprise Sign-In Card */}
-        <div className="rounded-xl border border-line bg-white p-6 sm:p-8 shadow-sm space-y-5">
+        <div className="rounded-2xl border border-line bg-white p-6 sm:p-8 shadow-sm space-y-5">
           <div className="flex items-center justify-between pb-3 border-b border-line-soft">
             <div className="flex items-center gap-2">
-              <KeyRound className="h-4 w-4 text-brand-600" />
+              <KeyRound className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-bold text-ink">Sign In to Account</h2>
             </div>
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-muted text-ink-secondary text-[10px] font-mono font-medium">
-              <ShieldCheck className="h-3 w-3 text-emerald-600" />
+              <ShieldCheck className="h-3 w-3 text-success" />
               <span>TLS Encrypted</span>
             </div>
           </div>
 
           {errorMessage && (
-            <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+            <div className="p-3 rounded-2xl bg-danger-soft border border-danger-border text-danger text-xs flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0 text-danger" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {successMessage && (
-            <div className="p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+            <div className="p-3 rounded-2xl bg-success-soft border border-success-border text-success text-xs flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
               <span>{successMessage}</span>
             </div>
           )}
@@ -203,7 +203,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="e.g. sarah.admin@lenscore.com"
-                  className="w-full rounded-md border border-line bg-slate-50/50 pl-9 pr-3 py-2 text-xs text-ink placeholder-slate-400 focus:bg-white focus:border-brand-500 focus:outline-none"
+                  className="w-full rounded-full border border-line bg-surface pl-9 pr-3 py-2.5 text-xs text-ink placeholder-muted focus:bg-white focus:border-primary focus:outline-none"
                 />
               </div>
             </div>
@@ -214,7 +214,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowHelpModal(true)}
-                  className="text-[11px] text-brand-600 font-medium hover:underline"
+                  className="text-[11px] text-primary font-medium hover:underline"
                 >
                   Forgot Password?
                 </button>
@@ -229,7 +229,7 @@ export default function LoginPage() {
                   onKeyDown={handleKeyDown}
                   onKeyUp={handleKeyDown}
                   placeholder="Enter password"
-                  className="w-full rounded-md border border-line bg-slate-50/50 pl-9 pr-9 py-2 text-xs text-ink placeholder-slate-400 focus:bg-white focus:border-brand-500 focus:outline-none"
+                  className="w-full rounded-full border border-line bg-surface pl-9 pr-9 py-2.5 text-xs text-ink placeholder-muted focus:bg-white focus:border-primary focus:outline-none"
                 />
                 <button
                   type="button"
@@ -241,7 +241,7 @@ export default function LoginPage() {
               </div>
 
               {capsLockOn && (
-                <div className="text-[11px] text-amber-600 font-medium">Caps Lock is ON</div>
+                <div className="text-[11px] text-warning font-medium">Caps Lock is ON</div>
               )}
             </div>
 
@@ -251,7 +251,7 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded border-line text-brand-600 focus:ring-0"
+                  className="rounded border-line text-primary focus:ring-0"
                 />
                 <span className="text-[11px]">Remember work email</span>
               </label>
@@ -269,7 +269,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-md bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-primary hover:bg-primary-hover text-white text-xs font-semibold transition-colors disabled:opacity-50"
             >
               {isLoading ? 'Verifying Credentials...' : 'Sign In'}
               <ArrowRight className="h-3.5 w-3.5" />
@@ -280,7 +280,7 @@ export default function LoginPage() {
           <div className="pt-4 border-t border-line-soft space-y-2">
             <div className="flex items-center justify-between text-xs font-bold text-ink-secondary">
               <div className="flex items-center gap-1.5">
-                <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20" />
+                <Zap className="h-3.5 w-3.5 text-warning fill-warning/20" />
                 <span>Quick Access Demo Accounts</span>
               </div>
             </div>
@@ -292,21 +292,21 @@ export default function LoginPage() {
                   type="button"
                   disabled={isLoading}
                   onClick={() => handleQuickAccess(acc.email, acc.pass)}
-                  className="w-full flex items-center justify-between p-2 rounded-md border border-line bg-slate-50/50 hover:bg-surface-muted text-left transition-colors group"
+                  className="w-full flex items-center justify-between p-2.5 rounded-2xl border border-line bg-surface hover:bg-surface-muted text-left transition-colors group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <UserCheck className="h-3.5 w-3.5 text-muted group-hover:text-brand-600 shrink-0" />
+                    <UserCheck className="h-3.5 w-3.5 text-muted group-hover:text-primary shrink-0" />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-semibold text-ink truncate">{acc.name}</span>
-                        <span className="text-[9px] font-semibold text-brand-700 bg-brand-50 px-1.5 py-0.2 rounded border border-brand-100 shrink-0">
+                        <span className="text-[9px] font-semibold text-primary bg-primary-soft px-1.5 py-0.5 rounded-full shrink-0">
                           {acc.badge}
                         </span>
                       </div>
                       <span className="text-[10px] text-muted font-mono truncate block">{acc.email}</span>
                     </div>
                   </div>
-                  <ArrowRight className="h-3 w-3 text-muted group-hover:text-brand-600 shrink-0" />
+                  <ArrowRight className="h-3 w-3 text-muted group-hover:text-primary shrink-0" />
                 </button>
               ))}
             </div>
@@ -322,7 +322,7 @@ export default function LoginPage() {
       {/* Help Modal */}
       {showHelpModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-md rounded-xl border border-line bg-white p-6 shadow-2xl space-y-4">
+          <div className="relative w-full max-w-md rounded-2xl border border-line bg-white p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-line-soft">
               <h3 className="text-sm font-bold text-ink">Enterprise Access Assistance</h3>
               <button onClick={() => setShowHelpModal(false)} className="text-muted hover:text-ink-secondary">
@@ -336,7 +336,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowHelpModal(false)}
-                className="px-4 py-2 rounded-md bg-surface-muted text-xs font-semibold text-ink-secondary hover:bg-surface-muted"
+                className="px-4 py-2 rounded-full bg-surface-muted text-xs font-semibold text-ink-secondary hover:bg-line"
               >
                 Close
               </button>
