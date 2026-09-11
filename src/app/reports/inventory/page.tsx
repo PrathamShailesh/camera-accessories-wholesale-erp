@@ -95,7 +95,8 @@ export default function InventoryReportsPage() {
                 </p>
               </Card>
             ) : (
-              <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
+              <>
+              <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
                 <Table>
                   <TableHeader>
                     <TableHead>Product</TableHead>
@@ -126,6 +127,29 @@ export default function InventoryReportsPage() {
                   </TableBody>
                 </Table>
               </Card>
+
+              <div className="md:hidden space-y-3">
+                {lowStock.map((p) => (
+                  <Card key={p.id} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <Link href={`/products/${p.id}`} className="font-semibold text-ink hover:underline text-sm">
+                          {p.name}
+                        </Link>
+                        <div className="text-xs text-muted font-mono mt-0.5">{p.sku} · {p.brand}</div>
+                      </div>
+                      <Badge tone={(p.totalStock || 0) === 0 ? 'danger' : 'warning'} className="shrink-0">
+                        {(p.totalStock || 0) === 0 ? 'Out of stock' : 'Reorder'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                      <span className="text-muted">On Hand: <span className="font-mono font-semibold text-ink">{p.totalStock ?? 0}</span></span>
+                      <span className="text-muted">Minimum: <span className="font-mono text-ink-secondary">{p.minStockLevel ?? 0}</span></span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              </>
             )}
           </section>
 
@@ -139,7 +163,8 @@ export default function InventoryReportsPage() {
                 <p className="text-sm text-muted">No products are significantly overstocked.</p>
               </Card>
             ) : (
-              <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
+              <>
+              <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
                 <Table>
                   <TableHeader>
                     <TableHead>Product</TableHead>
@@ -168,6 +193,28 @@ export default function InventoryReportsPage() {
                   </TableBody>
                 </Table>
               </Card>
+
+              <div className="md:hidden space-y-3">
+                {overstocked.map((p) => (
+                  <Card key={p.id} className="p-4 space-y-2">
+                    <Link href={`/products/${p.id}`} className="font-semibold text-ink hover:underline text-sm">
+                      {p.name}
+                    </Link>
+                    <div className="text-xs text-muted font-mono">{p.sku} · {p.brand}</div>
+                    <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                      <span className="text-muted">On Hand: <span className="font-mono font-semibold text-ink">{p.totalStock ?? 0}</span></span>
+                      <span className="text-muted">Min: <span className="font-mono text-ink-secondary">{p.minStockLevel ?? 0}</span></span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted">Capital Held</span>
+                      <span className="font-mono font-semibold text-ink">
+                        {formatUSD((p.totalStock || 0) * (p.purchasePrice || 0))}
+                      </span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              </>
             )}
           </section>
         </>

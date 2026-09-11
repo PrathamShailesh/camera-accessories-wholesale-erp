@@ -94,7 +94,8 @@ export default function SalesReportsPage() {
           description="Sales figures appear here once proformas are converted into tax invoices."
         />
       ) : (
-        <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
+        <>
+        <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Invoice</TableHead>
@@ -126,6 +127,28 @@ export default function SalesReportsPage() {
             </TableBody>
           </Table>
         </Card>
+
+        <div className="md:hidden space-y-3">
+          {filteredInvoices.map((inv) => (
+            <Card key={inv.id} className="p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <Link href={`/invoices/${inv.id}`} className="font-mono font-semibold text-primary hover:underline text-sm">
+                  {inv.invoiceNumber}
+                </Link>
+                <StatusBadge status={inv.fulfilmentStatus} />
+              </div>
+              <div className="text-xs text-ink-secondary">
+                <div>{inv.customerCompany}</div>
+                <div className="text-muted mt-0.5">{inv.depotName} · {formatDate(inv.issueDate)}</div>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                <span className="text-muted">Tax: <span className="font-mono text-ink-secondary">{formatUSD(inv.taxAmount)}</span></span>
+                <span className="font-mono font-semibold text-ink">{formatUSD(inv.grandTotal)}</span>
+              </div>
+            </Card>
+          ))}
+        </div>
+        </>
       )}
     </div>
   );

@@ -339,7 +339,8 @@ export default function DashboardPage() {
             {overview!.topProducts.length === 0 ? (
               <EmptyState icon={Package} title="No product sales yet" compact />
             ) : (
-              <Table className="border-0 rounded-none shadow-none">
+              <>
+              <Table className="hidden sm:block border-0 rounded-none shadow-none">
                 <TableHeader>
                   <TableHead>Product</TableHead>
                   <TableHead align="right">Units</TableHead>
@@ -362,6 +363,25 @@ export default function DashboardPage() {
                   ))}
                 </TableBody>
               </Table>
+
+              <div className="sm:hidden divide-y divide-line-soft">
+                {overview!.topProducts.map((p) => (
+                  <div key={p.productId} className="p-4 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-semibold text-ink text-sm">{p.name}</div>
+                        <div className="text-[11px] text-muted font-mono">{p.sku}</div>
+                      </div>
+                      <MarginBadge marginPercent={p.marginPercent} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-ink-secondary">
+                      <span>{p.unitsSold} units</span>
+                      <span className="font-semibold text-ink">{formatUSD(p.revenue)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              </>
             )}
           </Card>
 
@@ -375,7 +395,8 @@ export default function DashboardPage() {
             {overview!.topCustomers.length === 0 ? (
               <EmptyState icon={Building2} title="No customer activity yet" compact />
             ) : (
-              <Table className="border-0 rounded-none shadow-none">
+              <>
+              <Table className="hidden sm:block border-0 rounded-none shadow-none">
                 <TableHeader>
                   <TableHead>Customer</TableHead>
                   <TableHead align="right">Orders</TableHead>
@@ -395,6 +416,22 @@ export default function DashboardPage() {
                   ))}
                 </TableBody>
               </Table>
+
+              <div className="sm:hidden divide-y divide-line-soft">
+                {overview!.topCustomers.map((c) => (
+                  <div key={c.customerId} className="p-4 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-semibold text-ink text-sm">{c.name}</span>
+                      <MarginBadge marginPercent={c.marginPercent} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-ink-secondary">
+                      <span>{c.orders} orders</span>
+                      <span className="font-semibold text-ink">{formatUSD(c.revenue)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              </>
             )}
           </Card>
         </div>
@@ -409,6 +446,7 @@ export default function DashboardPage() {
               Manage hubs
             </Link>
           </CardHeader>
+          <div className="hidden md:block">
           <Table className="border-0 rounded-none shadow-none">
             <TableHeader>
               <TableHead>Depot Hub</TableHead>
@@ -432,6 +470,21 @@ export default function DashboardPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
+
+          <div className="md:hidden divide-y divide-line-soft">
+            {overview!.depotPerformance.map((d) => (
+              <div key={d.depotId} className="p-4 space-y-1.5">
+                <div className="font-semibold text-ink text-sm">{d.name}</div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-ink-secondary">
+                  <span>Sales: <span className="font-semibold text-ink">{formatUSD(d.revenue)}</span></span>
+                  <span>Profit: <span className="font-medium text-emerald-700">{formatUSD(d.profit)}</span></span>
+                  <span>Orders: <span className="text-ink">{d.orders}</span></span>
+                  <span className="font-mono">{d.inventoryUnits.toLocaleString()} units</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </Card>
       )}
 
@@ -459,7 +512,8 @@ export default function DashboardPage() {
                 }
               />
             ) : (
-              <Table className="border-0 rounded-none shadow-none">
+              <>
+              <Table className="hidden md:block border-0 rounded-none shadow-none">
                 <TableHeader>
                   <TableHead>Invoice #</TableHead>
                   <TableHead>Customer</TableHead>
@@ -507,6 +561,40 @@ export default function DashboardPage() {
                   ))}
                 </TableBody>
               </Table>
+
+              <div className="md:hidden divide-y divide-line-soft">
+                {invoices.map((inv) => (
+                  <div key={inv.id} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <Link href={`/invoices/${inv.id}`} prefetch={false} className="font-mono font-semibold text-primary hover:underline text-xs">
+                          {inv.invoiceNumber}
+                        </Link>
+                        <div className="font-semibold text-ink text-xs mt-0.5">{inv.customerCompany}</div>
+                      </div>
+                      <StatusBadge status={inv.fulfilmentStatus} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-ink-secondary">
+                      <span className="inline-flex items-center gap-1">
+                        <Building2 className="h-3.5 w-3.5 text-muted" />
+                        {inv.depotName.replace(' Depot', '').replace(' Hub', '')}
+                      </span>
+                      <span className="font-mono font-semibold text-ink">
+                        {!isDepotUser ? formatUSD(inv.grandTotal) : '—'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-end gap-1.5 pt-1">
+                      <IconButton label="Print / PDF" onClick={() => setSelectedDoc({ type: 'TAX_INVOICE', data: inv })}>
+                        <Printer className="h-3.5 w-3.5 text-muted" />
+                      </IconButton>
+                      <LinkButton href={`/invoices/${inv.id}`} size="sm" variant="secondary">
+                        Open
+                      </LinkButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              </>
             )}
           </Card>
         </div>
