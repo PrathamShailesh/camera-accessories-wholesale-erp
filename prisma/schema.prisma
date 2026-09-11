@@ -426,6 +426,18 @@ model Proforma {
   grandTotal              Float          @default(0)
   currency                String         @default("USD")
   status                  ProformaStatus @default(DRAFT)
+  // Freight calculated at the document level (see Products' unitWeightKg/dimensions
+  // on ProformaItem for inputs). shippingCost above IS the Total Freight — these
+  // fields are the audit trail of how it was derived, never added again.
+  actualWeightKg            Float    @default(0)
+  volumetricWeightKg        Float    @default(0)
+  chargeableWeightKg        Float    @default(0)
+  freightRatePerKg          Float    @default(0)
+  freightCharge             Float    @default(0)
+  additionalFreightCharges  Float    @default(0)
+  freightVolumetricDivisor  Float    @default(0)
+  freightIsManualOverride   Boolean  @default(false)
+  freightAllocationMethod   String?
   convertedToInvoiceId    String?
   convertedToInvoiceNumber String?
   convertedAt             DateTime?
@@ -459,6 +471,14 @@ model ProformaItem {
   selectedDepotId   String?
   selectedDepotName String?
   trackSerial       Boolean  @default(true)
+  // Package/weight/dimension details used to calculate shipment-level freight.
+  unitWeightKg      Float    @default(0)
+  lengthCm          Float    @default(0)
+  widthCm           Float    @default(0)
+  heightCm          Float    @default(0)
+  // Optional: this line's share of the invoice-level freight, set only via the
+  // "Allocate Freight" action. Never added into totals — for costing/reporting only.
+  allocatedFreight  Float    @default(0)
 
   proforma          Proforma @relation(fields: [proformaId], references: [id], onDelete: Cascade)
   product           Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
@@ -497,6 +517,17 @@ model TaxInvoice {
   currency         String                  @default("USD")
   notes            String?
   internalRemarks  String?
+  // Freight audit trail — see Proforma for the same shape. shippingCost above
+  // IS the Total Freight; these fields explain how it was derived.
+  actualWeightKg            Float    @default(0)
+  volumetricWeightKg        Float    @default(0)
+  chargeableWeightKg        Float    @default(0)
+  freightRatePerKg          Float    @default(0)
+  freightCharge             Float    @default(0)
+  additionalFreightCharges  Float    @default(0)
+  freightVolumetricDivisor  Float    @default(0)
+  freightIsManualOverride   Boolean  @default(false)
+  freightAllocationMethod   String?
   shipmentId       String?
   pdfUrl           String?
   createdAt        DateTime                @default(now())
@@ -538,6 +569,13 @@ model InvoiceItem {
   allocatedSerials String[]   @default([])
   trackSerial      Boolean    @default(true)
   isPicked         Boolean    @default(false)
+  // Package/weight/dimension details, carried over from the source ProformaItem.
+  unitWeightKg     Float      @default(0)
+  lengthCm         Float      @default(0)
+  widthCm          Float      @default(0)
+  heightCm         Float      @default(0)
+  // Optional per-line share of the invoice-level freight (costing/reporting only).
+  allocatedFreight Float      @default(0)
 
   invoice          TaxInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   product          Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
@@ -691,6 +729,11 @@ model CompanySettings {
   proformaNextNumber    Int      @default(3)
   defaultPaymentTerms   String   @default("Cash In Advance")
   defaultDeliveryTerms  String   @default("C&F Vietnam Airport")
+  // Freight configuration — no carrier rates or volumetric divisors are hardcoded
+  // in application code; these are the configurable defaults used by the freight
+  // calculator and may be overridden per-document.
+  freightVolumetricDivisor Float @default(5000)
+  freightDefaultRatePerKg  Float @default(0)
   // Email Configuration
   smtpHost              String   @default("smtp.gmail.com")
   smtpPort              Int      @default(587)

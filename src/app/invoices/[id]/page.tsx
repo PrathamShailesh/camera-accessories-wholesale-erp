@@ -17,6 +17,8 @@ import {
   CreditCard,
   X,
   XCircle,
+  Scale,
+  PieChart,
 } from 'lucide-react';
 import { formatUSD, formatDate } from '@/lib/utils';
 import { TaxInvoice, Shipment, CloudDocument, User } from '@/types/erp';
@@ -24,12 +26,15 @@ import { fetchCurrentUserCached, getCurrentUserCachedSync } from '@/lib/client-c
 import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
 import CloudinaryUploadModal from '@/components/documents/CloudinaryUploadModal';
 import { Button, LinkButton } from '@/components/ui/Button';
-import { StatusBadge } from '@/components/ui/Badge';
+import { StatusBadge, Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { ConfirmDialog } from '@/components/ui/Modal';
+import { ConfirmDialog, Drawer } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
+import { FreightSummaryPanel } from '@/components/freight/FreightSummaryPanel';
+import { FreightAllocationModal, FreightAllocationItem } from '@/components/freight/FreightAllocationModal';
+import { FreightAllocationMethod } from '@/lib/freight';
 
 export default function InvoiceDetailPage() {
   const { toast } = useToast();
@@ -59,6 +64,16 @@ export default function InvoiceDetailPage() {
   const [isShipping, setIsShipping] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isFreightEditOpen, setIsFreightEditOpen] = useState(false);
+  const [isSavingFreight, setIsSavingFreight] = useState(false);
+  const [freightActualWeightKg, setFreightActualWeightKg] = useState(0);
+  const [freightVolumetricWeightKg, setFreightVolumetricWeightKg] = useState(0);
+  const [freightRatePerKg, setFreightRatePerKg] = useState(0);
+  const [additionalFreightCharges, setAdditionalFreightCharges] = useState(0);
+  const [isFreightManualOverride, setIsFreightManualOverride] = useState(false);
+  const [manualTotalFreight, setManualTotalFreight] = useState(0);
+  const [isAllocateModalOpen, setIsAllocateModalOpen] = useState(false);
+  const [isSavingAllocation, setIsSavingAllocation] = useState(false);
 
   // Packing modal fields
   const [packedBy, setPackedBy] = useState('');
@@ -87,6 +102,12 @@ export default function InvoiceDetailPage() {
       if (res.ok) {
         const inv = await res.json();
         setInvoice(inv);
+        setFreightActualWeightKg(inv.actualWeightKg || 0);
+        setFreightVolumetricWeightKg(inv.volumetricWeightKg || 0);
+        setFreightRatePerKg(inv.freightRatePerKg || 0);
+        setAdditionalFreightCharges(inv.additionalFreightCharges || 0);
+        setIsFreightManualOverride(Boolean(inv.freightIsManualOverride));
+        setManualTotalFreight(inv.freightIsManualOverride ? inv.shippingCost || 0 : 0);
         if (inv.shipment) {
           setShipment(inv.shipment);
         } else if (inv.shipmentId) {
@@ -144,6 +165,9 @@ export default function InvoiceDetailPage() {
   }
 
   const isDepotUser = currentUser.role === 'DEPOT_USER';
+  const isClosedInvoice = invoice.fulfilmentStatus === 'CANCELLED' || invoice.fulfilmentStatus === 'DELIVERED';
+  const hasFreightAllocation = (invoice.items || []).some((it) => (it.allocatedFreight || 0) > 0);
+  const canAllocateFreight = !isDepotUser && (invoice.shippingCost || 0) > 0 && (invoice.items?.length || 0) > 0;
 
   const handlePickAll = async () => {
     if (!invoice) return;
@@ -254,6 +278,37 @@ export default function InvoiceDetailPage() {
     }
   };
 
+  const handleSaveFreight = async () => {
+    if (!invoice) return;
+    setIsSavingFreight(true);
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          freight: {
+            actualWeightKg: freightActualWeightKg,
+            volumetricWeightKg: freightVolumetricWeightKg,
+            freightRatePerKg,
+            additionalFreightCharges,
+            isManualOverride: isFreightManualOverride,
+            manualTotalFreight,
+          },
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to update freight');
+      }
+      toast({ title: 'Freight updated', variant: 'success' });
+      setIsFreightEditOpen(false);
+      loadData();
+    } catch (err: any) {
+      toast({ title: err.message || 'Could not update freight', variant: 'error' });
+    } finally {
+      setIsSavingFreight(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-16">
@@ -365,6 +420,9 @@ export default function InvoiceDetailPage() {
                     <th className="py-2.5 px-4 text-center">Qty</th>
                     {!isDepotUser && <th className="py-2.5 px-4 text-right">Unit Price</th>}
                     {!isDepotUser && <th className="py-2.5 px-4 text-right">Total</th>}
+                    {!isDepotUser && hasFreightAllocation && (
+                      <th className="py-2.5 px-4 text-right">Allocated Freight</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-soft">
@@ -405,6 +463,11 @@ export default function InvoiceDetailPage() {
                           {formatUSD(item.totalPrice)}
                         </td>
                       )}
+                      {!isDepotUser && hasFreightAllocation && (
+                        <td className="py-3 px-4 text-right font-mono text-ink-secondary">
+                          {item.allocatedFreight ? formatUSD(item.allocatedFreight) : '—'}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -427,8 +490,11 @@ export default function InvoiceDetailPage() {
                   <span>VAT / Tax (5%):</span>
                   <span className="text-ink">{formatUSD(invoice.taxAmount)}</span>
                 </div>
-                <div className="flex justify-between w-64 text-ink-secondary">
-                  <span>Shipping Charges:</span>
+                <div className="flex justify-between w-64 text-ink-secondary items-center">
+                  <span className="flex items-center gap-1.5">
+                    Shipping / Freight:
+                    {invoice.freightIsManualOverride && <Badge tone="warning">Manual Override</Badge>}
+                  </span>
                   <span className="text-ink">{formatUSD(invoice.shippingCost)}</span>
                 </div>
                 <div className="flex justify-between w-64 pt-2 border-t border-line text-sm font-bold text-ink">
@@ -497,6 +563,71 @@ export default function InvoiceDetailPage() {
               <p className="text-xs text-muted mt-0.5">Responsible for physical warehouse dispatch</p>
             </div>
           </Card>
+
+          {!isDepotUser && ((invoice.chargeableWeightKg || 0) > 0 || canAllocateFreight) && (
+            <Card className="p-5 space-y-3 text-xs">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                  <Scale className="h-3.5 w-3.5 text-muted" /> Freight Breakdown
+                </h3>
+                {invoice.freightIsManualOverride && <Badge tone="warning">Manual Override</Badge>}
+              </div>
+              {(invoice.chargeableWeightKg || 0) > 0 && (
+                <div className="space-y-2 text-ink-secondary">
+                  <div className="flex justify-between">
+                    <span>Actual Weight:</span>
+                    <span className="text-ink font-mono">{(invoice.actualWeightKg || 0).toFixed(2)} kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Volumetric Weight:</span>
+                    <span className="text-ink font-mono">{(invoice.volumetricWeightKg || 0).toFixed(2)} kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Chargeable Weight:</span>
+                    <span className="text-ink font-mono font-semibold">{(invoice.chargeableWeightKg || 0).toFixed(2)} kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Freight Rate:</span>
+                    <span className="text-ink font-mono">{formatUSD(invoice.freightRatePerKg || 0)} / kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Freight Charge:</span>
+                    <span className="text-ink font-mono">{formatUSD(invoice.freightCharge || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Additional Shipping Charges:</span>
+                    <span className="text-ink font-mono">{formatUSD(invoice.additionalFreightCharges || 0)}</span>
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-between pt-2 border-t border-line-soft font-semibold">
+                <span className="text-ink">Total Freight:</span>
+                <span className="text-primary font-mono">{formatUSD(invoice.shippingCost)}</span>
+              </div>
+              <div className="flex flex-col gap-2 pt-1">
+                {!isClosedInvoice && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    iconLeft={<Scale className="h-3.5 w-3.5 text-primary" />}
+                    onClick={() => setIsFreightEditOpen(true)}
+                  >
+                    Recalculate Freight
+                  </Button>
+                )}
+                {canAllocateFreight && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    iconLeft={<PieChart className="h-3.5 w-3.5 text-primary" />}
+                    onClick={() => setIsAllocateModalOpen(true)}
+                  >
+                    Allocate Freight to Products
+                  </Button>
+                )}
+              </div>
+            </Card>
+          )}
 
           {shipment && (
             <Card className="p-5 space-y-3 border-primary/20 bg-primary-soft/30">
@@ -640,6 +771,92 @@ export default function InvoiceDetailPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Recalculate Freight Drawer */}
+      <Drawer
+        open={isFreightEditOpen}
+        onClose={() => setIsFreightEditOpen(false)}
+        title="Recalculate Freight"
+        description="Adjust freight rate, additional charges, or apply a manual override."
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" onClick={() => setIsFreightEditOpen(false)} disabled={isSavingFreight}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveFreight} loading={isSavingFreight}>
+              Save Freight
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <FreightSummaryPanel
+            compact
+            actualWeightKg={freightActualWeightKg}
+            volumetricWeightKg={freightVolumetricWeightKg}
+            volumetricDivisor={invoice.freightVolumetricDivisor || 0}
+            freightRatePerKg={freightRatePerKg}
+            onFreightRateChange={setFreightRatePerKg}
+            additionalFreightCharges={additionalFreightCharges}
+            onAdditionalChargesChange={setAdditionalFreightCharges}
+            isManualOverride={isFreightManualOverride}
+            onManualOverrideChange={setIsFreightManualOverride}
+            manualTotalFreight={manualTotalFreight}
+            onManualTotalFreightChange={setManualTotalFreight}
+          />
+          <p className="text-[11px] text-muted">
+            Actual/Volumetric Weight were set when this invoice was created or last packed. To correct them
+            (e.g. after weighing the package), edit the values above before saving.
+          </p>
+        </div>
+      </Drawer>
+
+      {isAllocateModalOpen && (
+        <FreightAllocationModal
+          isOpen={isAllocateModalOpen}
+          onClose={() => setIsAllocateModalOpen(false)}
+          documentLabel={invoice.invoiceNumber}
+          totalFreight={invoice.shippingCost}
+          isSaving={isSavingAllocation}
+          items={(invoice.items || []).map(
+            (it): FreightAllocationItem => ({
+              id: it.id,
+              label: it.productName,
+              sku: it.productSku,
+              quantity: it.quantity,
+              unitWeightKg: it.unitWeightKg || 0,
+              totalPrice: it.totalPrice,
+              allocatedFreight: it.allocatedFreight,
+            })
+          )}
+          onSave={async (method: FreightAllocationMethod, allocations) => {
+            setIsSavingAllocation(true);
+            try {
+              const res = await fetch(`/api/invoices/${invoice.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  freightAllocation: {
+                    method,
+                    allocations: allocations.map((a) => ({ itemId: a.id, allocatedFreight: a.allocatedFreight })),
+                  },
+                }),
+              });
+              if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                throw new Error(d.error || 'Failed to save freight allocation');
+              }
+              toast({ title: 'Freight allocation saved', variant: 'success' });
+              setIsAllocateModalOpen(false);
+              loadData();
+            } catch (err: any) {
+              toast({ title: err.message || 'Could not save allocation', variant: 'error' });
+            } finally {
+              setIsSavingAllocation(false);
+            }
+          }}
+        />
       )}
     </div>
   );

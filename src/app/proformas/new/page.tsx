@@ -25,11 +25,14 @@ import {
 import AzurePdfExtractionModal from '@/components/documents/AzurePdfExtractionModal';
 import { ExtractedDocumentData } from '@/lib/azure-document-intelligence';
 import { formatUSD } from '@/lib/utils';
+import { calculateFreight } from '@/lib/freight';
 import { Customer, Product, Depot, PaymentTerms } from '@/types/erp';
 import { Button, LinkButton } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { FreightItemsTable } from '@/components/freight/FreightItemsTable';
+import { FreightSummaryPanel } from '@/components/freight/FreightSummaryPanel';
 
 const STEPS = [
   { step: 1, name: 'Customer', desc: 'Select or add client' },
@@ -72,10 +75,22 @@ function ProformaBuilder() {
       unitPrice: number;
       discountPercent: number;
       selectedDepotId: string;
+      unitWeightKg: number;
+      lengthCm: number;
+      widthCm: number;
+      heightCm: number;
     }[]
   >([]);
 
-  const [shippingCost, setShippingCost] = useState<number>(150);
+  // Freight calculator state — Total Freight (computed below) is what
+  // populates the Shipping/Freight Cost field; nothing hardcoded here, the
+  // rate/divisor defaults come from Settings → Freight & Logistics.
+  const [freightRatePerKg, setFreightRatePerKg] = useState<number>(0);
+  const [additionalFreightCharges, setAdditionalFreightCharges] = useState<number>(0);
+  const [volumetricDivisor, setVolumetricDivisor] = useState<number>(5000);
+  const [isFreightManualOverride, setIsFreightManualOverride] = useState<boolean>(false);
+  const [manualTotalFreight, setManualTotalFreight] = useState<number>(0);
+
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [paymentTerms, setPaymentTerms] = useState<string>('NET 30 days from dispatch');
   const [deliveryTerms, setDeliveryTerms] = useState<string>('Air Freight via Courier (CIF)');
@@ -86,10 +101,11 @@ function ProformaBuilder() {
 
   const loadData = async () => {
     try {
-      const [custsRes, prodsRes, depsRes] = await Promise.all([
+      const [custsRes, prodsRes, depsRes, settingsRes] = await Promise.all([
         fetch('/api/customers'),
         fetch('/api/products'),
         fetch('/api/depots'),
+        fetch('/api/settings'),
       ]);
       const custs = custsRes.ok ? await custsRes.json() : [];
       const prods = prodsRes.ok ? await prodsRes.json() : [];
@@ -97,6 +113,12 @@ function ProformaBuilder() {
       setCustomers(custs);
       setProducts(prods);
       setDepots(deps);
+
+      if (settingsRes.ok) {
+        const settings = await settingsRes.json();
+        if (settings?.freightVolumetricDivisor) setVolumetricDivisor(Number(settings.freightVolumetricDivisor));
+        if (settings?.freightDefaultRatePerKg) setFreightRatePerKg(Number(settings.freightDefaultRatePerKg));
+      }
 
       if (!selectedCustomerId) {
         if (queryCustomerId && custs.some((c: any) => c.id === queryCustomerId)) {
@@ -114,6 +136,10 @@ function ProformaBuilder() {
             unitPrice: prods[0].sellingPrice,
             discountPercent: 0,
             selectedDepotId: deps[0]?.id || 'dep-dxb',
+            unitWeightKg: 0,
+            lengthCm: 0,
+            widthCm: 0,
+            heightCm: 0,
           },
         ]);
       }
@@ -148,12 +174,22 @@ function ProformaBuilder() {
           unitPrice: item.unitPrice || prod?.sellingPrice || 100,
           discountPercent: item.discount || 0,
           selectedDepotId: depots[0]?.id || 'dep-dxb',
+          unitWeightKg: 0,
+          lengthCm: 0,
+          widthCm: 0,
+          heightCm: 0,
         };
       });
       setItems(mapped);
     }
 
-    if (data.shippingCharges) setShippingCost(data.shippingCharges);
+    // A shipping figure extracted from a customer's PDF is an externally
+    // supplied total, not one we calculated — treat it as a manual override
+    // rather than silently discarding it.
+    if (data.shippingCharges) {
+      setIsFreightManualOverride(true);
+      setManualTotalFreight(data.shippingCharges);
+    }
     if (data.paymentTerms) setPaymentTerms(data.paymentTerms);
     if (data.notes) setNotes(data.notes);
 
@@ -204,6 +240,10 @@ function ProformaBuilder() {
           unitPrice: p.sellingPrice,
           discountPercent: 0,
           selectedDepotId: depots[0]?.id || 'dep-dxb',
+          unitWeightKg: 0,
+          lengthCm: 0,
+          widthCm: 0,
+          heightCm: 0,
         },
       ]);
     }
@@ -268,6 +308,18 @@ function ProformaBuilder() {
   });
 
   const overallDiscountAmt = subtotal * (discountPercent / 100);
+
+  // Total Freight — the single figure that populates Shipping/Freight Cost.
+  const freightResult = calculateFreight({
+    items,
+    volumetricDivisor,
+    freightRatePerKg,
+    additionalFreightCharges,
+    isManualOverride: isFreightManualOverride,
+    manualTotalFreight,
+  });
+  const shippingCost = freightResult.totalFreight;
+
   const grandTotal = subtotal - overallDiscountAmt + totalTax + Number(shippingCost || 0);
 
   const handleSubmit = async () => {
@@ -294,6 +346,13 @@ function ProformaBuilder() {
           items,
           discountPercent,
           shippingCost: Number(shippingCost),
+          freight: {
+            volumetricDivisor,
+            freightRatePerKg,
+            additionalFreightCharges,
+            isManualOverride: isFreightManualOverride,
+            manualTotalFreight,
+          },
           paymentTerms,
           deliveryTerms,
           notes,
@@ -662,28 +721,54 @@ function ProformaBuilder() {
             })}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-line-soft pt-4">
-            <div>
-              <label className="text-xs font-semibold text-ink-secondary block mb-1">Overall Deal Discount (%)</label>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={discountPercent}
-                onChange={(e) => setDiscountPercent(Number(e.target.value))}
-                className="w-full rounded-md border border-line bg-white px-3 py-1.5 text-xs font-mono"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-ink-secondary block mb-1">Estimated Shipping / Freight ($)</label>
-              <input
-                type="number"
-                min={0}
-                value={shippingCost}
-                onChange={(e) => setShippingCost(Number(e.target.value))}
-                className="w-full rounded-md border border-line bg-white px-3 py-1.5 text-xs font-mono"
-              />
-            </div>
+          <div className="border-t border-line-soft pt-4">
+            <label className="text-xs font-semibold text-ink-secondary block mb-1">Overall Deal Discount (%)</label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={discountPercent}
+              onChange={(e) => setDiscountPercent(Number(e.target.value))}
+              className="w-full max-w-xs rounded-md border border-line bg-white px-3 py-1.5 text-xs font-mono"
+            />
+          </div>
+
+          {/* Invoice-level freight — calculated from shipment weight, not entered per product. */}
+          <div className="border-t border-line-soft pt-4 space-y-4">
+            <FreightItemsTable
+              items={items.map((item, idx) => {
+                const prod = products.find((p) => p.id === item.productId);
+                return {
+                  key: idx,
+                  label: prod?.name || 'Product',
+                  sku: prod?.sku,
+                  quantity: item.quantity,
+                  unitWeightKg: item.unitWeightKg,
+                  lengthCm: item.lengthCm,
+                  widthCm: item.widthCm,
+                  heightCm: item.heightCm,
+                };
+              })}
+              onChange={(key, patch) => {
+                const updated = [...items];
+                updated[key as number] = { ...updated[key as number], ...patch };
+                setItems(updated);
+              }}
+            />
+            <FreightSummaryPanel
+              actualWeightKg={freightResult.actualWeightKg}
+              volumetricWeightKg={freightResult.volumetricWeightKg}
+              volumetricDivisor={volumetricDivisor}
+              onVolumetricDivisorChange={setVolumetricDivisor}
+              freightRatePerKg={freightRatePerKg}
+              onFreightRateChange={setFreightRatePerKg}
+              additionalFreightCharges={additionalFreightCharges}
+              onAdditionalChargesChange={setAdditionalFreightCharges}
+              isManualOverride={isFreightManualOverride}
+              onManualOverrideChange={setIsFreightManualOverride}
+              manualTotalFreight={manualTotalFreight}
+              onManualTotalFreightChange={setManualTotalFreight}
+            />
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-line-soft">

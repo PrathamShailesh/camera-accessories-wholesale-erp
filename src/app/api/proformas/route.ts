@@ -3,6 +3,7 @@ import { prisma, withDbTimeout } from '@/lib/prisma';
 import dataStore from '@/lib/data-store';
 import { guardApi } from '@/lib/api-auth';
 import { parsePagination } from '@/lib/pagination';
+import { calculateFreight } from '@/lib/freight';
 
 export async function GET(req: NextRequest) {
   const auth = await guardApi(req, 'proformas.read');
@@ -65,7 +66,17 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { items = [], customerId, discountPercent, shippingCost, notes, deliveryTerms, paymentTerms, expiryDays } = body;
+    const {
+      items = [],
+      customerId,
+      discountPercent,
+      shippingCost,
+      notes,
+      deliveryTerms,
+      paymentTerms,
+      expiryDays,
+      freight,
+    } = body;
 
     // Get customer details (DB first, then dataStore fallback)
     let customer: any = null;
@@ -82,6 +93,14 @@ export async function POST(req: NextRequest) {
     if (!customer) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
+
+    // Freight defaults (volumetric divisor / rate) are configurable, never
+    // hardcoded — read from CompanySettings unless the caller overrides them.
+    let freightDefaults: { freightVolumetricDivisor?: number; freightDefaultRatePerKg?: number } | null = null;
+    try {
+      freightDefaults = await prisma.companySettings.findUnique({ where: { id: 'global-settings' } });
+    } catch {}
+    if (!freightDefaults) freightDefaults = dataStore.getCompanySettings() as any;
 
     // Resolve items and calculate totals
     let subtotal = 0;
@@ -115,12 +134,31 @@ export async function POST(req: NextRequest) {
         selectedDepotId: item.selectedDepotId || 'dep-central',
         selectedDepotName: item.selectedDepotName || 'Central Depot',
         trackSerial: fallbackProduct?.trackSerial ?? true,
+        unitWeightKg: Number(item.unitWeightKg) || 0,
+        lengthCm: Number(item.lengthCm) || 0,
+        widthCm: Number(item.widthCm) || 0,
+        heightCm: Number(item.heightCm) || 0,
       };
     });
 
     const discPercent = Number(discountPercent) || 0;
     const discountAmount = (subtotal * discPercent) / 100;
-    const shipCost = Number(shippingCost) || 0;
+
+    // Total Freight is computed authoritatively here (never trusted verbatim
+    // from the client) so it can never drift from the weights/rate that
+    // produced it, and is used once — as shippingCost — never duplicated.
+    // Callers that don't send a `freight` breakdown (legacy/manual entry, or
+    // AI PDF extraction) fall back to treating the raw shippingCost as a
+    // manual override, preserving prior behavior exactly.
+    const freightResult = calculateFreight({
+      items: resolvedItems,
+      volumetricDivisor: Number(freight?.volumetricDivisor ?? freightDefaults?.freightVolumetricDivisor) || 0,
+      freightRatePerKg: Number(freight?.freightRatePerKg ?? freightDefaults?.freightDefaultRatePerKg) || 0,
+      additionalFreightCharges: Number(freight?.additionalFreightCharges) || 0,
+      isManualOverride: freight ? Boolean(freight.isManualOverride) : true,
+      manualTotalFreight: Number(freight?.manualTotalFreight ?? shippingCost) || 0,
+    });
+    const shipCost = freightResult.totalFreight;
     const grandTotal = Number((subtotal - discountAmount + totalTax + shipCost).toFixed(2));
 
     // Try DB proforma creation
@@ -154,6 +192,14 @@ export async function POST(req: NextRequest) {
           shippingCost: shipCost,
           grandTotal,
           status: 'DRAFT',
+          actualWeightKg: freightResult.actualWeightKg,
+          volumetricWeightKg: freightResult.volumetricWeightKg,
+          chargeableWeightKg: freightResult.chargeableWeightKg,
+          freightRatePerKg: freightResult.freightRatePerKg,
+          freightCharge: freightResult.freightCharge,
+          additionalFreightCharges: freightResult.additionalFreightCharges,
+          freightVolumetricDivisor: freightResult.freightVolumetricDivisor,
+          freightIsManualOverride: freightResult.freightIsManualOverride,
           items: {
             create: resolvedItems.map((it: any) => ({
               productId: it.productId,
@@ -169,6 +215,10 @@ export async function POST(req: NextRequest) {
               selectedDepotId: it.selectedDepotId,
               selectedDepotName: it.selectedDepotName,
               trackSerial: it.trackSerial,
+              unitWeightKg: it.unitWeightKg,
+              lengthCm: it.lengthCm,
+              widthCm: it.widthCm,
+              heightCm: it.heightCm,
             })),
           },
         },
@@ -198,6 +248,14 @@ export async function POST(req: NextRequest) {
         taxAmount: Number(totalTax.toFixed(2)),
         shippingCost: shipCost,
         grandTotal,
+        actualWeightKg: freightResult.actualWeightKg,
+        volumetricWeightKg: freightResult.volumetricWeightKg,
+        chargeableWeightKg: freightResult.chargeableWeightKg,
+        freightRatePerKg: freightResult.freightRatePerKg,
+        freightCharge: freightResult.freightCharge,
+        additionalFreightCharges: freightResult.additionalFreightCharges,
+        freightVolumetricDivisor: freightResult.freightVolumetricDivisor,
+        freightIsManualOverride: freightResult.freightIsManualOverride,
         items: resolvedItems,
         status: 'DRAFT',
       });

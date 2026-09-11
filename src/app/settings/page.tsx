@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Building2, CreditCard, FileText, Mail, Save, Cpu, Sparkles } from 'lucide-react';
+import { Building2, CreditCard, FileText, Mail, Save, Cpu, Sparkles, Truck } from 'lucide-react';
 import ImageUploadField from '@/components/ui/ImageUploadField';
 import { fetchSettingsCached, invalidateSettings } from '@/lib/client-cache';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -38,6 +38,8 @@ interface CompanySettings {
   proformaNextNumber: number;
   defaultPaymentTerms: string;
   defaultDeliveryTerms: string;
+  freightVolumetricDivisor: number;
+  freightDefaultRatePerKg: number;
   smtpHost: string;
   smtpPort: number;
   smtpUser: string;
@@ -288,6 +290,33 @@ export default function SettingsPage() {
             wrapperClassName="sm:col-span-2"
             value={settings.defaultDeliveryTerms}
             onChange={(e) => set({ defaultDeliveryTerms: e.target.value })}
+          />
+        </div>
+      </Section>
+
+      <Section
+        icon={Truck}
+        title="Freight & Logistics"
+        description="Defaults used by the freight calculator on Proformas and Tax Invoices. Nothing here is hardcoded in the app — change it any time as carrier terms change."
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input
+            label="Volumetric Divisor"
+            type="number"
+            min={1}
+            step="1"
+            value={settings.freightVolumetricDivisor}
+            onChange={(e) => set({ freightVolumetricDivisor: Number(e.target.value) })}
+            hint="Standard air freight divisors are 5000 or 6000 (cm³ per chargeable kg)."
+          />
+          <Input
+            label="Default Freight Rate ($ / kg)"
+            type="number"
+            min={0}
+            step="0.01"
+            value={settings.freightDefaultRatePerKg}
+            onChange={(e) => set({ freightDefaultRatePerKg: Number(e.target.value) })}
+            hint="Pre-fills the rate field; always editable per shipment."
           />
         </div>
       </Section>

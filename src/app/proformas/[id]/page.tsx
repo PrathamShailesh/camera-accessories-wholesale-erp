@@ -24,6 +24,8 @@ import {
   Check,
   Trash2,
   Edit2,
+  Scale,
+  PieChart,
 } from 'lucide-react';
 const fireConfetti = (opts: Record<string, unknown>) => {
   import('canvas-confetti').then((m) => m.default(opts as any)).catch(() => {});
@@ -33,11 +35,14 @@ import { Proforma, Depot } from '@/types/erp';
 import { fetchSettingsCached } from '@/lib/client-cache';
 import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
 import { Button, LinkButton } from '@/components/ui/Button';
-import { StatusBadge } from '@/components/ui/Badge';
+import { StatusBadge, Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { ConfirmDialog, Drawer } from '@/components/ui/Modal';
 import { Input, Textarea } from '@/components/ui/Input';
+import { FreightSummaryPanel } from '@/components/freight/FreightSummaryPanel';
+import { FreightAllocationModal, FreightAllocationItem } from '@/components/freight/FreightAllocationModal';
+import { FreightAllocationMethod } from '@/lib/freight';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -86,6 +91,12 @@ export default function ProformaDetailPage() {
     shippingCost: 0,
     notes: '',
   });
+  const [freightRatePerKg, setFreightRatePerKg] = useState(0);
+  const [additionalFreightCharges, setAdditionalFreightCharges] = useState(0);
+  const [isFreightManualOverride, setIsFreightManualOverride] = useState(false);
+  const [manualTotalFreight, setManualTotalFreight] = useState(0);
+  const [isAllocateModalOpen, setIsAllocateModalOpen] = useState(false);
+  const [isSavingAllocation, setIsSavingAllocation] = useState(false);
 
   const prevStatusRef = useRef<string | null>(null);
 
@@ -123,6 +134,10 @@ export default function ProformaDetailPage() {
         shippingCost: data.shippingCost || 0,
         notes: data.notes || '',
       });
+      setFreightRatePerKg(data.freightRatePerKg || 0);
+      setAdditionalFreightCharges(data.additionalFreightCharges || 0);
+      setIsFreightManualOverride(Boolean(data.freightIsManualOverride));
+      setManualTotalFreight(data.freightIsManualOverride ? data.shippingCost || 0 : 0);
 
       const depsRes = await fetch('/api/depots');
       if (depsRes.ok) {
@@ -228,15 +243,28 @@ export default function ProformaDetailPage() {
   // Derived from the shared workflow rules, so the menu can only ever offer
   // transitions the API will actually accept.
   const statusOptions: ProformaStatus[] = allowedNextStatuses(proforma.status as ProformaStatus);
+  const hasFreightAllocation = (proforma.items || []).some((it) => (it.allocatedFreight || 0) > 0);
+  const canAllocateFreight = (proforma.shippingCost || 0) > 0 && (proforma.items?.length || 0) > 0;
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingEdit(true);
     try {
+      const { shippingCost: _unusedShippingCost, ...termsWithoutShipping } = editTerms;
       const res = await fetch(`/api/proformas/${proforma.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editTerms),
+        body: JSON.stringify({
+          ...termsWithoutShipping,
+          freight: {
+            actualWeightKg: proforma.actualWeightKg || 0,
+            volumetricWeightKg: proforma.volumetricWeightKg || 0,
+            freightRatePerKg,
+            additionalFreightCharges,
+            isManualOverride: isFreightManualOverride,
+            manualTotalFreight,
+          },
+        }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -544,6 +572,7 @@ export default function ProformaDetailPage() {
                     <th className="py-2.5 px-4 text-right">Unit Price</th>
                     <th className="py-2.5 px-4 text-right">Discount</th>
                     <th className="py-2.5 px-4 text-right">Line Total</th>
+                    {hasFreightAllocation && <th className="py-2.5 px-4 text-right">Allocated Freight</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-soft">
@@ -567,6 +596,11 @@ export default function ProformaDetailPage() {
                       <td className="py-3 px-4 text-right font-mono font-bold text-ink">
                         {formatUSD(item.totalPrice)}
                       </td>
+                      {hasFreightAllocation && (
+                        <td className="py-3 px-4 text-right font-mono text-ink-secondary">
+                          {item.allocatedFreight ? formatUSD(item.allocatedFreight) : '—'}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -589,8 +623,11 @@ export default function ProformaDetailPage() {
                 <span>VAT / Tax (5%):</span>
                 <span className="text-ink">{formatUSD(proforma.taxAmount)}</span>
               </div>
-              <div className="flex justify-between w-64 text-ink-secondary">
-                <span>Shipping Charges:</span>
+              <div className="flex justify-between w-64 text-ink-secondary items-center">
+                <span className="flex items-center gap-1.5">
+                  Shipping / Freight:
+                  {proforma.freightIsManualOverride && <Badge tone="warning">Manual Override</Badge>}
+                </span>
                 <span className="text-ink">{formatUSD(proforma.shippingCost)}</span>
               </div>
               <div className="flex justify-between w-64 pt-2 border-t border-line text-sm font-bold text-ink">
@@ -665,6 +702,60 @@ export default function ProformaDetailPage() {
               </div>
             </div>
           </Card>
+
+          {((proforma.chargeableWeightKg || 0) > 0 || canAllocateFreight) && (
+            <Card className="p-5 space-y-3 text-xs">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                  <Scale className="h-3.5 w-3.5 text-muted" /> Freight Breakdown
+                </h3>
+                {proforma.freightIsManualOverride && <Badge tone="warning">Manual Override</Badge>}
+              </div>
+              {(proforma.chargeableWeightKg || 0) > 0 && (
+                <div className="space-y-2 text-ink-secondary">
+                  <div className="flex justify-between">
+                    <span>Actual Weight:</span>
+                    <span className="text-ink font-mono">{(proforma.actualWeightKg || 0).toFixed(2)} kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Volumetric Weight:</span>
+                    <span className="text-ink font-mono">{(proforma.volumetricWeightKg || 0).toFixed(2)} kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Chargeable Weight:</span>
+                    <span className="text-ink font-mono font-semibold">{(proforma.chargeableWeightKg || 0).toFixed(2)} kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Freight Rate:</span>
+                    <span className="text-ink font-mono">{formatUSD(proforma.freightRatePerKg || 0)} / kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Freight Charge:</span>
+                    <span className="text-ink font-mono">{formatUSD(proforma.freightCharge || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Additional Shipping Charges:</span>
+                    <span className="text-ink font-mono">{formatUSD(proforma.additionalFreightCharges || 0)}</span>
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-between pt-2 border-t border-line-soft font-semibold">
+                <span className="text-ink">Total Freight:</span>
+                <span className="text-primary font-mono">{formatUSD(proforma.shippingCost)}</span>
+              </div>
+              {canAllocateFreight && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  iconLeft={<PieChart className="h-3.5 w-3.5 text-primary" />}
+                  onClick={() => setIsAllocateModalOpen(true)}
+                  className="w-full"
+                >
+                  Allocate Freight to Products
+                </Button>
+              )}
+            </Card>
+          )}
         </div>
       </div>
 
@@ -978,25 +1069,38 @@ export default function ProformaDetailPage() {
             onChange={(e) => setEditTerms({ ...editTerms, deliveryTerms: e.target.value })}
             placeholder="e.g. Air Freight via Courier (CIF)"
           />
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Discount (%)"
-              type="number"
-              min="0"
-              max="100"
-              step="0.1"
-              value={editTerms.discountPercent}
-              onChange={(e) => setEditTerms({ ...editTerms, discountPercent: Number(e.target.value) })}
+          <Input
+            label="Discount (%)"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            value={editTerms.discountPercent}
+            onChange={(e) => setEditTerms({ ...editTerms, discountPercent: Number(e.target.value) })}
+            wrapperClassName="max-w-[10rem]"
+          />
+
+          <div className="pt-2 border-t border-line-soft">
+            <FreightSummaryPanel
+              compact
+              actualWeightKg={proforma.actualWeightKg || 0}
+              volumetricWeightKg={proforma.volumetricWeightKg || 0}
+              volumetricDivisor={proforma.freightVolumetricDivisor || 0}
+              freightRatePerKg={freightRatePerKg}
+              onFreightRateChange={setFreightRatePerKg}
+              additionalFreightCharges={additionalFreightCharges}
+              onAdditionalChargesChange={setAdditionalFreightCharges}
+              isManualOverride={isFreightManualOverride}
+              onManualOverrideChange={setIsFreightManualOverride}
+              manualTotalFreight={manualTotalFreight}
+              onManualTotalFreightChange={setManualTotalFreight}
             />
-            <Input
-              label="Shipping Cost (USD)"
-              type="number"
-              min="0"
-              step="1"
-              value={editTerms.shippingCost}
-              onChange={(e) => setEditTerms({ ...editTerms, shippingCost: Number(e.target.value) })}
-            />
+            <p className="text-[11px] text-muted mt-2">
+              Actual/Volumetric Weight were set when this quotation was created. To change them, adjust the
+              product weights and dimensions from a new quotation, or contact an administrator.
+            </p>
           </div>
+
           <Textarea
             label="Internal Notes / Remarks"
             value={editTerms.notes}
@@ -1006,6 +1110,53 @@ export default function ProformaDetailPage() {
           />
         </form>
       </Drawer>
+
+      {isAllocateModalOpen && (
+        <FreightAllocationModal
+          isOpen={isAllocateModalOpen}
+          onClose={() => setIsAllocateModalOpen(false)}
+          documentLabel={proforma.proformaNumber}
+          totalFreight={proforma.shippingCost}
+          isSaving={isSavingAllocation}
+          items={(proforma.items || []).map(
+            (it): FreightAllocationItem => ({
+              id: it.id,
+              label: it.productName,
+              sku: it.productSku,
+              quantity: it.quantity,
+              unitWeightKg: it.unitWeightKg || 0,
+              totalPrice: it.totalPrice,
+              allocatedFreight: it.allocatedFreight,
+            })
+          )}
+          onSave={async (method: FreightAllocationMethod, allocations) => {
+            setIsSavingAllocation(true);
+            try {
+              const res = await fetch(`/api/proformas/${proforma.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  freightAllocation: {
+                    method,
+                    allocations: allocations.map((a) => ({ itemId: a.id, allocatedFreight: a.allocatedFreight })),
+                  },
+                }),
+              });
+              if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                throw new Error(d.error || 'Failed to save freight allocation');
+              }
+              toast({ title: 'Freight allocation saved', variant: 'success' });
+              setIsAllocateModalOpen(false);
+              loadData(true);
+            } catch (err: any) {
+              toast({ title: err.message || 'Could not save allocation', variant: 'error' });
+            } finally {
+              setIsSavingAllocation(false);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

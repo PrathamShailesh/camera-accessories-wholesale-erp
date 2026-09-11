@@ -209,6 +209,8 @@ export function redactSettings<T extends Record<string, any>>(
     defaultDeliveryTerms: settings.defaultDeliveryTerms,
     taxRegistrationNumber: settings.taxRegistrationNumber,
     vatGstNumber: settings.vatGstNumber,
+    freightVolumetricDivisor: settings.freightVolumetricDivisor,
+    freightDefaultRatePerKg: settings.freightDefaultRatePerKg,
     isSmtpConfigured,
   };
 

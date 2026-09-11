@@ -208,9 +208,33 @@ export interface ProformaItem {
   selectedDepotId?: string;
   selectedDepotName?: string;
   trackSerial?: boolean;
+  /** Package/weight/dimension details used to calculate shipment-level freight. */
+  unitWeightKg?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
+  /** This line's share of the invoice-level freight — set only via "Allocate Freight". */
+  allocatedFreight?: number;
 }
 
-export interface Proforma {
+export type FreightAllocationMethod = 'WEIGHT' | 'QUANTITY' | 'VALUE' | 'MANUAL';
+
+/** Freight audit trail shared by Proforma and TaxInvoice. shippingCost IS the
+ *  Total Freight already included in grandTotal — these fields only explain
+ *  how it was derived; never add them into a total again. */
+export interface FreightDetails {
+  actualWeightKg: number;
+  volumetricWeightKg: number;
+  chargeableWeightKg: number;
+  freightRatePerKg: number;
+  freightCharge: number;
+  additionalFreightCharges: number;
+  freightVolumetricDivisor: number;
+  freightIsManualOverride: boolean;
+  freightAllocationMethod?: FreightAllocationMethod | null;
+}
+
+export interface Proforma extends Partial<FreightDetails> {
   id: string;
   proformaNumber: string;
   customerId: string;
@@ -273,9 +297,16 @@ export interface InvoiceItem {
   allocatedSerials: string[];
   trackSerial: boolean;
   isPicked?: boolean;
+  /** Package/weight/dimension details, carried over from the source ProformaItem. */
+  unitWeightKg?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
+  /** This line's share of the invoice-level freight — set only via "Allocate Freight". */
+  allocatedFreight?: number;
 }
 
-export interface TaxInvoice {
+export interface TaxInvoice extends Partial<FreightDetails> {
   id: string;
   invoiceNumber: string;
   proformaId?: string;
@@ -528,6 +559,9 @@ export interface CompanySettings {
   proformaNextNumber: number;
   defaultPaymentTerms?: string;
   defaultDeliveryTerms?: string;
+  /** Configurable freight defaults — never hardcoded in application code. */
+  freightVolumetricDivisor?: number;
+  freightDefaultRatePerKg?: number;
   smtpFromEmail?: string;
   bankName?: string;
   accountName?: string;
