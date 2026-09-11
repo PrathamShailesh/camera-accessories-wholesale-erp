@@ -49,7 +49,6 @@ export default function SalesReportsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="06 / ANALYTICS"
         title="Sales Reports"
         description="Invoiced revenue, tax collected, and order volume."
         actions={
@@ -67,7 +66,7 @@ export default function SalesReportsPage() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-lg divide-x divide-y lg:divide-y-0 divide-line bg-surface">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border border-line rounded-2xl divide-x divide-y lg:divide-y-0 divide-line bg-surface overflow-hidden">
         <div className="p-4">
           <div className="text-xs uppercase tracking-wider text-muted">Total Sales</div>
           <div className="text-2xl font-semibold text-ink mt-1.5">{formatUSD(totalSales)}</div>
@@ -95,7 +94,8 @@ export default function SalesReportsPage() {
           description="Sales figures appear here once proformas are converted into tax invoices."
         />
       ) : (
-        <Card className="overflow-hidden p-0">
+        <>
+        <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Invoice</TableHead>
@@ -127,6 +127,28 @@ export default function SalesReportsPage() {
             </TableBody>
           </Table>
         </Card>
+
+        <div className="md:hidden space-y-3">
+          {filteredInvoices.map((inv) => (
+            <Card key={inv.id} className="p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <Link href={`/invoices/${inv.id}`} className="font-mono font-semibold text-primary hover:underline text-sm">
+                  {inv.invoiceNumber}
+                </Link>
+                <StatusBadge status={inv.fulfilmentStatus} />
+              </div>
+              <div className="text-xs text-ink-secondary">
+                <div>{inv.customerCompany}</div>
+                <div className="text-muted mt-0.5">{inv.depotName} · {formatDate(inv.issueDate)}</div>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                <span className="text-muted">Tax: <span className="font-mono text-ink-secondary">{formatUSD(inv.taxAmount)}</span></span>
+                <span className="font-mono font-semibold text-ink">{formatUSD(inv.grandTotal)}</span>
+              </div>
+            </Card>
+          ))}
+        </div>
+        </>
       )}
     </div>
   );

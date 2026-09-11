@@ -7,7 +7,7 @@ import { formatDateTime } from '@/lib/utils';
 import { User, UserRole, Depot } from '@/types/erp';
 import ImageUploadField from '@/components/ui/ImageUploadField';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Button } from '@/components/ui/Button';
+import { Button, IconButton } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
@@ -276,7 +276,6 @@ export default function UsersManagementPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="07 / ADMINISTRATION"
         title="Users & Roles"
         description="System operators, role-based access control, and depot assignments."
         actions={
@@ -288,27 +287,27 @@ export default function UsersManagementPage() {
         }
       />
 
-      <div className="flex border-b border-line gap-2">
+      <div className="flex items-center gap-1.5">
         <button
           onClick={() => setActiveTab('users')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
+          className={`flex items-center gap-2 h-9 rounded-full px-3.5 text-xs font-semibold transition-colors ${
             activeTab === 'users'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted hover:text-ink'
+              ? 'bg-ink text-white'
+              : 'bg-white text-ink-secondary border border-line hover:bg-surface'
           }`}
         >
-          <Users className="h-4 w-4" />
+          <Users className="h-3.5 w-3.5" />
           <span>Team Members ({users.length})</span>
         </button>
         <button
           onClick={() => setActiveTab('roles')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
+          className={`flex items-center gap-2 h-9 rounded-full px-3.5 text-xs font-semibold transition-colors ${
             activeTab === 'roles'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted hover:text-ink'
+              ? 'bg-ink text-white'
+              : 'bg-white text-ink-secondary border border-line hover:bg-surface'
           }`}
         >
-          <ShieldAlert className="h-4 w-4" />
+          <ShieldAlert className="h-3.5 w-3.5" />
           <span>Roles & Permissions Matrix</span>
         </button>
       </div>
@@ -354,7 +353,7 @@ export default function UsersManagementPage() {
             </Card>
           </div>
 
-          <Card className="overflow-hidden p-0">
+          <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
             <div className="px-5 py-3.5 bg-surface border-b border-line">
               <h3 className="text-xs font-bold text-ink uppercase tracking-wider">Access Control Matrix</h3>
             </div>
@@ -389,21 +388,21 @@ export default function UsersManagementPage() {
                     </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded border ${
-                        row.m === 'Full Access' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-slate-400 bg-slate-50 border-slate-200'
+                        row.m === 'Full Access' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-muted bg-surface border-line'
                       }`}>
                         {row.m === 'Full Access' ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />} {row.m}
                       </span>
                     </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded border ${
-                        row.eu === 'Full Access' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : row.eu === 'View Only' ? 'text-sky-700 bg-sky-50 border-sky-200' : 'text-slate-400 bg-slate-50 border-slate-200'
+                        row.eu === 'Full Access' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : row.eu === 'View Only' ? 'text-sky-700 bg-sky-50 border-sky-200' : 'text-muted bg-surface border-line'
                       }`}>
                         {row.eu === 'Full Access' ? <Check className="h-3 w-3" /> : row.eu === 'View Only' ? <Check className="h-3 w-3" /> : <Minus className="h-3 w-3" />} {row.eu}
                       </span>
                     </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded border ${
-                        row.du.includes('Assigned') ? 'text-amber-700 bg-amber-50 border-amber-200' : row.du === 'Stock Only' ? 'text-sky-700 bg-sky-50 border-sky-200' : 'text-slate-400 bg-slate-50 border-slate-200'
+                        row.du.includes('Assigned') ? 'text-amber-700 bg-amber-50 border-amber-200' : row.du === 'Stock Only' ? 'text-sky-700 bg-sky-50 border-sky-200' : 'text-muted bg-surface border-line'
                       }`}>
                         {row.du === 'None' ? <Minus className="h-3 w-3" /> : <Check className="h-3 w-3" />} {row.du}
                       </span>
@@ -427,7 +426,7 @@ export default function UsersManagementPage() {
               options={[{ label: 'All roles', value: 'ALL' }, ...ROLE_OPTIONS]}
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              wrapperClassName="w-44"
+              wrapperClassName="w-full sm:w-44"
             />
             <span className="text-xs text-muted sm:ml-auto">{filteredUsers.length} users</span>
           </div>
@@ -452,7 +451,8 @@ export default function UsersManagementPage() {
               }
             />
           ) : (
-            <Card className="overflow-hidden p-0">
+            <>
+            <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
               <Table>
                 <TableHeader>
                   <TableHead>User</TableHead>
@@ -506,7 +506,7 @@ export default function UsersManagementPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2"
+                            className="text-muted hover:text-danger hover:bg-danger-soft px-2"
                             onClick={() => setDeleteTarget(u)}
                             title="Delete User"
                           >
@@ -519,6 +519,54 @@ export default function UsersManagementPage() {
                 </TableBody>
               </Table>
             </Card>
+
+            <div className="md:hidden space-y-3">
+              {filteredUsers.map((u) => (
+                <Card key={u.id} className="p-4 space-y-2.5">
+                  <div className="flex items-start gap-3">
+                    <Avatar name={u.name} src={u.avatar} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-ink truncate">{u.name}</div>
+                      <div className="text-xs text-muted truncate">{u.email}</div>
+                    </div>
+                    <StatusBadge status={u.status} />
+                  </div>
+                  <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                    <Badge tone={ROLE_TONE[u.role] || 'neutral'}>{u.role.replace(/_/g, ' ')}</Badge>
+                    <span className="text-muted">
+                      {u.role === 'DEPOT_USER' ? u.assignedDepotName || '—' : 'All depots'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-muted">
+                    Last login: {u.lastLogin ? formatDateTime(u.lastLogin) : 'Never'}
+                  </div>
+                  <div className="flex items-center flex-wrap gap-1.5 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleToggleStatus(u)}
+                      className={u.status === 'ACTIVE' ? 'text-amber-600' : 'text-emerald-600'}
+                    >
+                      {u.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setResetTarget(u)}>
+                      Reset
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => openEdit(u)}>
+                      Edit
+                    </Button>
+                    <IconButton
+                      label="Delete User"
+                      className="text-muted hover:text-danger hover:bg-danger-soft"
+                      onClick={() => setDeleteTarget(u)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </IconButton>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            </>
           )}
         </>
       )}

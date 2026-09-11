@@ -122,34 +122,33 @@ export default function AuditLogsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="06 / SYSTEM & SECURITY"
         title="Audit Logs & Transactional Notifications"
         description="Immutable record of business activity and transactional email dispatch logs."
       />
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-line pb-2">
+      <div className="flex items-center gap-1.5">
         <button
           onClick={() => setActiveTab('audit')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+          className={`flex items-center gap-2 h-9 rounded-full px-3.5 text-xs font-semibold transition-colors ${
             activeTab === 'audit'
-              ? 'bg-primary text-white shadow-xs'
-              : 'text-muted hover:text-ink hover:bg-surface-muted'
+              ? 'bg-ink text-white'
+              : 'bg-white text-ink-secondary border border-line hover:bg-surface'
           }`}
         >
-          <ScrollText className="h-4 w-4" />
+          <ScrollText className="h-3.5 w-3.5" />
           <span>System Audit Logs ({auditLogs.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('notifications')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+          className={`flex items-center gap-2 h-9 rounded-full px-3.5 text-xs font-semibold transition-colors ${
             activeTab === 'notifications'
-              ? 'bg-primary text-white shadow-xs'
-              : 'text-muted hover:text-ink hover:bg-surface-muted'
+              ? 'bg-ink text-white'
+              : 'bg-white text-ink-secondary border border-line hover:bg-surface'
           }`}
         >
-          <Mail className="h-4 w-4" />
+          <Mail className="h-3.5 w-3.5" />
           <span>Email Notifications Log ({emailLogs.length})</span>
         </button>
       </div>
@@ -181,7 +180,8 @@ export default function AuditLogsPage() {
               }
             />
           ) : (
-            <Card className="overflow-hidden p-0">
+            <>
+            <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
               <Table>
                 <TableHeader>
                   <TableHead>Timestamp</TableHead>
@@ -208,6 +208,26 @@ export default function AuditLogsPage() {
                 </TableBody>
               </Table>
             </Card>
+
+            <div className="md:hidden space-y-3">
+              {filteredAudit.map((log) => (
+                <Card key={log.id} className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-medium text-ink text-sm">{log.userName}</div>
+                      <div className="text-[11px] text-muted">{log.userRole?.replace(/_/g, ' ')}</div>
+                    </div>
+                    <Badge>{log.action}</Badge>
+                  </div>
+                  <div className="text-xs text-ink-secondary">{log.entityLabel}</div>
+                  <div className="text-xs text-muted">{log.description}</div>
+                  <div className="text-[11px] text-muted pt-1 border-t border-line-soft">
+                    {formatDateTime(log.timestamp)}
+                  </div>
+                </Card>
+              ))}
+            </div>
+            </>
           )}
         </>
       ) : (
@@ -246,7 +266,8 @@ export default function AuditLogsPage() {
               }
             />
           ) : (
-            <Card className="overflow-hidden p-0">
+            <>
+            <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
               <Table>
                 <TableHeader>
                   <TableHead>Sent / Logged Time</TableHead>
@@ -276,17 +297,17 @@ export default function AuditLogsPage() {
                       </TableCell>
                       <TableCell>
                         {log.status === 'SENT' ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-success bg-success-soft px-2.5 py-0.5 rounded-full border border-success-border">
                             <CheckCircle2 className="h-3 w-3" />
                             SENT
                           </span>
                         ) : log.status === 'FAILED' ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200" title={log.failureReason || ''}>
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-danger bg-danger-soft px-2.5 py-0.5 rounded-full border border-danger-border" title={log.failureReason || ''}>
                             <AlertTriangle className="h-3 w-3" />
                             FAILED
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-warning bg-warning-soft px-2.5 py-0.5 rounded-full border border-warning-border">
                             <Clock className="h-3 w-3" />
                             PENDING
                           </span>
@@ -308,6 +329,50 @@ export default function AuditLogsPage() {
                 </TableBody>
               </Table>
             </Card>
+
+            <div className="md:hidden space-y-3">
+              {filteredEmail.map((log) => (
+                <Card key={log.id} className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-mono text-xs font-semibold text-primary">{log.notificationType}</span>
+                    {log.status === 'SENT' ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-success bg-success-soft px-2.5 py-0.5 rounded-full border border-success-border">
+                        <CheckCircle2 className="h-3 w-3" />
+                        SENT
+                      </span>
+                    ) : log.status === 'FAILED' ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-danger bg-danger-soft px-2.5 py-0.5 rounded-full border border-danger-border" title={log.failureReason || ''}>
+                        <AlertTriangle className="h-3 w-3" />
+                        FAILED
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-warning bg-warning-soft px-2.5 py-0.5 rounded-full border border-warning-border">
+                        <Clock className="h-3 w-3" />
+                        PENDING
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs">
+                    <div className="font-semibold text-ink">{log.recipientEmail}</div>
+                    {log.recipientName && <div className="text-[11px] text-muted">{log.recipientName}</div>}
+                  </div>
+                  <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                    <span className="font-mono font-bold text-ink">{log.relatedEntityRef}</span>
+                    <span className="text-muted">{formatDateTime(log.sentAt || log.createdAt)}</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    loading={retryingLogId === log.id}
+                    onClick={() => handleRetry(log.id)}
+                    className="w-full"
+                  >
+                    Retry Email
+                  </Button>
+                </Card>
+              ))}
+            </div>
+            </>
           )}
         </>
       )}

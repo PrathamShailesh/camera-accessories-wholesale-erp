@@ -64,7 +64,6 @@ export default function SerialsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="03 / INVENTORY"
         breadcrumbs={[{ label: 'Inventory', href: '/inventory' }, { label: 'Serial Numbers' }]}
         title="Serial Numbers"
         description="Unit-level traceability for cameras, lenses, and high-value equipment."
@@ -75,7 +74,7 @@ export default function SerialsPage() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-lg divide-x divide-y lg:divide-y-0 divide-line bg-surface">
+      <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-2xl divide-x divide-y lg:divide-y-0 divide-line bg-surface overflow-hidden">
         <div className="p-4">
           <div className="text-xs uppercase tracking-wider text-muted">Tracked Units</div>
           <div className="text-2xl font-semibold text-ink mt-1.5">{serials.length}</div>
@@ -138,7 +137,8 @@ export default function SerialsPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0">
+        <>
+        <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Serial Number</TableHead>
@@ -172,6 +172,32 @@ export default function SerialsPage() {
             </TableBody>
           </Table>
         </Card>
+
+        <div className="md:hidden space-y-3">
+          {filtered.map((sn) => (
+            <Card key={sn.id} className="p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-mono font-semibold text-ink text-sm">{sn.serialNumber}</span>
+                <StatusBadge status={sn.status} />
+              </div>
+              <div className="text-xs text-ink-secondary">
+                <div>{sn.productName || '—'}</div>
+                <div className="text-muted font-mono mt-0.5">{sn.productSku || '—'}</div>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                <span className="text-muted">{sn.depotName || '—'}</span>
+                {sn.invoiceNumber ? (
+                  <Link href={`/invoices/${sn.invoiceId}`} className="font-mono text-primary hover:underline">
+                    {sn.invoiceNumber}
+                  </Link>
+                ) : (
+                  <span className="text-muted">—</span>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+        </>
       )}
     </div>
   );

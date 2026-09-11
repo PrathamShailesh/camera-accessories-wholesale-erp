@@ -475,36 +475,36 @@ export default function BulkProductImportModal({
   const isUpdateMode = importMode === 'UPDATE_STOCK';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-5xl h-full max-h-[92vh] rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/50 backdrop-blur-md animate-fade-in">
+      <div className="relative w-full max-w-5xl h-full max-h-[92vh] rounded-3xl border border-line bg-white shadow-2xl flex flex-col overflow-hidden">
         {/* Modal Header */}
-        <div className="shrink-0 flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md">
+        <div className="shrink-0 flex items-center justify-between p-5 border-b border-line bg-white/95 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div
               className={`p-2.5 rounded-2xl border ${
                 isUpdateMode
-                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  ? 'bg-amber-500/10 text-warning border-amber-500/20'
+                  : 'bg-emerald-500/10 text-success border-emerald-500/20'
               }`}
             >
               <FileSpreadsheet className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white">
+                <h3 className="text-base font-bold text-ink">
                   {isUpdateMode ? 'Bulk Stock Update' : 'Bulk Product Master Import'}
                 </h3>
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${
                     isUpdateMode
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      ? 'bg-amber-500/20 text-warning border-amber-500/40'
+                      : 'bg-emerald-500/20 text-success border-emerald-500/40'
                   }`}
                 >
                   {isUpdateMode ? 'Update Inventory' : 'Create & Update Products'}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-muted mt-0.5">
                 {isUpdateMode
                   ? 'Update warehouse inventory quantities for existing SKUs via CSV or Excel.'
                   : 'Import product catalog master with descriptions, wholesale prices, barcodes, and initial stock.'}
@@ -514,7 +514,7 @@ export default function BulkProductImportModal({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-xl text-muted hover:text-ink hover:bg-surface-muted transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -523,15 +523,15 @@ export default function BulkProductImportModal({
         {/* Modal Body */}
         <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-5">
           {/* Mode Switcher Tabs */}
-          <div className="flex items-center justify-between gap-4 p-3 rounded-2xl bg-slate-950 border border-slate-800">
+          <div className="flex items-center justify-between gap-4 p-3 rounded-2xl bg-surface border border-line">
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => handleModeSwitch('CREATE')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   !isUpdateMode
-                    ? 'bg-brand-600 text-white shadow-glow'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                    ? 'bg-primary text-white'
+                    : 'text-muted hover:text-ink hover:bg-white'
                 }`}
               >
                 <PackagePlus className="h-4 w-4" />
@@ -543,8 +543,8 @@ export default function BulkProductImportModal({
                 onClick={() => handleModeSwitch('UPDATE_STOCK')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   isUpdateMode
-                    ? 'bg-amber-600 text-white shadow-glow'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                    ? 'bg-warning text-white'
+                    : 'text-muted hover:text-ink hover:bg-white'
                 }`}
               >
                 <PackageCheck className="h-4 w-4" />
@@ -554,21 +554,21 @@ export default function BulkProductImportModal({
 
             {/* Template Downloaders */}
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">Templates:</span>
+              <span className="text-[11px] text-muted font-mono hidden sm:inline">Templates:</span>
               <button
                 type="button"
                 onClick={() => handleDownloadTemplate('csv')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-mono font-medium transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-white hover:bg-surface-muted text-ink-secondary text-xs font-mono font-medium transition-colors"
               >
-                <Download className="h-3.5 w-3.5 text-brand-400" />
+                <Download className="h-3.5 w-3.5 text-primary" />
                 <span>.CSV</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleDownloadTemplate('xlsx')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-mono font-medium transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-white hover:bg-surface-muted text-ink-secondary text-xs font-mono font-medium transition-colors"
               >
-                <Download className="h-3.5 w-3.5 text-emerald-400" />
+                <Download className="h-3.5 w-3.5 text-success" />
                 <span>.XLSX</span>
               </button>
             </div>
@@ -576,50 +576,50 @@ export default function BulkProductImportModal({
 
           {/* Import Summary Results Screen */}
           {importSummary && (
-            <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-4 animate-fade-in">
+            <div className="p-5 rounded-2xl bg-surface border border-line space-y-4 animate-fade-in">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-success border border-emerald-500/20 flex items-center justify-center">
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">Batch Import Completed</h4>
-                  <p className="text-xs text-slate-400">
+                  <h4 className="text-sm font-bold text-ink">Batch Import Completed</h4>
+                  <p className="text-xs text-muted">
                     Processed {importSummary.total} rows from spreadsheet.
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3 text-center font-mono">
-                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                  <div className="text-slate-400 text-[10px]">TOTAL ROWS</div>
-                  <div className="text-lg font-bold text-white mt-0.5">{importSummary.total}</div>
+                <div className="p-3 rounded-xl bg-white border border-line">
+                  <div className="text-muted text-[10px]">TOTAL ROWS</div>
+                  <div className="text-lg font-bold text-ink mt-0.5">{importSummary.total}</div>
                 </div>
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
-                  <div className="text-emerald-400 text-[10px]">SUCCESSFULLY PROCESSED</div>
-                  <div className="text-lg font-bold text-emerald-300 mt-0.5">
+                  <div className="text-success text-[10px]">SUCCESSFULLY PROCESSED</div>
+                  <div className="text-lg font-bold text-success mt-0.5">
                     {importSummary.imported}
                   </div>
                   {(importSummary.created !== undefined || importSummary.updated !== undefined) && (
-                    <div className="text-[10px] text-emerald-400/80 mt-0.5">
+                    <div className="text-[10px] text-success/80 mt-0.5">
                       {importSummary.created || 0} created · {importSummary.updated || 0} updated
                     </div>
                   )}
                 </div>
                 <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30">
-                  <div className="text-rose-400 text-[10px]">FAILED ROWS</div>
-                  <div className="text-lg font-bold text-rose-300 mt-0.5">{importSummary.failed}</div>
+                  <div className="text-danger text-[10px]">FAILED ROWS</div>
+                  <div className="text-lg font-bold text-danger mt-0.5">{importSummary.failed}</div>
                 </div>
               </div>
 
               {importSummary.errors.length > 0 && (
-                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-                  <span className="text-xs font-bold text-rose-400 font-mono">Detailed Error Log:</span>
-                  <div className="max-h-32 overflow-y-auto space-y-1 text-xs font-mono text-slate-400">
+                <div className="p-3 rounded-xl bg-white border border-line space-y-2">
+                  <span className="text-xs font-bold text-danger font-mono">Detailed Error Log:</span>
+                  <div className="max-h-32 overflow-y-auto space-y-1 text-xs font-mono text-muted">
                     {importSummary.errors.map((err, i) => (
                       <div key={i} className="flex gap-2">
-                        <span className="text-slate-500">Row {err.row}:</span>
-                        {err.sku && <span className="text-brand-400">[{err.sku}]</span>}
-                        <span className="text-rose-300">{err.error}</span>
+                        <span className="text-muted">Row {err.row}:</span>
+                        {err.sku && <span className="text-primary">[{err.sku}]</span>}
+                        <span className="text-danger">{err.error}</span>
                       </div>
                     ))}
                   </div>
@@ -636,8 +636,8 @@ export default function BulkProductImportModal({
               onClick={() => fileInputRef.current?.click()}
               className={`border-2 border-dashed rounded-3xl p-8 sm:p-12 text-center cursor-pointer transition-all group ${
                 isUpdateMode
-                  ? 'border-slate-700 hover:border-amber-500 bg-slate-950/60 hover:bg-slate-900/60'
-                  : 'border-slate-700 hover:border-brand-500 bg-slate-950/60 hover:bg-slate-900/60'
+                  ? 'border-line hover:border-amber-500 bg-surface hover:bg-surface'
+                  : 'border-line hover:border-brand-500 bg-surface hover:bg-surface'
               }`}
             >
               <input
@@ -651,8 +651,8 @@ export default function BulkProductImportModal({
               <div
                 className={`mx-auto w-14 h-14 rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${
                   isUpdateMode
-                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                    : 'bg-brand-500/10 text-brand-400 border border-brand-500/20'
+                    ? 'bg-amber-500/10 text-warning border border-amber-500/20'
+                    : 'bg-brand-500/10 text-primary border border-brand-500/20'
                 }`}
               >
                 {isParsing ? (
@@ -662,12 +662,12 @@ export default function BulkProductImportModal({
                 )}
               </div>
 
-              <h4 className="text-sm font-bold text-white">
+              <h4 className="text-sm font-bold text-ink">
                 {isParsing
                   ? 'Reading & Validating Spreadsheet...'
                   : 'Drop your CSV or Excel file here, or click to browse'}
               </h4>
-              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+              <p className="text-xs text-muted mt-1 max-w-md mx-auto">
                 Supports standard <strong>.CSV</strong>, <strong>.XLSX</strong>, and <strong>.XLS</strong> files.
                 Stock columns like <code>stock</code>, <code>quantity</code>, or <code>qty</code> are automatically recognized.
               </p>
@@ -675,8 +675,8 @@ export default function BulkProductImportModal({
               <div
                 className={`mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border transition-colors ${
                   isUpdateMode
-                    ? 'bg-slate-800 text-slate-200 border-slate-700 group-hover:bg-amber-600 group-hover:text-white group-hover:border-amber-600'
-                    : 'bg-slate-800 text-slate-200 border-slate-700 group-hover:bg-brand-600 group-hover:text-white'
+                    ? 'bg-surface-muted text-ink border-line group-hover:bg-warning group-hover:text-white group-hover:border-warning'
+                    : 'bg-surface-muted text-ink border-line group-hover:bg-primary group-hover:text-white group-hover:border-primary'
                 }`}
               >
                 <span>Browse Files</span>
@@ -687,11 +687,11 @@ export default function BulkProductImportModal({
           {/* Parsed Rows Toolbar and KPI Bar */}
           {parsedRows.length > 0 && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-950 border border-slate-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-surface border border-line">
                 <div className="flex items-center gap-3">
                   <div className="text-xs">
-                    <span className="text-slate-400">File: </span>
-                    <span className="font-bold text-white font-mono">{file?.name}</span>
+                    <span className="text-muted">File: </span>
+                    <span className="font-bold text-ink font-mono">{file?.name}</span>
                   </div>
                   <button
                     onClick={() => {
@@ -699,7 +699,7 @@ export default function BulkProductImportModal({
                       setFile(null);
                       setImportSummary(null);
                     }}
-                    className="text-[11px] text-brand-400 hover:text-brand-300 underline font-mono"
+                    className="text-[11px] text-primary hover:text-primary-hover underline font-mono"
                   >
                     Change File
                   </button>
@@ -710,8 +710,8 @@ export default function BulkProductImportModal({
                     onClick={() => setFilterView('ALL')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all ${
                       filterView === 'ALL'
-                        ? 'bg-slate-800 text-white border border-slate-700'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'bg-surface-muted text-ink border border-line'
+                        : 'text-muted hover:text-ink'
                     }`}
                   >
                     All Rows ({parsedRows.length})
@@ -720,8 +720,8 @@ export default function BulkProductImportModal({
                     onClick={() => setFilterView('VALID')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all ${
                       filterView === 'VALID'
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                        : 'text-slate-400 hover:text-emerald-400'
+                        ? 'bg-emerald-500/20 text-success border border-emerald-500/40'
+                        : 'text-muted hover:text-success'
                     }`}
                   >
                     Valid ({validCount})
@@ -730,8 +730,8 @@ export default function BulkProductImportModal({
                     onClick={() => setFilterView('INVALID')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all ${
                       filterView === 'INVALID'
-                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                        : 'text-slate-400 hover:text-rose-400'
+                        ? 'bg-rose-500/20 text-danger border border-rose-500/40'
+                        : 'text-muted hover:text-danger'
                     }`}
                   >
                     Errors ({invalidCount})
@@ -740,10 +740,10 @@ export default function BulkProductImportModal({
               </div>
 
               {/* Pre-Import Preview Table */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-inner">
+              <div className="rounded-2xl border border-line bg-surface overflow-hidden shadow-inner">
                 <div className="overflow-x-auto max-h-[380px]">
                   <table className="w-full text-left text-xs border-collapse font-sans">
-                    <thead className="sticky top-0 bg-slate-900 border-b border-slate-800 text-[10px] font-mono uppercase text-slate-400 z-10">
+                    <thead className="sticky top-0 bg-white border-b border-line text-[10px] font-mono uppercase text-muted z-10">
                       <tr>
                         <th className="p-3 text-center w-12">Status</th>
                         <th className="p-3">SKU / Code</th>
@@ -762,68 +762,68 @@ export default function BulkProductImportModal({
                         <th className="p-3">Validation</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60 font-medium">
+                    <tbody className="divide-y divide-line font-medium">
                       {displayRows.map((row) => (
                         <tr
                           key={row.rowNum}
                           className={
                             row.isValid
-                              ? 'hover:bg-slate-900/50 transition-colors'
+                              ? 'hover:bg-surface transition-colors'
                               : 'bg-rose-500/5 hover:bg-rose-500/10 transition-colors'
                           }
                         >
                           <td className="p-3 text-center">
                             {row.isValid ? (
-                              <CheckCircle2 className="h-4 w-4 text-emerald-400 mx-auto" />
+                              <CheckCircle2 className="h-4 w-4 text-success mx-auto" />
                             ) : (
-                              <AlertCircle className="h-4 w-4 text-rose-400 mx-auto" />
+                              <AlertCircle className="h-4 w-4 text-danger mx-auto" />
                             )}
                           </td>
-                          <td className="p-3 font-mono font-bold text-white whitespace-nowrap">
-                            {row.sku || <span className="text-rose-400 italic">Missing</span>}
+                          <td className="p-3 font-mono font-bold text-ink whitespace-nowrap">
+                            {row.sku || <span className="text-danger italic">Missing</span>}
                           </td>
                           {!isUpdateMode && (
                             <>
-                              <td className="p-3 max-w-xs truncate text-slate-200">
-                                {row.name || <span className="text-rose-400 italic">Missing</span>}
+                              <td className="p-3 max-w-xs truncate text-ink">
+                                {row.name || <span className="text-danger italic">Missing</span>}
                               </td>
                               <td className="p-3 whitespace-nowrap">
-                                <span className="text-white font-semibold">{row.brand}</span>
-                                <span className="text-slate-500 text-[10px] block font-mono">
+                                <span className="text-ink font-semibold">{row.brand}</span>
+                                <span className="text-muted text-[10px] block font-mono">
                                   {row.category}
                                 </span>
                               </td>
-                              <td className="p-3 text-right font-mono font-bold text-white whitespace-nowrap">
+                              <td className="p-3 text-right font-mono font-bold text-ink whitespace-nowrap">
                                 {formatUSD(row.wholesalePrice)}
                               </td>
-                              <td className="p-3 text-right font-mono text-slate-300 whitespace-nowrap">
+                              <td className="p-3 text-right font-mono text-ink-secondary whitespace-nowrap">
                                 {formatUSD(row.sellingPrice)}
                               </td>
                             </>
                           )}
                           <td className="p-3 text-center font-mono text-[11px] whitespace-nowrap">
-                            <span className="font-bold text-emerald-400">
+                            <span className="font-bold text-success">
                               {row.stock} units
                             </span>
                           </td>
                           {!isUpdateMode && (
                             <td className="p-3 text-center whitespace-nowrap">
                               {row.trackSerial ? (
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-brand-500/20 text-brand-300 border border-brand-500/40">
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-primary-soft text-primary border border-primary/30">
                                   Tracked
                                 </span>
                               ) : (
-                                <span className="text-slate-500 text-[10px] font-mono">No</span>
+                                <span className="text-muted text-[10px] font-mono">No</span>
                               )}
                             </td>
                           )}
                           <td className="p-3 text-[11px] max-w-xs">
                             {row.isValid ? (
-                              <span className="text-emerald-400 font-mono text-[10px]">
+                              <span className="text-success font-mono text-[10px]">
                                 {isUpdateMode ? 'Ready to update stock' : 'Ready for database import'}
                               </span>
                             ) : (
-                              <span className="text-rose-400 font-mono text-[10px] line-clamp-2">
+                              <span className="text-danger font-mono text-[10px] line-clamp-2">
                                 {row.errors.join(' • ')}
                               </span>
                             )}
@@ -839,14 +839,14 @@ export default function BulkProductImportModal({
         </div>
 
         {/* Fixed Sticky Footer */}
-        <div className="shrink-0 flex items-center justify-between p-4 px-6 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md">
-          <div className="text-xs text-slate-400">
+        <div className="shrink-0 flex items-center justify-between p-4 px-6 border-t border-line bg-white/95 backdrop-blur-md">
+          <div className="text-xs text-muted">
             {parsedRows.length > 0 && (
               <span>
-                <strong className="text-white font-mono">{validCount}</strong>{' '}
+                <strong className="text-ink font-mono">{validCount}</strong>{' '}
                 {isUpdateMode ? 'products ready to update' : 'valid products ready to import'}
                 {invalidCount > 0 && (
-                  <span className="text-rose-400 ml-2">
+                  <span className="text-danger ml-2">
                     ({invalidCount} invalid rows will be skipped)
                   </span>
                 )}
@@ -858,7 +858,7 @@ export default function BulkProductImportModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+              className="px-4 py-2 rounded-xl border border-line bg-surface-muted hover:bg-line text-ink-secondary text-xs font-semibold transition-colors"
             >
               {importSummary ? 'Close' : 'Cancel'}
             </button>
@@ -867,10 +867,10 @@ export default function BulkProductImportModal({
               <button
                 onClick={isUpdateMode ? handleConfirmStockUpdate : handleConfirmImport}
                 disabled={validCount === 0 || isImporting}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-xs font-bold shadow-glow transition-all disabled:opacity-40 ${
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-xs font-bold transition-all disabled:opacity-40 ${
                   isUpdateMode
-                    ? 'bg-amber-600 hover:bg-amber-500'
-                    : 'bg-brand-600 hover:bg-brand-500'
+                    ? 'bg-warning hover:bg-warning/90'
+                    : 'bg-primary hover:bg-primary-hover'
                 }`}
               >
                 {isImporting ? (

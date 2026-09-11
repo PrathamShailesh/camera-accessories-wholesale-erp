@@ -11,3 +11,5 @@ export * from './EmptyState';
 export * from './Skeleton';
 export * from './PageHeader';
 export * from './KPICard';
+export * from './Checkbox';
+export * from './FilterBar';

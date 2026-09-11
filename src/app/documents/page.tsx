@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import {
   FolderLock,
   UploadCloud,
-  Search,
   FileText,
   ExternalLink,
   Download,
@@ -19,9 +18,12 @@ import { CloudDocument, DocumentCategory } from '@/types/erp';
 import CloudinaryUploadModal from '@/components/documents/CloudinaryUploadModal';
 import AzurePdfExtractionModal from '@/components/documents/AzurePdfExtractionModal';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Button, LinkButton } from '@/components/ui/Button';
+import { Button, LinkButton, IconButton } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { SearchInput } from '@/components/ui/Input';
+import { Toolbar, ToolbarGroup, FilterPillGroup } from '@/components/ui/FilterBar';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -95,7 +97,7 @@ export default function DocumentsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="text-slate-500 text-xs font-medium">Loading Cloudinary document repository...</div>
+        <div className="text-muted text-xs font-medium">Loading Cloudinary document repository...</div>
       </div>
     );
   }
@@ -103,7 +105,6 @@ export default function DocumentsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="05 / DOCUMENTS"
         title="Documents"
         description="One place for every commercial document — AWBs, invoices, proformas, and certificates."
         actions={
@@ -123,58 +124,43 @@ export default function DocumentsPage() {
       />
 
       {error && (
-        <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+        <div className="p-3 rounded-2xl bg-danger-soft border border-danger-border text-danger text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Filter and Search Bar */}
-      <Card className="p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search title, filename, SKU, AWB or customer..."
-            className="w-full rounded-md border border-slate-200 bg-slate-50/50 pl-9 pr-3 py-1.5 text-xs text-slate-900 focus:bg-white"
+      {/* Filters + Search */}
+      <Toolbar>
+        <ToolbarGroup>
+          <FilterPillGroup
+            value={selectedCategory}
+            onChange={setSelectedCategory}
+            options={[
+              { label: 'All Documents', value: 'ALL' },
+              { label: 'Airway Bills', value: 'AIRWAY_BILL' },
+              { label: 'Tax Invoices', value: 'TAX_INVOICE' },
+              { label: 'Proformas', value: 'PROFORMA' },
+              { label: 'Packing Lists', value: 'PACKING_LIST' },
+              { label: 'Certificates', value: 'CERTIFICATE' },
+              { label: 'Other', value: 'OTHER' },
+            ]}
           />
-        </div>
-
-        {/* Category Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-          {[
-            { label: 'All Documents', value: 'ALL' },
-            { label: 'Airway Bills', value: 'AIRWAY_BILL' },
-            { label: 'Tax Invoices', value: 'TAX_INVOICE' },
-            { label: 'Proformas', value: 'PROFORMA' },
-            { label: 'Packing Lists', value: 'PACKING_LIST' },
-            { label: 'Certificates', value: 'CERTIFICATE' },
-            { label: 'Other', value: 'OTHER' },
-          ].map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setSelectedCategory(tab.value)}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${
-                selectedCategory === tab.value
-                  ? 'bg-brand-50 text-brand-700 font-bold border border-brand-200'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </Card>
+        </ToolbarGroup>
+        <SearchInput
+          placeholder="Search title, filename, SKU, AWB or customer..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          wrapperClassName="w-full lg:w-72"
+        />
+      </Toolbar>
 
       {/* Documents Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredDocs.length === 0 ? (
-          <Card className="col-span-full py-16 text-center text-slate-500 text-xs">
-            <FolderLock className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-            <span>No documents found matching criteria.</span>
-          </Card>
+          <div className="col-span-full rounded-2xl border border-line bg-white">
+            <EmptyState icon={FolderLock} title="No documents found" description="No documents match your search or filter." />
+          </div>
         ) : (
           filteredDocs.map((doc) => {
             const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(doc.fileFormat.toLowerCase());
@@ -183,7 +169,7 @@ export default function DocumentsPage() {
               <Card
                 key={doc.id}
                 onClick={() => setPreviewDoc(doc)}
-                className="p-4 flex flex-col justify-between cursor-pointer hover:border-brand-300 hover:shadow-md transition-all group"
+                className="p-4 flex flex-col justify-between cursor-pointer hover:border-primary/40 transition-all group"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
@@ -191,31 +177,31 @@ export default function DocumentsPage() {
                     <button
                       onClick={(e) => handleDelete(doc.id, e)}
                       title="Delete Document"
-                      className="text-slate-400 hover:text-rose-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="text-muted hover:text-danger p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="h-9 w-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-brand-600">
+                    <div className="h-9 w-9 rounded-xl bg-surface-muted border border-line flex items-center justify-center shrink-0 text-primary">
                       {isImage ? <ImageIcon className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-xs font-bold text-slate-900 group-hover:text-brand-600 line-clamp-1">
+                      <h3 className="text-xs font-bold text-ink group-hover:text-primary line-clamp-1">
                         {doc.title}
                       </h3>
-                      <p className="text-[11px] text-slate-400 font-mono mt-0.5 truncate">{doc.fileName}</p>
+                      <p className="text-[11px] text-muted font-mono mt-0.5 truncate">{doc.fileName}</p>
                     </div>
                   </div>
 
-                  <div className="mt-3 p-2 rounded bg-slate-50 border border-slate-100 text-[11px] text-slate-600">
-                    <span className="text-slate-400 block text-[10px]">Linked Entity:</span>
+                  <div className="mt-3 p-2 rounded bg-surface border border-line-soft text-[11px] text-ink-secondary">
+                    <span className="text-muted block text-[10px]">Linked Entity:</span>
                     <span className="font-medium truncate block">{doc.relatedEntityLabel || doc.relatedEntityType}</span>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                <div className="mt-4 pt-2.5 border-t border-line-soft flex items-center justify-between text-[10px] font-mono text-muted">
                   <span>{formatFileSize(doc.fileSize)}</span>
                   <span>{formatDateTime(doc.uploadedAt)}</span>
                 </div>
@@ -239,12 +225,12 @@ export default function DocumentsPage() {
 
       {/* Preview Modal */}
       {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-2xl rounded-xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
+          <div className="relative w-full max-w-2xl rounded-2xl border border-line bg-white shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-line-soft bg-surface">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">{previewDoc.title}</h3>
-                <p className="text-[11px] font-mono text-slate-400">{previewDoc.fileName}</p>
+                <h3 className="text-sm font-bold text-ink">{previewDoc.title}</h3>
+                <p className="text-[11px] font-mono text-muted">{previewDoc.fileName}</p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -252,34 +238,34 @@ export default function DocumentsPage() {
                   href={previewDoc.cloudinaryUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold"
+                  className="inline-flex items-center gap-1 h-9 px-3.5 rounded-full bg-primary hover:bg-primary-hover text-white text-xs font-semibold"
                 >
                   <Download className="h-3.5 w-3.5" />
                   <span>Download</span>
                 </a>
-                <button onClick={() => setPreviewDoc(null)} className="p-1 text-slate-400 hover:text-slate-600">
+                <IconButton label="Close preview" onClick={() => setPreviewDoc(null)}>
                   <X className="h-4 w-4" />
-                </button>
+                </IconButton>
               </div>
             </div>
 
-            <div className="p-6 max-h-[65vh] overflow-y-auto flex flex-col items-center justify-center bg-slate-100">
+            <div className="p-6 max-h-[65vh] overflow-y-auto flex flex-col items-center justify-center bg-surface-muted">
               {['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(previewDoc.fileFormat.toLowerCase()) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={previewDoc.cloudinaryUrl}
                   alt={previewDoc.title}
-                  className="max-h-[50vh] max-w-full rounded-md object-contain border border-slate-200"
+                  className="max-h-[50vh] max-w-full rounded-xl object-contain border border-line"
                 />
               ) : (
                 <div className="text-center py-8 space-y-3">
-                  <FileText className="h-12 w-12 text-brand-600 mx-auto" />
-                  <div className="text-xs font-bold text-slate-900">{previewDoc.fileName}</div>
+                  <FileText className="h-12 w-12 text-primary mx-auto" />
+                  <div className="text-xs font-bold text-ink">{previewDoc.fileName}</div>
                   <a
                     href={previewDoc.cloudinaryUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-4 py-2 rounded-md bg-brand-600 text-white text-xs font-semibold"
+                    className="inline-flex items-center gap-1 h-9 px-4 rounded-full bg-primary text-white text-xs font-semibold"
                   >
                     Open Document Link <ExternalLink className="h-3.5 w-3.5" />
                   </a>

@@ -75,7 +75,7 @@ export default function CustomerDetailPage() {
   if (isLoading) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="text-slate-500 text-xs font-medium">Loading customer profile...</div>
+        <div className="text-muted text-xs font-medium">Loading customer profile...</div>
       </div>
     );
   }
@@ -83,7 +83,7 @@ export default function CustomerDetailPage() {
   if (!customer) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="text-slate-500 text-sm font-semibold">Customer account not found</div>
+        <div className="text-muted text-sm font-semibold">Customer account not found</div>
         <LinkButton href="/customers" variant="outline" size="sm">
           Back to Customers
         </LinkButton>
@@ -113,12 +113,11 @@ export default function CustomerDetailPage() {
     <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-16">
       {/* Header */}
       <PageHeader
-        eyebrow="02 / SALES"
         breadcrumbs={[{ label: 'Customers', href: '/customers' }, { label: customer.companyName }]}
         title={
           <span className="inline-flex items-center gap-2.5">
             {customer.companyName}
-            <span className="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 align-middle">
+            <span className="font-mono text-xs font-bold text-ink-secondary bg-surface-muted px-2 py-0.5 rounded border border-line align-middle">
               {customer.customerCode}
             </span>
           </span>
@@ -136,7 +135,7 @@ export default function CustomerDetailPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              className="text-muted hover:text-danger hover:bg-danger-soft"
               iconLeft={<Trash2 className="h-4 w-4" />}
               onClick={() => setIsDeleteOpen(true)}
             >
@@ -173,26 +172,26 @@ export default function CustomerDetailPage() {
       {/* Addresses */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="p-5 space-y-2 text-xs">
-          <div className="flex items-center gap-1.5 text-slate-900 font-bold">
-            <MapPin className="h-4 w-4 text-brand-600" />
+          <div className="flex items-center gap-1.5 text-ink font-bold">
+            <MapPin className="h-4 w-4 text-primary" />
             <span>Billing Address</span>
           </div>
-          <p className="text-slate-600 leading-relaxed">{customer.billingAddress}</p>
+          <p className="text-ink-secondary leading-relaxed">{customer.billingAddress}</p>
         </Card>
 
         <Card className="p-5 space-y-2 text-xs">
-          <div className="flex items-center gap-1.5 text-slate-900 font-bold">
+          <div className="flex items-center gap-1.5 text-ink font-bold">
             <Building2 className="h-4 w-4 text-emerald-600" />
             <span>Shipping / Receiving Hub</span>
           </div>
-          <p className="text-slate-600 leading-relaxed">{customer.shippingAddress}</p>
+          <p className="text-ink-secondary leading-relaxed">{customer.shippingAddress}</p>
         </Card>
       </div>
 
       {/* Transaction History */}
       <Card className="overflow-hidden space-y-0">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <div className="p-4 border-b border-line-soft bg-surface flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
             Invoices & Orders ({invoices.length})
           </h3>
         </div>
@@ -210,17 +209,17 @@ export default function CustomerDetailPage() {
           <TableBody>
             {invoices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-400">
+                <TableCell colSpan={7} className="text-center py-8 text-muted">
                   No invoices generated yet for this customer account.
                 </TableCell>
               </TableRow>
             ) : (
               invoices.map((inv) => (
                 <TableRow key={inv.id}>
-                  <TableCell className="font-mono font-bold text-brand-600">{inv.invoiceNumber}</TableCell>
-                  <TableCell className="text-slate-500">{formatDate(inv.issueDate)}</TableCell>
-                  <TableCell className="text-slate-700">{inv.depotName}</TableCell>
-                  <TableCell align="right" className="font-mono font-bold text-slate-900">{formatUSD(inv.grandTotal)}</TableCell>
+                  <TableCell className="font-mono font-bold text-primary">{inv.invoiceNumber}</TableCell>
+                  <TableCell className="text-muted">{formatDate(inv.issueDate)}</TableCell>
+                  <TableCell className="text-ink-secondary">{inv.depotName}</TableCell>
+                  <TableCell align="right" className="font-mono font-bold text-ink">{formatUSD(inv.grandTotal)}</TableCell>
                   <TableCell>
                     <StatusBadge status={inv.paymentStatus || 'UNPAID'} />
                   </TableCell>

@@ -365,7 +365,7 @@ export default function AzurePdfExtractionModal({
     >
       <div className="flex flex-col gap-5">
         {/* Step indicator */}
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="flex items-center justify-between border-b border-line pb-3">
           <div className="flex items-center gap-2">
             <span
               className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
@@ -374,7 +374,7 @@ export default function AzurePdfExtractionModal({
             >
               {step !== 'upload' ? '✓' : '1'}
             </span>
-            <span className={`text-xs font-medium ${step === 'upload' ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
+            <span className={`text-xs font-medium ${step === 'upload' ? 'text-ink font-bold' : 'text-muted'}`}>
               Upload PDF
             </span>
             <span className="text-slate-300">/</span>
@@ -384,12 +384,12 @@ export default function AzurePdfExtractionModal({
                   ? 'bg-primary text-white'
                   : step === 'confirm' || step === 'success'
                   ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-slate-100 text-slate-500'
+                  : 'bg-surface-muted text-muted'
               }`}
             >
               {step === 'confirm' || step === 'success' ? '✓' : '2'}
             </span>
-            <span className={`text-xs font-medium ${step === 'review' ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
+            <span className={`text-xs font-medium ${step === 'review' ? 'text-ink font-bold' : 'text-muted'}`}>
               Review & Edit
             </span>
             <span className="text-slate-300">/</span>
@@ -399,14 +399,14 @@ export default function AzurePdfExtractionModal({
                   ? 'bg-primary text-white'
                   : step === 'success'
                   ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-slate-100 text-slate-500'
+                  : 'bg-surface-muted text-muted'
               }`}
             >
               {step === 'success' ? '✓' : '3'}
             </span>
             <span
               className={`text-xs font-medium ${
-                step === 'confirm' || step === 'success' ? 'text-slate-900 font-bold' : 'text-slate-500'
+                step === 'confirm' || step === 'success' ? 'text-ink font-bold' : 'text-muted'
               }`}
             >
               Confirm & Save
@@ -435,7 +435,7 @@ export default function AzurePdfExtractionModal({
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-300 hover:border-primary/70 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-slate-50/50 hover:bg-slate-50 cursor-pointer transition-colors text-center"
+              className="border-2 border-dashed border-line hover:border-primary/70 rounded-xl p-8 flex flex-col items-center justify-center gap-3 bg-slate-50/50 hover:bg-surface cursor-pointer transition-colors text-center"
             >
               <input
                 ref={fileInputRef}
@@ -450,19 +450,19 @@ export default function AzurePdfExtractionModal({
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-ink">
                   {file ? file.name : 'Click to select or drag & drop PDF document'}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-muted mt-1">
                   Supports standard digital PDFs and high-resolution scanned invoices / OCR documents.
                 </p>
               </div>
 
               {file && (
-                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700 mt-1 shadow-sm">
+                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-md border border-line text-xs text-ink-secondary mt-1 shadow-sm">
                   <FileText className="h-4 w-4 text-primary" />
                   <span className="font-medium">{file.name}</span>
-                  <span className="text-slate-400 font-mono">({(file.size / 1024).toFixed(0)} KB)</span>
+                  <span className="text-muted font-mono">({(file.size / 1024).toFixed(0)} KB)</span>
                 </div>
               )}
             </div>
@@ -476,8 +476,8 @@ export default function AzurePdfExtractionModal({
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <div className="text-[11px] text-slate-500">
+            <div className="flex items-center justify-between pt-2 border-t border-line-soft">
+              <div className="text-[11px] text-muted">
                 {isAnalyzing ? (
                   <span className="text-sky-600 font-medium animate-pulse">
                     Azure AI OCR processing in background...
@@ -550,13 +550,13 @@ export default function AzurePdfExtractionModal({
             </div>
 
             {/* Document Header Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50/40">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl border border-line bg-slate-50/40">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Target ERP Document Type</label>
+                <label className="block text-[11px] font-semibold text-ink-secondary mb-1">Target ERP Document Type</label>
                 <select
                   value={saveType}
                   onChange={(e) => setSaveType(e.target.value as any)}
-                  className="w-full text-xs rounded-md border border-slate-200 bg-white px-2.5 py-1.5 focus:border-primary"
+                  className="w-full text-xs rounded-md border border-line bg-white px-2.5 py-1.5 focus:border-primary"
                 >
                   <option value="PROFORMA">Proforma Quotation (PI)</option>
                   <option value="TAX_INVOICE">Commercial Tax Invoice (INV)</option>
@@ -564,21 +564,21 @@ export default function AzurePdfExtractionModal({
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Extracted Document / Ref #</label>
+                <label className="block text-[11px] font-semibold text-ink-secondary mb-1">Extracted Document / Ref #</label>
                 <input
                   type="text"
                   value={extractedData.invoiceNumber}
                   onChange={(e) => handleFieldChange('invoiceNumber', e.target.value)}
-                  className="w-full text-xs rounded-md border border-slate-200 bg-white px-2.5 py-1.5 focus:border-primary"
+                  className="w-full text-xs rounded-md border border-line bg-white px-2.5 py-1.5 focus:border-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Currency</label>
+                <label className="block text-[11px] font-semibold text-ink-secondary mb-1">Currency</label>
                 <select
                   value={extractedData.currency}
                   onChange={(e) => handleFieldChange('currency', e.target.value)}
-                  className="w-full text-xs rounded-md border border-slate-200 bg-white px-2.5 py-1.5 focus:border-primary"
+                  className="w-full text-xs rounded-md border border-line bg-white px-2.5 py-1.5 focus:border-primary"
                 >
                   <option value="USD">USD ($)</option>
                   <option value="EUR">EUR (€)</option>
@@ -589,112 +589,112 @@ export default function AzurePdfExtractionModal({
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Invoice Date</label>
+                <label className="block text-[11px] font-semibold text-ink-secondary mb-1">Invoice Date</label>
                 <input
                   type="date"
                   value={extractedData.invoiceDate?.slice(0, 10) || ''}
                   onChange={(e) => handleFieldChange('invoiceDate', e.target.value)}
-                  className="w-full text-xs rounded-md border border-slate-200 bg-white px-2.5 py-1.5 focus:border-primary"
+                  className="w-full text-xs rounded-md border border-line bg-white px-2.5 py-1.5 focus:border-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Due Date</label>
+                <label className="block text-[11px] font-semibold text-ink-secondary mb-1">Due Date</label>
                 <input
                   type="date"
                   value={extractedData.dueDate?.slice(0, 10) || ''}
                   onChange={(e) => handleFieldChange('dueDate', e.target.value)}
-                  className="w-full text-xs rounded-md border border-slate-200 bg-white px-2.5 py-1.5 focus:border-primary"
+                  className="w-full text-xs rounded-md border border-line bg-white px-2.5 py-1.5 focus:border-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Payment Terms</label>
+                <label className="block text-[11px] font-semibold text-ink-secondary mb-1">Payment Terms</label>
                 <input
                   type="text"
                   value={extractedData.paymentTerms || ''}
                   onChange={(e) => handleFieldChange('paymentTerms', e.target.value)}
-                  className="w-full text-xs rounded-md border border-slate-200 bg-white px-2.5 py-1.5 focus:border-primary"
+                  className="w-full text-xs rounded-md border border-line bg-white px-2.5 py-1.5 focus:border-primary"
                 />
               </div>
             </div>
 
             {/* Customer & Address Information */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl border border-slate-200 bg-white">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl border border-line bg-white">
               <div className="flex flex-col gap-2">
-                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <span className="text-xs font-bold text-ink flex items-center gap-1.5">
                   <Building2 className="h-3.5 w-3.5 text-primary" /> Customer / Client Details
                 </span>
                 <div>
-                  <label className="block text-[11px] text-slate-600 mb-0.5">Company Name</label>
+                  <label className="block text-[11px] text-ink-secondary mb-0.5">Company Name</label>
                   <input
                     type="text"
                     value={extractedData.companyName || ''}
                     onChange={(e) => handleFieldChange('companyName', e.target.value)}
-                    className="w-full text-xs rounded-md border border-slate-200 px-2.5 py-1.5 focus:border-primary"
+                    className="w-full text-xs rounded-md border border-line px-2.5 py-1.5 focus:border-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-600 mb-0.5">Contact Person</label>
+                  <label className="block text-[11px] text-ink-secondary mb-0.5">Contact Person</label>
                   <input
                     type="text"
                     value={extractedData.customerName || ''}
                     onChange={(e) => handleFieldChange('customerName', e.target.value)}
-                    className="w-full text-xs rounded-md border border-slate-200 px-2.5 py-1.5 focus:border-primary"
+                    className="w-full text-xs rounded-md border border-line px-2.5 py-1.5 focus:border-primary"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[11px] text-slate-600 mb-0.5">Email</label>
+                    <label className="block text-[11px] text-ink-secondary mb-0.5">Email</label>
                     <input
                       type="email"
                       value={extractedData.email || ''}
                       onChange={(e) => handleFieldChange('email', e.target.value)}
-                      className="w-full text-xs rounded-md border border-slate-200 px-2.5 py-1.5 focus:border-primary"
+                      className="w-full text-xs rounded-md border border-line px-2.5 py-1.5 focus:border-primary"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-600 mb-0.5">Phone</label>
+                    <label className="block text-[11px] text-ink-secondary mb-0.5">Phone</label>
                     <input
                       type="text"
                       value={extractedData.phone || ''}
                       onChange={(e) => handleFieldChange('phone', e.target.value)}
-                      className="w-full text-xs rounded-md border border-slate-200 px-2.5 py-1.5 focus:border-primary"
+                      className="w-full text-xs rounded-md border border-line px-2.5 py-1.5 focus:border-primary"
                     />
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <span className="text-xs font-bold text-ink flex items-center gap-1.5">
                   <Building2 className="h-3.5 w-3.5 text-primary" /> Billing & Shipping Addresses
                 </span>
                 <div>
-                  <label className="block text-[11px] text-slate-600 mb-0.5">Billing Address</label>
+                  <label className="block text-[11px] text-ink-secondary mb-0.5">Billing Address</label>
                   <textarea
                     rows={2}
                     value={extractedData.billingAddress || ''}
                     onChange={(e) => handleFieldChange('billingAddress', e.target.value)}
-                    className="w-full text-xs rounded-md border border-slate-200 px-2.5 py-1.5 focus:border-primary"
+                    className="w-full text-xs rounded-md border border-line px-2.5 py-1.5 focus:border-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-600 mb-0.5">Shipping Address</label>
+                  <label className="block text-[11px] text-ink-secondary mb-0.5">Shipping Address</label>
                   <textarea
                     rows={2}
                     value={extractedData.shippingAddress || ''}
                     onChange={(e) => handleFieldChange('shippingAddress', e.target.value)}
-                    className="w-full text-xs rounded-md border border-slate-200 px-2.5 py-1.5 focus:border-primary"
+                    className="w-full text-xs rounded-md border border-line px-2.5 py-1.5 focus:border-primary"
                   />
                 </div>
               </div>
             </div>
 
             {/* Editable Line Items Table */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+            <div className="border border-line rounded-xl overflow-hidden bg-white">
+              <div className="flex items-center justify-between px-4 py-2.5 bg-surface border-b border-line">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-900">Extracted Line Items</span>
+                  <span className="text-xs font-bold text-ink">Extracted Line Items</span>
                   <Badge tone="neutral" className="text-[11px]">
                     {extractedData.lineItems.length} items
                   </Badge>
@@ -706,7 +706,7 @@ export default function AzurePdfExtractionModal({
 
               <div className="overflow-x-auto max-h-60 overflow-y-auto">
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-slate-50/70 text-slate-600 font-semibold border-b border-slate-200 sticky top-0">
+                  <thead className="bg-slate-50/70 text-ink-secondary font-semibold border-b border-line sticky top-0">
                     <tr>
                       <th className="py-2 px-3 w-10">#</th>
                       <th className="py-2 px-3">Description</th>
@@ -721,13 +721,13 @@ export default function AzurePdfExtractionModal({
                   <tbody className="divide-y divide-slate-100">
                     {extractedData.lineItems.map((item, idx) => (
                       <tr key={item.id || idx} className="hover:bg-slate-50/50">
-                        <td className="py-1.5 px-3 font-mono text-slate-400">{idx + 1}</td>
+                        <td className="py-1.5 px-3 font-mono text-muted">{idx + 1}</td>
                         <td className="py-1.5 px-3">
                           <input
                             type="text"
                             value={item.description}
                             onChange={(e) => handleLineItemChange(idx, 'description', e.target.value)}
-                            className="w-full text-xs rounded border border-transparent hover:border-slate-300 focus:border-primary px-2 py-1 bg-transparent focus:bg-white"
+                            className="w-full text-xs rounded border border-transparent hover:border-line focus:border-primary px-2 py-1 bg-transparent focus:bg-white"
                           />
                         </td>
                         <td className="py-1.5 px-3">
@@ -735,7 +735,7 @@ export default function AzurePdfExtractionModal({
                             type="text"
                             value={item.sku || item.productCode || ''}
                             onChange={(e) => handleLineItemChange(idx, 'sku', e.target.value)}
-                            className="w-full text-xs font-mono rounded border border-transparent hover:border-slate-300 focus:border-primary px-2 py-1 bg-transparent focus:bg-white"
+                            className="w-full text-xs font-mono rounded border border-transparent hover:border-line focus:border-primary px-2 py-1 bg-transparent focus:bg-white"
                           />
                         </td>
                         <td className="py-1.5 px-3 text-right">
@@ -744,7 +744,7 @@ export default function AzurePdfExtractionModal({
                             min="1"
                             value={item.quantity}
                             onChange={(e) => handleLineItemChange(idx, 'quantity', Number(e.target.value))}
-                            className="w-16 text-right text-xs rounded border border-transparent hover:border-slate-300 focus:border-primary px-2 py-1 bg-transparent focus:bg-white"
+                            className="w-16 text-right text-xs rounded border border-transparent hover:border-line focus:border-primary px-2 py-1 bg-transparent focus:bg-white"
                           />
                         </td>
                         <td className="py-1.5 px-3 text-right">
@@ -753,7 +753,7 @@ export default function AzurePdfExtractionModal({
                             step="0.01"
                             value={item.unitPrice}
                             onChange={(e) => handleLineItemChange(idx, 'unitPrice', Number(e.target.value))}
-                            className="w-24 text-right text-xs rounded border border-transparent hover:border-slate-300 focus:border-primary px-2 py-1 bg-transparent focus:bg-white"
+                            className="w-24 text-right text-xs rounded border border-transparent hover:border-line focus:border-primary px-2 py-1 bg-transparent focus:bg-white"
                           />
                         </td>
                         <td className="py-1.5 px-3 text-right">
@@ -762,10 +762,10 @@ export default function AzurePdfExtractionModal({
                             step="0.1"
                             value={item.taxRate ?? 5}
                             onChange={(e) => handleLineItemChange(idx, 'taxRate', Number(e.target.value))}
-                            className="w-16 text-right text-xs rounded border border-transparent hover:border-slate-300 focus:border-primary px-2 py-1 bg-transparent focus:bg-white"
+                            className="w-16 text-right text-xs rounded border border-transparent hover:border-line focus:border-primary px-2 py-1 bg-transparent focus:bg-white"
                           />
                         </td>
-                        <td className="py-1.5 px-3 text-right font-mono font-medium text-slate-900">
+                        <td className="py-1.5 px-3 text-right font-mono font-medium text-ink">
                           {extractedData.currency} {Number(item.amount || item.quantity * item.unitPrice).toFixed(2)}
                         </td>
                         <td className="py-1.5 px-2 text-center">
@@ -773,7 +773,7 @@ export default function AzurePdfExtractionModal({
                             type="button"
                             onClick={() => handleDeleteLineItem(idx)}
                             disabled={extractedData.lineItems.length <= 1}
-                            className="p-1 text-slate-400 hover:text-rose-600 disabled:opacity-30"
+                            className="p-1 text-muted hover:text-rose-600 disabled:opacity-30"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -786,9 +786,9 @@ export default function AzurePdfExtractionModal({
             </div>
 
             {/* Financial Totals Breakdown */}
-            <div className="flex flex-col sm:flex-row items-start justify-between gap-4 p-4 rounded-xl border border-slate-200 bg-slate-50/70">
-              <div className="flex-1 text-xs text-slate-500">
-                <span className="font-semibold text-slate-700">Financial Summary Check:</span>
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-4 p-4 rounded-xl border border-line bg-slate-50/70">
+              <div className="flex-1 text-xs text-muted">
+                <span className="font-semibold text-ink-secondary">Financial Summary Check:</span>
                 <p className="mt-1">
                   Adjust shipping, tax, or discounts if needed. Totals recompute dynamically and will be saved to the
                   ERP ledger.
@@ -796,45 +796,45 @@ export default function AzurePdfExtractionModal({
               </div>
 
               <div className="w-full sm:w-80 flex flex-col gap-1.5 text-xs">
-                <div className="flex justify-between items-center text-slate-600">
+                <div className="flex justify-between items-center text-ink-secondary">
                   <span>Subtotal:</span>
                   <span className="font-mono font-medium">
                     {extractedData.currency} {Number(extractedData.subtotal).toFixed(2)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center text-slate-600">
+                <div className="flex justify-between items-center text-ink-secondary">
                   <span>Tax Amount:</span>
                   <span className="font-mono font-medium">
                     {extractedData.currency} {Number(extractedData.taxAmount).toFixed(2)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center text-slate-600">
+                <div className="flex justify-between items-center text-ink-secondary">
                   <span>Shipping Charges:</span>
                   <div className="flex items-center gap-1">
-                    <span className="text-slate-400 font-mono">{extractedData.currency}</span>
+                    <span className="text-muted font-mono">{extractedData.currency}</span>
                     <input
                       type="number"
                       step="0.01"
                       value={extractedData.shippingCharges}
                       onChange={(e) => handleFieldChange('shippingCharges', Number(e.target.value))}
-                      className="w-20 text-right text-xs rounded border border-slate-200 bg-white px-2 py-0.5"
+                      className="w-20 text-right text-xs rounded border border-line bg-white px-2 py-0.5"
                     />
                   </div>
                 </div>
-                <div className="flex justify-between items-center text-slate-600">
+                <div className="flex justify-between items-center text-ink-secondary">
                   <span>Discount:</span>
                   <div className="flex items-center gap-1">
-                    <span className="text-slate-400 font-mono">{extractedData.currency}</span>
+                    <span className="text-muted font-mono">{extractedData.currency}</span>
                     <input
                       type="number"
                       step="0.01"
                       value={extractedData.discountAmount}
                       onChange={(e) => handleFieldChange('discountAmount', Number(e.target.value))}
-                      className="w-20 text-right text-xs rounded border border-slate-200 bg-white px-2 py-0.5"
+                      className="w-20 text-right text-xs rounded border border-line bg-white px-2 py-0.5"
                     />
                   </div>
                 </div>
-                <div className="border-t border-slate-300 pt-1.5 flex justify-between items-center font-bold text-slate-900 text-sm">
+                <div className="border-t border-line pt-1.5 flex justify-between items-center font-bold text-ink text-sm">
                   <span>Grand Total:</span>
                   <span className="font-mono text-primary">
                     {extractedData.currency} {Number(extractedData.grandTotal).toFixed(2)}
@@ -844,7 +844,7 @@ export default function AzurePdfExtractionModal({
             </div>
 
             {/* Actions for Step 2 */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+            <div className="flex items-center justify-between pt-2 border-t border-line">
               <Button variant="outline" onClick={() => setStep('upload')} iconLeft={<ArrowLeft className="h-4 w-4" />}>
                 Back to Upload
               </Button>
@@ -875,10 +875,10 @@ export default function AzurePdfExtractionModal({
                 <Save className="h-5 w-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-900">
+                <h4 className="text-sm font-bold text-ink">
                   Confirm ERP Record Creation ({saveType === 'PROFORMA' ? 'Proforma Invoice' : 'Tax Invoice'})
                 </h4>
-                <p className="text-xs text-slate-600 mt-1">
+                <p className="text-xs text-ink-secondary mt-1">
                   You are about to save this document into the ERP database. Please confirm the key details below:
                 </p>
               </div>
@@ -886,22 +886,22 @@ export default function AzurePdfExtractionModal({
 
             {/* Summary Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                <span className="text-slate-500 text-[11px] block">Document Type</span>
-                <span className="font-bold text-slate-900">
+              <div className="p-3 rounded-lg border border-line bg-surface">
+                <span className="text-muted text-[11px] block">Document Type</span>
+                <span className="font-bold text-ink">
                   {saveType === 'PROFORMA' ? 'Proforma Quotation' : 'Commercial Tax Invoice'}
                 </span>
               </div>
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                <span className="text-slate-500 text-[11px] block">Customer</span>
-                <span className="font-bold text-slate-900 truncate block">{extractedData.companyName}</span>
+              <div className="p-3 rounded-lg border border-line bg-surface">
+                <span className="text-muted text-[11px] block">Customer</span>
+                <span className="font-bold text-ink truncate block">{extractedData.companyName}</span>
               </div>
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                <span className="text-slate-500 text-[11px] block">Line Items Count</span>
-                <span className="font-bold text-slate-900">{extractedData.lineItems.length} lines</span>
+              <div className="p-3 rounded-lg border border-line bg-surface">
+                <span className="text-muted text-[11px] block">Line Items Count</span>
+                <span className="font-bold text-ink">{extractedData.lineItems.length} lines</span>
               </div>
-              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                <span className="text-slate-500 text-[11px] block">Grand Total</span>
+              <div className="p-3 rounded-lg border border-line bg-surface">
+                <span className="text-muted text-[11px] block">Grand Total</span>
                 <span className="font-bold text-primary font-mono">
                   {extractedData.currency} {Number(extractedData.grandTotal).toFixed(2)}
                 </span>
@@ -916,7 +916,7 @@ export default function AzurePdfExtractionModal({
             </div>
 
             {/* Actions for Step 3 */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+            <div className="flex items-center justify-between pt-3 border-t border-line">
               <Button variant="outline" onClick={() => setStep('review')} disabled={isSaving}>
                 Back to Edit
               </Button>
@@ -944,9 +944,9 @@ export default function AzurePdfExtractionModal({
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-slate-900">Successfully Saved to ERP</h3>
-              <p className="text-xs text-slate-500 mt-1">
-                The document has been created with number <span className="font-mono font-bold text-slate-800">{savedResult.number}</span>.
+              <h3 className="text-base font-bold text-ink">Successfully Saved to ERP</h3>
+              <p className="text-xs text-muted mt-1">
+                The document has been created with number <span className="font-mono font-bold text-ink">{savedResult.number}</span>.
               </p>
             </div>
 

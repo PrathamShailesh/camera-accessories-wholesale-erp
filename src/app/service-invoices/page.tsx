@@ -6,21 +6,12 @@ import { useRouter } from 'next/navigation';
 import {
   FileText,
   Plus,
-  Search,
-  Filter,
   RefreshCw,
   Mail,
   Eye,
   CheckCircle2,
-  AlertCircle,
   Clock,
-  DollarSign,
   TrendingUp,
-  Building2,
-  Calendar,
-  ExternalLink,
-  ChevronRight,
-  MoreVertical,
   Trash2,
   XCircle,
 } from 'lucide-react';
@@ -29,6 +20,14 @@ import { ConfirmDialog } from '@/components/ui/Modal';
 import { ServiceInvoice, ServiceInvoiceStatus } from '@/types/erp';
 import { formatUSD, formatDate } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Button, LinkButton, IconButton } from '@/components/ui/Button';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { Card } from '@/components/ui/Card';
+import { SearchInput } from '@/components/ui/Input';
+import { Toolbar, ToolbarGroup, FilterPillGroup } from '@/components/ui/FilterBar';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonTable } from '@/components/ui/Skeleton';
 
 export default function ServiceInvoicesListPage() {
   const { toast } = useToast();
@@ -179,270 +178,295 @@ export default function ServiceInvoicesListPage() {
   const getStatusBadge = (status: ServiceInvoiceStatus) => {
     switch (status) {
       case 'PAID':
-        return 'bg-[#15803D]/10 text-[#15803D] border-[#15803D]/20';
+        return 'bg-success-soft text-success border-success-border';
       case 'ISSUED':
       case 'SENT':
-        return 'bg-[#005E82]/10 text-[#005E82] border-[#005E82]/20';
+        return 'bg-primary-soft text-primary border-info-border';
       case 'PARTIALLY_PAID':
-        return 'bg-amber-500/10 text-amber-700 border-amber-500/20';
+        return 'bg-warning-soft text-warning border-warning-border';
       case 'OVERDUE':
-        return 'bg-red-500/10 text-red-700 border-red-500/20';
+        return 'bg-danger-soft text-danger border-danger-border';
       case 'CANCELLED':
-        return 'bg-gray-100 text-gray-500 border-gray-200';
+        return 'bg-surface-muted text-muted border-line';
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'bg-surface-muted text-ink-secondary border-line';
     }
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-20 animate-fade-in">
-      {/* Top Banner Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-[#E5E7EB] shadow-xs">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="h-10 w-10 rounded-2xl bg-[#005E82]/10 flex items-center justify-center text-[#005E82]">
-              <FileText className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#111827]">
-                Manual Service Invoices
-              </h1>
-              <p className="text-xs text-[#6B7280]">
-                Billing for logistics, packaging, transport, installation & business services (separate from product inventory)
-              </p>
-            </div>
-          </div>
+    <div className="flex flex-col gap-6 pb-16">
+      <PageHeader
+        title="Manual Service Invoices"
+        description="Billing for logistics, packaging, transport, installation & business services — separate from product inventory."
+        actions={
+          <LinkButton href="/service-invoices/new" iconLeft={<Plus className="h-4 w-4" />}>
+            Create Service Invoice
+          </LinkButton>
+        }
+      />
+
+      {/* Compact summary indicators */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex items-center gap-2 rounded-full bg-ink text-white px-4 h-9 text-xs font-semibold">
+          <TrendingUp className="h-3.5 w-3.5" />
+          Total Revenue <span className="tabular-nums">{formatUSD(totalServiceRevenue)}</span>
         </div>
-
-        <Link
-          href="/service-invoices/new"
-          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-[#005E82] hover:bg-[#004B68] text-white text-xs font-bold shadow-xs transition-all active:scale-98 shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Create Service Invoice</span>
-        </Link>
-      </div>
-
-      {/* Separate Revenue Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-3xl border border-[#E5E7EB] shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#6B7280]">Total Service Revenue</span>
-            <div className="h-8 w-8 rounded-xl bg-[#005E82]/10 text-[#005E82] flex items-center justify-center">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold font-mono text-[#005E82] mt-2">
-            {formatUSD(totalServiceRevenue)}
-          </div>
-          <span className="text-[11px] text-[#6B7280] mt-1 block">Excludes product sales & inventory</span>
+        <div className="inline-flex items-center gap-2 rounded-full bg-success-soft text-success px-4 h-9 text-xs font-semibold">
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Paid <span className="tabular-nums">{formatUSD(paidAmount)}</span>
         </div>
-
-        <div className="bg-white p-5 rounded-3xl border border-[#E5E7EB] shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#6B7280]">Paid Revenue</span>
-            <div className="h-8 w-8 rounded-xl bg-[#15803D]/10 text-[#15803D] flex items-center justify-center">
-              <CheckCircle2 className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold font-mono text-[#15803D] mt-2">
-            {formatUSD(paidAmount)}
-          </div>
-          <span className="text-[11px] text-[#6B7280] mt-1 block">Cleared service payments</span>
-        </div>
-
-        <div className="bg-white p-5 rounded-3xl border border-[#E5E7EB] shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#6B7280]">Pending Receivable</span>
-            <div className="h-8 w-8 rounded-xl bg-[#F15A29]/10 text-[#F15A29] flex items-center justify-center">
-              <Clock className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold font-mono text-[#F15A29] mt-2">
-            {formatUSD(pendingAmount)}
-          </div>
-          <span className="text-[11px] text-[#6B7280] mt-1 block">Issued & awaiting settlement</span>
+        <div className="inline-flex items-center gap-2 rounded-full bg-orange-soft text-orange px-4 h-9 text-xs font-semibold">
+          <Clock className="h-3.5 w-3.5" />
+          Pending <span className="tabular-nums">{formatUSD(pendingAmount)}</span>
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="bg-white p-4 rounded-3xl border border-[#E5E7EB] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <form onSubmit={handleSearchSubmit} className="relative flex-1 w-full">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6B7280]" />
-          <input
-            type="text"
-            placeholder="Search service invoice number, customer company, or email..."
+      {/* Filters + Search */}
+      <Toolbar>
+        <ToolbarGroup>
+          <FilterPillGroup
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { label: 'All', value: 'ALL' },
+              { label: 'Draft', value: 'DRAFT' },
+              { label: 'Issued', value: 'ISSUED' },
+              { label: 'Sent', value: 'SENT' },
+              { label: 'Paid', value: 'PAID' },
+              { label: 'Overdue', value: 'OVERDUE' },
+              { label: 'Cancelled', value: 'CANCELLED' },
+            ]}
+          />
+        </ToolbarGroup>
+        <form onSubmit={handleSearchSubmit} className="w-full lg:w-72">
+          <SearchInput
+            placeholder="Search invoice #, customer, or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-xs focus:border-[#005E82] focus:outline-none font-mono"
           />
         </form>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 overflow-x-auto pb-1 sm:pb-0">
-          <Filter className="h-4 w-4 text-[#6B7280] shrink-0" />
-          {['ALL', 'DRAFT', 'ISSUED', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED'].map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold font-mono transition-all whitespace-nowrap ${
-                statusFilter === st
-                  ? 'bg-[#005E82] text-white shadow-xs'
-                  : 'bg-[#F8FAFC] text-[#6B7280] hover:text-[#111827] border border-[#E5E7EB]'
-              }`}
-            >
-              {st}
-            </button>
-          ))}
-        </div>
-      </div>
+      </Toolbar>
 
       {/* Service Invoices Data Table */}
-      <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-xs overflow-hidden">
+      <div>
         {isLoading ? (
-          <div className="p-12 text-center">
-            <RefreshCw className="h-6 w-6 animate-spin text-[#005E82] mx-auto" />
-            <p className="text-xs text-[#6B7280] mt-2">Loading service invoices...</p>
-          </div>
+          <SkeletonTable rows={6} cols={8} />
         ) : invoices.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <FileText className="h-10 w-10 text-[#6B7280]/40 mx-auto" />
-            <div className="text-sm font-bold text-[#111827]">No Service Invoices Found</div>
-            <p className="text-xs text-[#6B7280] max-w-sm mx-auto">
-              Create a manual service invoice to bill logistics, transport, packaging, or handling charges separately from product inventory.
-            </p>
-            <Link
-              href="/service-invoices/new"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#005E82] text-white text-xs font-bold"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Create First Service Invoice</span>
-            </Link>
+          <div className="rounded-2xl border border-line bg-white">
+            <EmptyState
+              icon={FileText}
+              title="No Service Invoices Found"
+              description="Create a manual service invoice to bill logistics, transport, packaging, or handling charges separately from product inventory."
+              action={
+                <LinkButton href="/service-invoices/new" iconLeft={<Plus className="h-4 w-4" />}>
+                  Create First Service Invoice
+                </LinkButton>
+              }
+            />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-[#F8FAFC] border-b border-[#E5E7EB] text-[11px] font-bold text-[#6B7280] uppercase tracking-wider font-mono">
-                  <th className="py-3.5 px-4">Invoice #</th>
-                  <th className="py-3.5 px-4">Customer</th>
-                  <th className="py-3.5 px-4">Services</th>
-                  <th className="py-3.5 px-4">Issue / Due Date</th>
-                  <th className="py-3.5 px-4 text-right">Grand Total</th>
-                  <th className="py-3.5 px-4 text-center">Status</th>
-                  <th className="py-3.5 px-4 text-center">Email</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E5E7EB]">
-                {invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-[#F8FAFC] transition-colors">
-                    <td className="py-4 px-4 font-mono font-bold text-[#005E82]">
-                      <Link href={`/service-invoices/${inv.id}`} className="hover:underline">
-                        #{inv.invoiceNumber}
-                      </Link>
-                    </td>
+          <>
+          <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableHead>Invoice #</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Services</TableHead>
+              <TableHead>Issue / Due Date</TableHead>
+              <TableHead align="right">Grand Total</TableHead>
+              <TableHead align="center">Status</TableHead>
+              <TableHead align="center">Email</TableHead>
+              <TableHead align="right">Actions</TableHead>
+            </TableHeader>
+            <TableBody>
+              {invoices.map((inv) => (
+                <TableRow key={inv.id}>
+                  <TableCell>
+                    <Link href={`/service-invoices/${inv.id}`} className="font-semibold text-primary hover:underline text-sm">
+                      #{inv.invoiceNumber}
+                    </Link>
+                  </TableCell>
 
-                    <td className="py-4 px-4">
-                      <div className="font-bold text-[#111827]">{inv.customerCompany}</div>
-                      <div className="text-[11px] text-[#6B7280]">{inv.customerName} • {inv.customerEmail}</div>
-                    </td>
+                  <TableCell>
+                    <div className="font-medium text-ink text-sm">{inv.customerCompany}</div>
+                    <div className="text-xs text-muted">{inv.customerName} • {inv.customerEmail}</div>
+                  </TableCell>
 
-                    <td className="py-4 px-4">
-                      <div className="flex flex-wrap gap-1">
-                        {(inv.items || []).slice(0, 2).map((item, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 rounded-md bg-[#005E82]/5 border border-[#005E82]/15 text-[#005E82] text-[10px] font-mono font-semibold"
-                          >
-                            {item.category}: {item.description}
-                          </span>
-                        ))}
-                        {(inv.items?.length || 0) > 2 && (
-                          <span className="px-1.5 py-0.5 text-[10px] text-[#6B7280] font-mono">
-                            +{(inv.items?.length || 0) - 2} more
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="py-4 px-4 font-mono text-[11px] text-[#6B7280]">
-                      <div>Issue: {formatDate(inv.issueDate)}</div>
-                      <div className="text-red-600 font-semibold">Due: {formatDate(inv.dueDate)}</div>
-                    </td>
-
-                    <td className="py-4 px-4 text-right font-mono font-bold text-[#111827] text-sm">
-                      {formatUSD(inv.grandTotal)}
-                    </td>
-
-                    <td className="py-4 px-4 text-center">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border ${getStatusBadge(inv.status)}`}>
-                        {inv.status}
-                      </span>
-                    </td>
-
-                    <td className="py-4 px-4 text-center font-mono text-[10px]">
-                      {inv.emailStatus === 'SENT' ? (
-                        <span className="inline-flex items-center gap-1 text-[#15803D] font-bold">
-                          <CheckCircle2 className="h-3 w-3" /> Sent
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {(inv.items || []).slice(0, 2).map((item, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 rounded-full bg-primary-soft text-primary text-[10px] font-semibold"
+                        >
+                          {item.category}: {item.description}
                         </span>
-                      ) : (
-                        <span className="text-[#6B7280]">Not Sent</span>
+                      ))}
+                      {(inv.items?.length || 0) > 2 && (
+                        <span className="px-1.5 py-0.5 text-[10px] text-muted">
+                          +{(inv.items?.length || 0) - 2} more
+                        </span>
                       )}
-                    </td>
+                    </div>
+                  </TableCell>
 
-                    <td className="py-4 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleSendInvoiceEmail(inv)}
-                          disabled={Boolean(isSendingEmail[inv.id])}
-                          className="px-2.5 py-1.5 rounded-xl bg-white border border-[#E5E7EB] text-[#005E82] hover:bg-[#005E82]/5 text-xs font-bold shadow-xs transition-all flex items-center gap-1"
-                          title="Send Service Invoice to Customer Email"
+                  <TableCell className="text-xs text-muted">
+                    <div>Issue: {formatDate(inv.issueDate)}</div>
+                    <div className="text-danger font-medium">Due: {formatDate(inv.dueDate)}</div>
+                  </TableCell>
+
+                  <TableCell align="right" className="font-semibold text-sm text-ink tabular-nums">
+                    {formatUSD(inv.grandTotal)}
+                  </TableCell>
+
+                  <TableCell align="center">
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border ${getStatusBadge(inv.status)}`}>
+                      {inv.status}
+                    </span>
+                  </TableCell>
+
+                  <TableCell align="center" className="text-[11px]">
+                    {inv.emailStatus === 'SENT' ? (
+                      <span className="inline-flex items-center gap-1 text-success font-semibold">
+                        <CheckCircle2 className="h-3 w-3" /> Sent
+                      </span>
+                    ) : (
+                      <span className="text-muted">Not Sent</span>
+                    )}
+                  </TableCell>
+
+                  <TableCell align="right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleSendInvoiceEmail(inv)}
+                        loading={Boolean(isSendingEmail[inv.id])}
+                        iconLeft={!isSendingEmail[inv.id] ? <Mail className="h-3.5 w-3.5" /> : undefined}
+                        title="Send Service Invoice to Customer Email"
+                      >
+                        <span className="hidden sm:inline">Email</span>
+                      </Button>
+
+                      <IconButton label="View Service Invoice Details" onClick={() => router.push(`/service-invoices/${inv.id}`)}>
+                        <Eye className="h-4 w-4 text-muted" />
+                      </IconButton>
+
+                      {inv.status !== 'CANCELLED' && inv.status !== 'PAID' && (
+                        <IconButton
+                          label="Cancel Service Invoice"
+                          className="text-muted hover:text-warning hover:bg-warning-soft"
+                          onClick={() => setCancellingInvoice(inv)}
                         >
-                          {isSendingEmail[inv.id] ? (
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Mail className="h-3.5 w-3.5" />
-                          )}
-                          <span className="hidden sm:inline">Email</span>
-                        </button>
+                          <XCircle className="h-4 w-4" />
+                        </IconButton>
+                      )}
 
-                        <Link
-                          href={`/service-invoices/${inv.id}`}
-                          className="p-1.5 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] hover:bg-[#F8FAFC] transition-all shadow-xs"
-                          title="View Service Invoice Details"
+                      {(inv.status === 'DRAFT' || inv.status === 'CANCELLED') && (
+                        <IconButton
+                          label="Delete Service Invoice"
+                          className="text-muted hover:text-danger hover:bg-danger-soft"
+                          onClick={() => setDeletingInvoice(inv)}
                         >
-                          <Eye className="h-4 w-4" />
-                        </Link>
-
-                        {inv.status !== 'CANCELLED' && inv.status !== 'PAID' && (
-                          <button
-                            type="button"
-                            onClick={() => setCancellingInvoice(inv)}
-                            className="p-1.5 rounded-xl bg-white border border-[#E5E7EB] text-amber-600 hover:bg-amber-50 transition-all shadow-xs"
-                            title="Cancel Service Invoice"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </button>
-                        )}
-
-                        {(inv.status === 'DRAFT' || inv.status === 'CANCELLED') && (
-                          <button
-                            type="button"
-                            onClick={() => setDeletingInvoice(inv)}
-                            className="p-1.5 rounded-xl bg-white border border-[#E5E7EB] text-red-600 hover:bg-red-50 transition-all shadow-xs"
-                            title="Delete Service Invoice"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          <Trash2 className="h-4 w-4" />
+                        </IconButton>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
           </div>
+
+          <div className="md:hidden space-y-3">
+            {invoices.map((inv) => (
+              <Card key={inv.id} className="p-4 space-y-2.5">
+                <Link href={`/service-invoices/${inv.id}`} className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-primary text-sm">#{inv.invoiceNumber}</div>
+                    <div className="font-medium text-ink text-sm truncate">{inv.customerCompany}</div>
+                    <div className="text-xs text-muted truncate">{inv.customerName} • {inv.customerEmail}</div>
+                  </div>
+                  <span className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold border ${getStatusBadge(inv.status)}`}>
+                    {inv.status}
+                  </span>
+                </Link>
+
+                <div className="flex flex-wrap gap-1">
+                  {(inv.items || []).slice(0, 2).map((item, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-0.5 rounded-full bg-primary-soft text-primary text-[10px] font-semibold"
+                    >
+                      {item.category}: {item.description}
+                    </span>
+                  ))}
+                  {(inv.items?.length || 0) > 2 && (
+                    <span className="px-1.5 py-0.5 text-[10px] text-muted">
+                      +{(inv.items?.length || 0) - 2} more
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-line-soft">
+                  <div className="text-muted">
+                    <div>Issue: {formatDate(inv.issueDate)}</div>
+                    <div className="text-danger font-medium">Due: {formatDate(inv.dueDate)}</div>
+                  </div>
+                  <div className="font-semibold text-sm text-ink tabular-nums">{formatUSD(inv.grandTotal)}</div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  {inv.emailStatus === 'SENT' ? (
+                    <span className="inline-flex items-center gap-1 text-success font-semibold text-[11px]">
+                      <CheckCircle2 className="h-3 w-3" /> Sent
+                    </span>
+                  ) : (
+                    <span className="text-muted text-[11px]">Not Sent</span>
+                  )}
+
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleSendInvoiceEmail(inv)}
+                      loading={Boolean(isSendingEmail[inv.id])}
+                      iconLeft={!isSendingEmail[inv.id] ? <Mail className="h-3.5 w-3.5" /> : undefined}
+                      title="Send Service Invoice to Customer Email"
+                    >
+                      Email
+                    </Button>
+
+                    <IconButton label="View Service Invoice Details" onClick={() => router.push(`/service-invoices/${inv.id}`)}>
+                      <Eye className="h-4 w-4 text-muted" />
+                    </IconButton>
+
+                    {inv.status !== 'CANCELLED' && inv.status !== 'PAID' && (
+                      <IconButton
+                        label="Cancel Service Invoice"
+                        className="text-muted hover:text-warning hover:bg-warning-soft"
+                        onClick={() => setCancellingInvoice(inv)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </IconButton>
+                    )}
+
+                    {(inv.status === 'DRAFT' || inv.status === 'CANCELLED') && (
+                      <IconButton
+                        label="Delete Service Invoice"
+                        className="text-muted hover:text-danger hover:bg-danger-soft"
+                        onClick={() => setDeletingInvoice(inv)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </IconButton>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+          </>
         )}
       </div>
 

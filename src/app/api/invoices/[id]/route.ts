@@ -4,6 +4,13 @@ import dataStore from '@/lib/data-store';
 import { assertDepotAccess, guardApi } from '@/lib/api-auth';
 import { hasPermission } from '@/lib/rbac';
 import { restoreStockForCancelledInvoice } from '@/lib/inventory-service';
+import {
+  allocateFreight,
+  computeChargeableWeightKg,
+  computeFreightCharge,
+  computeTotalFreight,
+  FreightAllocationMethod,
+} from '@/lib/freight';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -85,6 +92,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       paymentStatus,
       notes,
       internalRemarks,
+      freight,
+      freightAllocation,
     } = body;
 
     let existing: any = null;
@@ -150,8 +159,79 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (notes !== undefined) updateData.notes = notes;
     if (internalRemarks !== undefined) updateData.internalRemarks = internalRemarks;
 
+    const isClosed = existing.fulfilmentStatus === 'CANCELLED' || existing.fulfilmentStatus === 'DELIVERED';
+
+    // Freight edit: rate, additional charges, manual override, or a direct
+    // actual/volumetric weight correction (e.g. once the package is actually
+    // weighed at packing). Recomputed authoritatively here, same rule as
+    // Proformas — a client-supplied Total Freight is never trusted verbatim.
+    if (freight !== undefined && !isClosed) {
+      const actualWeightKg = Number(freight.actualWeightKg ?? existing.actualWeightKg) || 0;
+      const volumetricWeightKg = Number(freight.volumetricWeightKg ?? existing.volumetricWeightKg) || 0;
+      const chargeableWeightKg = computeChargeableWeightKg(actualWeightKg, volumetricWeightKg);
+      const freightRatePerKg = Number(freight.freightRatePerKg ?? existing.freightRatePerKg) || 0;
+      const freightCharge = computeFreightCharge(chargeableWeightKg, freightRatePerKg);
+      const additionalFreightCharges = Number(freight.additionalFreightCharges ?? existing.additionalFreightCharges) || 0;
+      const isManualOverride = Boolean(freight.isManualOverride);
+      const totalFreight = isManualOverride
+        ? Math.max(0, Number(freight.manualTotalFreight) || 0)
+        : computeTotalFreight(freightCharge, additionalFreightCharges);
+
+      updateData.actualWeightKg = actualWeightKg;
+      updateData.volumetricWeightKg = volumetricWeightKg;
+      updateData.chargeableWeightKg = chargeableWeightKg;
+      updateData.freightRatePerKg = freightRatePerKg;
+      updateData.freightCharge = freightCharge;
+      updateData.additionalFreightCharges = additionalFreightCharges;
+      updateData.freightIsManualOverride = isManualOverride;
+      if (freight.volumetricDivisor !== undefined) {
+        updateData.freightVolumetricDivisor = Number(freight.volumetricDivisor) || 0;
+      }
+      updateData.shippingCost = totalFreight;
+
+      const subtotal = Number(existing.subtotal) || 0;
+      const taxAmount = Number(existing.taxAmount) || 0;
+      const discountAmount = Number(existing.discountAmount) || 0;
+      const otherCharges = Number(existing.otherCharges) || 0;
+      updateData.grandTotal = Number((subtotal - discountAmount + taxAmount + totalFreight + otherCharges).toFixed(2));
+    }
+
+    // Optional freight allocation to products — reporting only, never changes
+    // subtotal/tax/shippingCost/grandTotal.
+    let itemAllocationUpdates: { id: string; allocatedFreight: number }[] | null = null;
+    if (freightAllocation && Array.isArray(existing.items)) {
+      const method = freightAllocation.method as FreightAllocationMethod;
+      const totalFreight = updateData.shippingCost !== undefined ? updateData.shippingCost : Number(existing.shippingCost) || 0;
+      if (method === 'MANUAL') {
+        const provided: { itemId: string; allocatedFreight: number }[] = freightAllocation.allocations || [];
+        itemAllocationUpdates = provided.map((a) => ({ id: a.itemId, allocatedFreight: Number(a.allocatedFreight) || 0 }));
+      } else {
+        const shares = allocateFreight(
+          existing.items.map((it: any) => ({
+            quantity: it.quantity,
+            unitWeightKg: it.unitWeightKg || 0,
+            totalPrice: it.totalPrice,
+          })),
+          totalFreight,
+          method
+        );
+        itemAllocationUpdates = existing.items.map((it: any, idx: number) => ({
+          id: it.id,
+          allocatedFreight: shares[idx] || 0,
+        }));
+      }
+      updateData.freightAllocationMethod = method;
+    }
+
     let invoice: any = null;
     try {
+      if (itemAllocationUpdates) {
+        await prisma.$transaction(
+          itemAllocationUpdates.map((u) =>
+            prisma.invoiceItem.update({ where: { id: u.id }, data: { allocatedFreight: u.allocatedFreight } })
+          )
+        );
+      }
       invoice = await prisma.taxInvoice.update({
         where: { id: existing.id },
         data: updateData,
@@ -197,7 +277,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         } catch {}
       }
     } catch (dbErr) {
-      invoice = dataStore.updateInvoice(existing.id, updateData);
+      if (itemAllocationUpdates) {
+        const itemMap = new Map(itemAllocationUpdates.map((u) => [u.id, u.allocatedFreight]));
+        existing.items = (existing.items || []).map((it: any) =>
+          itemMap.has(it.id) ? { ...it, allocatedFreight: itemMap.get(it.id) } : it
+        );
+      }
+      invoice = dataStore.updateInvoice(existing.id, { ...updateData, items: existing.items });
     }
 
     if (!invoice) {

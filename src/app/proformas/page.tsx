@@ -6,11 +6,8 @@ import { useRouter } from 'next/navigation';
 import {
   FileCheck2,
   PlusCircle,
-  Search,
   Printer,
-  Receipt,
   CheckCircle,
-  FileText,
   Plus,
   Trash2,
   XCircle,
@@ -25,9 +22,11 @@ import PrintableDocumentModal from '@/components/pdf/PrintableDocumentModal';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button, LinkButton, IconButton } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { SearchInput } from '@/components/ui/Input';
+import { Toolbar, ToolbarGroup, FilterPillGroup } from '@/components/ui/FilterBar';
 import { fetchWithCache } from '@/lib/client-cache';
 
 export default function ProformasPage() {
@@ -181,7 +180,7 @@ export default function ProformasPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="text-slate-500 text-xs font-medium">Loading proforma quotations...</div>
+        <div className="text-muted text-xs font-medium">Loading proforma quotations...</div>
       </div>
     );
   }
@@ -189,7 +188,6 @@ export default function ProformasPage() {
   return (
     <div className="flex flex-col gap-6 pb-12">
       <PageHeader
-        eyebrow="02 / SALES"
         title="Proformas"
         description="Create, approve, and convert customer quotations and sales proposals into tax invoices."
         actions={
@@ -200,68 +198,144 @@ export default function ProformasPage() {
       />
 
       {error && (
-        <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+        <div className="p-3 rounded-2xl bg-danger-soft border border-danger-border text-danger text-xs flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Summary Cards & Search Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 bg-white border-slate-200">
-          <div className="text-xs font-semibold text-slate-500">Total Proformas</div>
-          <div className="text-2xl font-bold text-slate-900 font-mono mt-1">{filteredProformas.length}</div>
-        </Card>
-        <Card className="p-4 bg-white border-slate-200">
-          <div className="text-xs font-semibold text-slate-500">Pipeline Value</div>
-          <div className="text-2xl font-bold text-brand-600 font-mono mt-1">{formatUSD(totalProformaValue)}</div>
-        </Card>
-        <Card className="p-4 bg-white border-slate-200">
-          <div className="text-xs font-semibold text-slate-500">Search & Filter</div>
-          <div className="relative mt-1">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search proforma #, customer..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 rounded-md border border-slate-200 text-xs focus:outline-none focus:border-brand-500 font-mono"
-            />
-          </div>
-        </Card>
+      {/* Compact summary indicators */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex items-center gap-2 rounded-full bg-ink text-white px-4 h-9 text-xs font-semibold">
+          Total <span className="tabular-nums">{filteredProformas.length}</span>
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-full bg-primary-soft text-primary px-4 h-9 text-xs font-semibold">
+          Pipeline Value <span className="tabular-nums">{formatUSD(totalProformaValue)}</span>
+        </div>
       </div>
 
-      {/* Status Filter Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-        {['ALL', 'DRAFT', 'SENT', 'CONFIRMED', 'CONVERTED', 'CANCELLED'].map((st) => (
-          <button
-            key={st}
-            onClick={() => setFilterStatus(st)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
-              filterStatus === st
-                ? 'bg-[#005E82] text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            {st}
-          </button>
-        ))}
-      </div>
+      {/* Filters + Search + Actions */}
+      <Toolbar>
+        <ToolbarGroup>
+          <FilterPillGroup
+            value={filterStatus}
+            onChange={setFilterStatus}
+            options={[
+              { label: 'All', value: 'ALL' },
+              { label: 'Draft', value: 'DRAFT' },
+              { label: 'Sent', value: 'SENT' },
+              { label: 'Confirmed', value: 'CONFIRMED' },
+              { label: 'Converted', value: 'CONVERTED' },
+              { label: 'Cancelled', value: 'CANCELLED' },
+            ]}
+          />
+        </ToolbarGroup>
+        <SearchInput
+          placeholder="Search proforma #, customer..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          wrapperClassName="w-full lg:w-72"
+        />
+      </Toolbar>
 
       {/* Table */}
-      <Card className="overflow-hidden border-slate-200 bg-white">
+      <div>
         {filteredProformas.length === 0 ? (
-          <EmptyState
-            icon={FileCheck2}
-            title="No Proformas Found"
-            description="Create a new proforma quotation to start tracking wholesale pipeline orders."
-            action={
-              <LinkButton href="/proformas/new" iconLeft={<Plus className="h-4 w-4" />}>
-                New Proforma
-              </LinkButton>
-            }
-          />
+          <div className="rounded-2xl border border-line bg-white">
+            <EmptyState
+              icon={FileCheck2}
+              title="No Proformas Found"
+              description="Create a new proforma quotation to start tracking wholesale pipeline orders."
+              action={
+                <LinkButton href="/proformas/new" iconLeft={<Plus className="h-4 w-4" />}>
+                  New Proforma
+                </LinkButton>
+              }
+            />
+          </div>
         ) : (
+          <>
+          <div className="md:hidden space-y-3">
+            {filteredProformas.map((pf) => (
+              <Card
+                key={pf.id}
+                className="p-4 space-y-2.5 cursor-pointer"
+                onClick={() => router.push(`/proformas/${pf.id}`)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/proformas/${pf.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-semibold text-primary hover:underline text-sm"
+                    >
+                      {pf.proformaNumber}
+                    </Link>
+                    <div className="font-medium text-ink text-sm truncate">{pf.customerCompany}</div>
+                    <div className="text-xs text-muted truncate">{pf.customerName}</div>
+                  </div>
+                  <StatusBadge status={pf.status} className="shrink-0" />
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-semibold text-ink tabular-nums">{formatUSD(pf.grandTotal)}</span>
+                  <span className="text-xs text-muted">{formatDate(pf.issueDate)}</span>
+                </div>
+
+                {pf.convertedToInvoiceNumber && (
+                  <div className="text-[11px] text-success flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    <span>Inv: {pf.convertedToInvoiceNumber}</span>
+                  </div>
+                )}
+
+                <div
+                  className="flex items-center justify-end gap-1.5 pt-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {(pf.status === 'DRAFT' || pf.status === 'SENT') && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleApprove(pf.id)}
+                      loading={approvingId === pf.id}
+                    >
+                      Approve
+                    </Button>
+                  )}
+                  {pf.status === 'CONFIRMED' && (
+                    <LinkButton href={`/proformas/${pf.id}`} size="sm" className="bg-success text-white hover:bg-success/90">
+                      Convert
+                    </LinkButton>
+                  )}
+                  <IconButton label="Print / PDF" onClick={() => setSelectedDoc(pf)}>
+                    <Printer className="h-3.5 w-3.5 text-muted" />
+                  </IconButton>
+                  <LinkButton href={`/proformas/${pf.id}`} size="sm" variant="secondary">
+                    View
+                  </LinkButton>
+                  {pf.status !== 'CONVERTED' && pf.status !== 'CANCELLED' && (
+                    <IconButton
+                      label="Cancel Proforma"
+                      onClick={() => setCancellingProforma(pf)}
+                      className="text-muted hover:text-warning hover:bg-warning-soft"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                    </IconButton>
+                  )}
+                  {(pf.status === 'DRAFT' || pf.status === 'CANCELLED') && (
+                    <IconButton
+                      label="Delete Proforma"
+                      onClick={() => setDeletingProforma(pf)}
+                      className="text-muted hover:text-danger hover:bg-danger-soft"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </IconButton>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableHead>Proforma #</TableHead>
@@ -278,28 +352,28 @@ export default function ProformasPage() {
                   <TableCell>
                     <Link
                       href={`/proformas/${pf.id}`}
-                      className="font-mono font-bold text-brand-600 hover:underline text-xs"
+                      className="font-semibold text-primary hover:underline text-sm"
                     >
                       {pf.proformaNumber}
                     </Link>
                     {pf.convertedToInvoiceNumber && (
-                      <div className="text-[10px] text-emerald-700 font-mono flex items-center gap-1 mt-0.5">
+                      <div className="text-[11px] text-success flex items-center gap-1 mt-0.5">
                         <CheckCircle className="h-3 w-3" />
                         <span>Inv: {pf.convertedToInvoiceNumber}</span>
                       </div>
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="font-semibold text-slate-900 text-xs">{pf.customerCompany}</div>
-                    <div className="text-[11px] text-slate-500">{pf.customerName}</div>
+                    <div className="font-medium text-ink text-sm">{pf.customerCompany}</div>
+                    <div className="text-xs text-muted">{pf.customerName}</div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs text-slate-600">{pf.managerName}</span>
+                    <span className="text-sm text-ink-secondary">{pf.managerName}</span>
                   </TableCell>
                   <TableCell>
-                    <span className="font-mono text-xs text-slate-500">{formatDate(pf.issueDate)}</span>
+                    <span className="text-sm text-muted">{formatDate(pf.issueDate)}</span>
                   </TableCell>
-                  <TableCell align="right" className="font-mono font-bold text-xs text-slate-900">
+                  <TableCell align="right" className="font-semibold text-sm text-ink tabular-nums">
                     {formatUSD(pf.grandTotal)}
                   </TableCell>
                   <TableCell>
@@ -308,52 +382,46 @@ export default function ProformasPage() {
                   <TableCell align="right">
                     <div className="flex items-center justify-end gap-1.5">
                       {(pf.status === 'DRAFT' || pf.status === 'SENT') && (
-                        <button
-                          type="button"
+                        <Button
+                          size="sm"
                           onClick={() => handleApprove(pf.id)}
-                          disabled={approvingId === pf.id}
-                          className="px-2.5 py-1 rounded-md bg-[#005E82] hover:bg-[#004B68] text-white text-[11px] font-bold transition-all shadow-xs"
+                          loading={approvingId === pf.id}
                         >
-                          {approvingId === pf.id ? 'Approving...' : 'Approve'}
-                        </button>
+                          Approve
+                        </Button>
                       )}
 
                       {pf.status === 'CONFIRMED' && (
-                        <Link
-                          href={`/proformas/${pf.id}`}
-                          className="px-2.5 py-1 rounded-md bg-[#15803D] hover:bg-[#166534] text-white text-[11px] font-bold transition-all shadow-xs"
-                        >
+                        <LinkButton href={`/proformas/${pf.id}`} size="sm" className="bg-success text-white hover:bg-success/90">
                           Convert
-                        </Link>
+                        </LinkButton>
                       )}
 
                       <IconButton label="Print / PDF" onClick={() => setSelectedDoc(pf)}>
-                        <Printer className="h-3.5 w-3.5 text-slate-500" />
+                        <Printer className="h-3.5 w-3.5 text-muted" />
                       </IconButton>
                       <LinkButton href={`/proformas/${pf.id}`} size="sm" variant="secondary">
                         View
                       </LinkButton>
 
                       {pf.status !== 'CONVERTED' && pf.status !== 'CANCELLED' && (
-                        <button
-                          type="button"
+                        <IconButton
+                          label="Cancel Proforma"
                           onClick={() => setCancellingProforma(pf)}
-                          className="p-1.5 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                          title="Cancel Proforma"
+                          className="text-muted hover:text-warning hover:bg-warning-soft"
                         >
                           <XCircle className="h-3.5 w-3.5" />
-                        </button>
+                        </IconButton>
                       )}
 
                       {(pf.status === 'DRAFT' || pf.status === 'CANCELLED') && (
-                        <button
-                          type="button"
+                        <IconButton
+                          label="Delete Proforma"
                           onClick={() => setDeletingProforma(pf)}
-                          className="p-1.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                          title="Delete Proforma"
+                          className="text-muted hover:text-danger hover:bg-danger-soft"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        </IconButton>
                       )}
                     </div>
                   </TableCell>
@@ -361,8 +429,10 @@ export default function ProformasPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
+          </>
         )}
-      </Card>
+      </div>
 
       {/* Printable Modal */}
       {selectedDoc && (

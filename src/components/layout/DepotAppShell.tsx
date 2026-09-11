@@ -107,7 +107,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
                 <Link
                   href="/dashboard"
                   prefetch={false}
-                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F8FAFC] hover:bg-[#E5E7EB] text-[#111827] text-xs font-semibold transition-colors border border-[#E5E7EB]"
+                  className="hidden md:flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#F8FAFC] hover:bg-[#E5E7EB] text-[#111827] text-xs font-semibold transition-colors border border-[#E5E7EB]"
                   title="Switch to Management ERP Dashboard"
                 >
                   <span>Main ERP</span>
@@ -117,7 +117,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
 
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2.5 rounded-lg text-[#6B7280] hover:text-[#111827] hover:bg-[#F8FAFC]"
+                className="md:hidden p-2.5 rounded-full text-[#6B7280] hover:text-[#111827] hover:bg-[#F8FAFC]"
                 aria-label="Toggle menu"
               >
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -125,7 +125,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
 
               <button
                 onClick={handleLogout}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#F8FAFC] hover:bg-[#E5E7EB] text-[#111827] text-xs font-medium border border-[#E5E7EB] transition-colors"
+                className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#F8FAFC] hover:bg-[#E5E7EB] text-[#111827] text-xs font-medium border border-[#E5E7EB] transition-colors"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
@@ -148,8 +148,8 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
                   prefetch={false}
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
-                    'flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-colors',
-                    isActive ? 'bg-[#005E82] text-white shadow-xs' : 'text-[#4B5563] hover:text-[#111827] hover:bg-[#F8FAFC]'
+                    'flex items-center gap-3 px-4 py-3.5 rounded-full text-sm font-semibold transition-colors',
+                    isActive ? 'bg-[#111827] text-white' : 'text-[#4B5563] hover:text-[#111827] hover:bg-[#F8FAFC]'
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -160,7 +160,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
             })}
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-[#DC2626] hover:bg-[#DC2626]/10 text-sm font-medium"
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-full text-[#DC2626] hover:bg-[#DC2626]/10 text-sm font-medium"
             >
               <LogOut className="h-5 w-5" />
               <span>Logout</span>
@@ -181,8 +181,8 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
                   href={item.href}
                   prefetch={false}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    isActive ? 'bg-[#005E82] text-white shadow-xs font-semibold' : 'text-[#4B5563] hover:text-[#111827] hover:bg-[#F8FAFC]'
+                    'flex items-center gap-3 px-3.5 py-2.5 rounded-full text-sm font-medium transition-colors',
+                    isActive ? 'bg-[#111827] text-white font-semibold' : 'text-[#4B5563] hover:text-[#111827] hover:bg-[#F8FAFC]'
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -196,7 +196,7 @@ export default function DepotAppShell({ children }: { children: React.ReactNode 
           <div className="p-3 border-t border-[#E5E7EB]">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F8FAFC] hover:bg-[#E5E7EB] text-[#4B5563] hover:text-[#111827] text-sm font-medium transition-colors border border-[#E5E7EB]"
+              className="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-[#F8FAFC] hover:bg-[#E5E7EB] text-[#4B5563] hover:text-[#111827] text-sm font-medium transition-colors border border-[#E5E7EB]"
             >
               <LogOut className="h-4 w-4 text-[#DC2626]" />
               <span>Logout</span>

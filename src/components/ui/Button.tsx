@@ -18,10 +18,10 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-xs gap-1.5 rounded-lg',
-  md: 'h-9 px-3.5 text-sm gap-2 rounded-lg',
-  lg: 'h-11 px-5 text-sm gap-2 rounded-lg',
-  icon: 'h-9 w-9 rounded-lg shrink-0',
+  sm: 'h-11 md:h-9 px-3.5 text-xs gap-1.5 rounded-full',
+  md: 'h-11 md:h-10 px-4 text-sm gap-2 rounded-full',
+  lg: 'h-11 px-5 text-sm gap-2 rounded-full',
+  icon: 'h-11 w-11 md:h-10 md:w-10 rounded-full shrink-0',
 };
 
 interface BaseButtonProps {

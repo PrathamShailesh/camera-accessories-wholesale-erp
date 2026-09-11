@@ -14,9 +14,9 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { formatUSD, cloudinaryThumb } from '@/lib/utils';
 import { Product, Depot } from '@/types/erp';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Button, LinkButton } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { Button, LinkButton, IconButton } from '@/components/ui/Button';
 import { MarginBadge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { SearchInput, Input, Select, Textarea } from '@/components/ui/Input';
 import { Drawer, ConfirmDialog } from '@/components/ui/Modal';
@@ -302,7 +302,6 @@ export default function ProductsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="03 / INVENTORY"
         title="Product Catalog"
         description="Product master with stock distribution, wholesale margins, serials and barcodes."
         actions={
@@ -318,7 +317,7 @@ export default function ProductsPage() {
       />
 
       {/* Catalog metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-lg divide-x divide-y lg:divide-y-0 divide-line bg-surface">
+      <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-2xl divide-x divide-y lg:divide-y-0 divide-line bg-surface overflow-hidden">
         <div className="p-4">
           <div className="text-xs uppercase tracking-wider text-muted">Catalog SKUs</div>
           <div className="text-2xl font-semibold text-ink mt-1.5">{products.length}</div>
@@ -396,8 +395,9 @@ export default function ProductsPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0">
-          <Table>
+        <>
+        <div className="hidden md:block">
+        <Table>
             <TableHeader>
               <TableHead>Product</TableHead>
               <TableHead>Brand</TableHead>
@@ -454,23 +454,74 @@ export default function ProductsPage() {
                         <LinkButton href={`/products/${p.id}`} size="sm" variant="secondary">
                           View
                         </LinkButton>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2"
+                        <IconButton
+                          label="Delete Product"
+                          className="text-muted hover:text-danger hover:bg-danger-soft"
                           onClick={() => setDeletingProduct(p)}
-                          title="Delete Product"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        </IconButton>
                       </div>
                     </TableCell>
                   </TableRow>
                 );
               })}
-            </TableBody>
-          </Table>
-        </Card>
+          </TableBody>
+        </Table>
+        </div>
+
+        <div className="md:hidden space-y-3">
+          {filteredProducts.map((p) => {
+            const isLow = (p.totalStock || 0) <= (p.minStockLevel ?? 0);
+            return (
+              <Card key={p.id} className="p-4 space-y-2.5">
+                <div className="flex items-start gap-3">
+                  <div className="h-11 w-11 shrink-0 rounded-md border border-line bg-surface-muted overflow-hidden flex items-center justify-center p-1">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/placeholder-product.svg"
+                      alt={p.name}
+                      loading="lazy"
+                      className="h-full w-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder-product.svg';
+                      }}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-ink truncate">{p.name}</div>
+                    <div className="text-xs text-muted font-mono mt-0.5">{p.sku}</div>
+                    <div className="text-xs text-muted mt-0.5">{p.brand} · {p.categoryName || '—'}</div>
+                  </div>
+                  <MarginBadge marginPercent={Number(marginFor(p).toFixed(1))} />
+                </div>
+                <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                  <span className={`font-mono font-semibold ${isLow ? 'text-warning' : 'text-ink'}`}>
+                    Stock: {p.totalStock ?? 0}
+                  </span>
+                  <span className="font-mono text-muted">{formatUSD(p.purchasePrice)}</span>
+                  <span className="font-mono font-semibold text-ink">{formatUSD(p.sellingPrice)}</span>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(p)}>
+                    Edit
+                  </Button>
+                  <LinkButton href={`/products/${p.id}`} size="sm" variant="secondary" className="flex-1">
+                    View
+                  </LinkButton>
+                  <IconButton
+                    label="Delete Product"
+                    className="text-muted hover:text-danger hover:bg-danger-soft"
+                    onClick={() => setDeletingProduct(p)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </IconButton>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+        </>
       )}
 
       <Drawer
@@ -520,7 +571,7 @@ export default function ProductsPage() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="e.g. Sony FX3 Full-Frame Cinema Camera"
             />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
                 label="SKU"
                 required={drawerMode === 'create'}
@@ -573,7 +624,7 @@ export default function ProductsPage() {
                 Margin: <span className="font-semibold text-ink">{formMargin}%</span>
               </span>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Input
                 label="Cost"
                 type="number"
@@ -599,7 +650,7 @@ export default function ProductsPage() {
                 onChange={(e) => setForm({ ...form, sellingPrice: Number(e.target.value) })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
                 label="Tax Rate (%)"
                 type="number"

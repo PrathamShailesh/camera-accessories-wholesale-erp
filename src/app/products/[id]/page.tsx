@@ -165,7 +165,7 @@ export default function ProductDetailPage() {
   if (isLoading) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="text-slate-500 text-xs font-medium animate-pulse">
+        <div className="text-muted text-xs font-medium animate-pulse">
           Loading product specifications and inventory telemetry...
         </div>
       </div>
@@ -175,7 +175,7 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="text-slate-500 text-sm font-semibold">Product model not found</div>
+        <div className="text-muted text-sm font-semibold">Product model not found</div>
         <LinkButton href="/products" variant="outline" size="sm">
           Back to Product Catalog
         </LinkButton>
@@ -190,12 +190,11 @@ export default function ProductDetailPage() {
     <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-16">
       {/* Header */}
       <PageHeader
-        eyebrow="03 / INVENTORY"
         breadcrumbs={[{ label: 'Products', href: '/products' }, { label: product.name }]}
         title={
           <span className="inline-flex items-center gap-2.5">
             {product.name}
-            <span className="font-mono text-xs text-brand-600 font-bold bg-brand-50 px-2 py-0.5 rounded border border-brand-200 align-middle">
+            <span className="font-mono text-xs text-primary font-bold bg-primary-soft px-2 py-0.5 rounded border border-primary/20 align-middle">
               {product.sku}
             </span>
           </span>
@@ -229,7 +228,7 @@ export default function ProductDetailPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              className="text-muted hover:text-danger hover:bg-danger-soft"
               iconLeft={<Trash2 className="h-4 w-4" />}
               onClick={() => setIsDeleteOpen(true)}
             >
@@ -241,7 +240,7 @@ export default function ProductDetailPage() {
 
       {/* Main Specs & Image */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-1 overflow-hidden h-64 flex items-center justify-center bg-slate-50 p-6">
+        <Card className="md:col-span-1 overflow-hidden h-64 flex items-center justify-center bg-surface p-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/placeholder-product.svg"
@@ -255,25 +254,25 @@ export default function ProductDetailPage() {
 
         <Card className="md:col-span-2 p-6 flex flex-col justify-between space-y-4">
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
               Product Record & Technical Specifications
             </h3>
-            <p className="text-xs text-slate-700 mt-2 leading-relaxed">
+            <p className="text-xs text-ink-secondary mt-2 leading-relaxed">
               {product.description || 'No detailed specifications recorded for this SKU.'}
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-lg bg-surface border border-line text-xs font-mono">
             <div>
-              <span className="text-slate-500 block text-[10px] uppercase font-sans font-semibold">Cost Price</span>
-              <span className="text-slate-900 font-bold">{formatUSD(product.purchasePrice)}</span>
+              <span className="text-muted block text-[10px] uppercase font-sans font-semibold">Cost Price</span>
+              <span className="text-ink font-bold">{formatUSD(product.purchasePrice)}</span>
             </div>
             <div>
-              <span className="text-slate-500 block text-[10px] uppercase font-sans font-semibold">Wholesale Price</span>
-              <span className="text-slate-900 font-bold">{formatUSD(product.wholesalePrice)}</span>
+              <span className="text-muted block text-[10px] uppercase font-sans font-semibold">Wholesale Price</span>
+              <span className="text-ink font-bold">{formatUSD(product.wholesalePrice)}</span>
             </div>
             <div>
-              <span className="text-slate-500 block text-[10px] uppercase font-sans font-semibold">Gross Margin</span>
+              <span className="text-muted block text-[10px] uppercase font-sans font-semibold">Gross Margin</span>
               <MarginBadge marginPercent={marginPct} />
             </div>
           </div>
@@ -283,10 +282,10 @@ export default function ProductDetailPage() {
       {/* Depot Distribution Grid */}
       <Card className="p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
             Inventory Distribution Across Depots
           </h3>
-          <span className="font-mono text-xs font-bold text-slate-700">
+          <span className="font-mono text-xs font-bold text-ink-secondary">
             Total Available: {product.totalStock ?? 0} Units
           </span>
         </div>
@@ -296,18 +295,18 @@ export default function ProductDetailPage() {
             depots.map((d) => {
               const qty = product.depotBreakdown?.[d.id] ?? 0;
               return (
-                <div key={d.id} className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-center">
-                  <span className="text-xs text-slate-500 font-sans block truncate">{d.name}</span>
-                  <div className="text-lg font-bold text-slate-900 mt-1">
-                    {qty} <span className="text-xs font-normal text-slate-500">Units</span>
+                <div key={d.id} className="p-4 rounded-lg bg-surface border border-line text-center">
+                  <span className="text-xs text-muted font-sans block truncate">{d.name}</span>
+                  <div className="text-lg font-bold text-ink mt-1">
+                    {qty} <span className="text-xs font-normal text-muted">Units</span>
                   </div>
                 </div>
               );
             })
           ) : (
-            <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-center col-span-full">
-              <span className="text-xs text-slate-500 font-sans">Total Stock</span>
-              <div className="text-xl font-bold text-slate-900 mt-1">
+            <div className="p-4 rounded-lg bg-surface border border-line text-center col-span-full">
+              <span className="text-xs text-muted font-sans">Total Stock</span>
+              <div className="text-xl font-bold text-ink mt-1">
                 {product.totalStock ?? 0} Units
               </div>
             </div>
@@ -319,8 +318,8 @@ export default function ProductDetailPage() {
       <Card className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Hash className="h-4 w-4 text-brand-600" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+            <Hash className="h-4 w-4 text-primary" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-ink">
               Tracked Serial Numbers ({serials.length})
             </h3>
           </div>
@@ -328,20 +327,21 @@ export default function ProductDetailPage() {
             href={`/inventory/serials?productId=${product.id}`}
             variant="ghost"
             size="sm"
-            className="text-xs text-brand-600"
+            className="text-xs text-primary"
           >
             Manage Serials
           </LinkButton>
         </div>
 
         {serials.length === 0 ? (
-          <div className="py-8 text-center text-slate-400 text-xs bg-slate-50/50 rounded-lg border border-dashed border-slate-200">
+          <div className="py-8 text-center text-muted text-xs bg-surface rounded-lg border border-dashed border-line">
             No tracked serial numbers registered for this product model yet.
           </div>
         ) : (
-          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+          <>
+          <div className="hidden md:block overflow-x-auto border border-line rounded-lg">
             <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+              <thead className="bg-surface text-muted font-semibold border-b border-line">
                 <tr>
                   <th className="p-2.5">Serial Number</th>
                   <th className="p-2.5">Depot</th>
@@ -349,11 +349,11 @@ export default function ProductDetailPage() {
                   <th className="p-2.5">Allocated Invoice</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-mono">
+              <tbody className="divide-y divide-line-soft font-mono">
                 {serials.map((s) => (
-                  <tr key={s.id} className="hover:bg-slate-50/50">
-                    <td className="p-2.5 font-bold text-slate-900">{s.serialNumber}</td>
-                    <td className="p-2.5 text-slate-600">{s.depotId}</td>
+                  <tr key={s.id} className="hover:bg-surface">
+                    <td className="p-2.5 font-bold text-ink">{s.serialNumber}</td>
+                    <td className="p-2.5 text-ink-secondary">{s.depotId}</td>
                     <td className="p-2.5">
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -361,18 +361,44 @@ export default function ProductDetailPage() {
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                             : s.status === 'ALLOCATED'
                             ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                            : 'bg-slate-100 text-slate-600 border border-slate-200'
+                            : 'bg-surface-muted text-ink-secondary border border-line'
                         }`}
                       >
                         {s.status}
                       </span>
                     </td>
-                    <td className="p-2.5 text-slate-500">{s.invoiceNumber || s.invoiceId || '—'}</td>
+                    <td className="p-2.5 text-muted">{s.invoiceNumber || s.invoiceId || '—'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          <div className="md:hidden space-y-2 font-mono">
+            {serials.map((s) => (
+              <div key={s.id} className="p-3 rounded-lg border border-line bg-surface text-xs space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-ink">{s.serialNumber}</span>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      s.status === 'IN_STOCK'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : s.status === 'ALLOCATED'
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-surface-muted text-ink-secondary border border-line'
+                    }`}
+                  >
+                    {s.status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-ink-secondary">
+                  <span>Depot: {s.depotId}</span>
+                  <span className="text-muted">{s.invoiceNumber || s.invoiceId || '—'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          </>
         )}
       </Card>
 
@@ -401,7 +427,7 @@ export default function ProductDetailPage() {
             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
             required
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Brand"
               value={editForm.brand}
@@ -425,7 +451,7 @@ export default function ProductDetailPage() {
             onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
             rows={3}
           />
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Input
               label="Cost Price ($)"
               type="number"
@@ -455,9 +481,9 @@ export default function ProductDetailPage() {
             />
           </div>
 
-          <div className="border-t border-slate-200 pt-3">
-            <h4 className="font-semibold text-slate-700 mb-2">Depot Stock Allocations</h4>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="border-t border-line pt-3">
+            <h4 className="font-semibold text-ink-secondary mb-2">Depot Stock Allocations</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {depots.map((d) => (
                 <div key={d.id}>
                   <Input

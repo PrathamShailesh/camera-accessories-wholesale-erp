@@ -94,7 +94,7 @@ export default function ShipmentDetailPage() {
   if (isLoading) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="text-slate-500 text-xs font-medium animate-pulse">
+        <div className="text-muted text-xs font-medium animate-pulse">
           Loading shipment consignment and tracking status...
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function ShipmentDetailPage() {
   if (!shipment) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="text-slate-500 text-sm font-semibold">Shipment record not found</div>
+        <div className="text-muted text-sm font-semibold">Shipment record not found</div>
         <LinkButton href="/shipments" variant="outline" size="sm">
           Back to Shipments
         </LinkButton>
@@ -116,7 +116,6 @@ export default function ShipmentDetailPage() {
     <div className="flex flex-col gap-6 max-w-4xl mx-auto pb-16">
       {/* Header */}
       <PageHeader
-        eyebrow="04 / DEPOT & FULFILMENT"
         breadcrumbs={[{ label: 'Shipments', href: '/shipments' }, { label: shipment.shipmentNumber }]}
         title={
           <span className="inline-flex items-center gap-2.5">
@@ -132,7 +131,7 @@ export default function ShipmentDetailPage() {
                 href={shipment.trackingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-xs"
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-primary hover:bg-primary-hover text-white text-xs font-semibold"
               >
                 Track Live <ExternalLink className="h-3.5 w-3.5" />
               </a>
@@ -142,7 +141,7 @@ export default function ShipmentDetailPage() {
                 variant="outline"
                 size="sm"
                 loading={isMarkingDelivered}
-                iconLeft={<CheckCircle2 className="h-4 w-4 text-emerald-600" />}
+                iconLeft={<CheckCircle2 className="h-4 w-4 text-success" />}
                 onClick={handleMarkDelivered}
               >
                 Mark Delivered
@@ -165,58 +164,58 @@ export default function ShipmentDetailPage() {
       {/* Shipment Specs Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="p-6 space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
             Consignment Specs & Origin
           </h3>
           <div className="space-y-3 text-xs font-mono">
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500 font-sans">Gross Weight</span>
-              <span className="text-slate-900 font-bold">{shipment.weightKg} kg</span>
+            <div className="flex justify-between py-1 border-b border-line-soft">
+              <span className="text-muted font-sans">Gross Weight</span>
+              <span className="text-ink font-bold">{shipment.weightKg} kg</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500 font-sans">Carton / Box Count</span>
-              <span className="text-slate-900 font-bold">{shipment.packageCount} Carton</span>
+            <div className="flex justify-between py-1 border-b border-line-soft">
+              <span className="text-muted font-sans">Carton / Box Count</span>
+              <span className="text-ink font-bold">{shipment.packageCount} Carton</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500 font-sans">Origin Depot Hub</span>
-              <span className="text-slate-900 font-sans font-semibold">{shipment.depotName}</span>
+            <div className="flex justify-between py-1 border-b border-line-soft">
+              <span className="text-muted font-sans">Origin Depot Hub</span>
+              <span className="text-ink font-sans font-semibold">{shipment.depotName}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500 font-sans">Airway Bill Number</span>
-              <span className="text-sky-700 font-bold">{shipment.airwayBillNumber}</span>
+            <div className="flex justify-between py-1 border-b border-line-soft">
+              <span className="text-muted font-sans">Airway Bill Number</span>
+              <span className="text-primary font-bold">{shipment.airwayBillNumber}</span>
             </div>
             <div className="flex justify-between py-1">
-              <span className="text-slate-500 font-sans">Dispatched Date</span>
-              <span className="text-slate-700 font-sans">{formatDate(shipment.shippingDate)}</span>
+              <span className="text-muted font-sans">Dispatched Date</span>
+              <span className="text-ink-secondary font-sans">{formatDate(shipment.shippingDate)}</span>
             </div>
           </div>
         </Card>
 
         <Card className="p-6 space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
             Delivery Destination & Consignee
           </h3>
           <div className="space-y-3 text-xs">
-            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-              <div className="font-bold text-slate-900 text-sm">{shipment.customerCompany}</div>
-              <div className="text-slate-600 mt-0.5">Attn: {shipment.customerName}</div>
-              <div className="flex items-start gap-1.5 text-slate-500 mt-2">
-                <MapPin className="h-3.5 w-3.5 mt-0.5 text-slate-400 shrink-0" />
+            <div className="p-3 rounded-lg bg-surface border border-line">
+              <div className="font-bold text-ink text-sm">{shipment.customerCompany}</div>
+              <div className="text-ink-secondary mt-0.5">Attn: {shipment.customerName}</div>
+              <div className="flex items-start gap-1.5 text-muted mt-2">
+                <MapPin className="h-3.5 w-3.5 mt-0.5 text-muted shrink-0" />
                 <span className="leading-relaxed">{shipment.shippingAddress || 'Address on file'}</span>
               </div>
             </div>
 
             {invoice && (
-              <div className="p-3 rounded-lg border border-slate-100 space-y-1.5 font-mono text-xs">
+              <div className="p-3 rounded-lg border border-line-soft space-y-1.5 font-mono text-xs">
                 <div className="flex justify-between">
-                  <span className="text-slate-500 font-sans">Linked Invoice:</span>
-                  <Link href={`/invoices/${invoice.id}`} className="text-brand-600 font-bold hover:underline">
+                  <span className="text-muted font-sans">Linked Invoice:</span>
+                  <Link href={`/invoices/${invoice.id}`} className="text-primary font-bold hover:underline">
                     {invoice.invoiceNumber}
                   </Link>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500 font-sans">Invoice Total:</span>
-                  <span className="text-slate-900 font-bold">{formatUSD(invoice.grandTotal)}</span>
+                  <span className="text-muted font-sans">Invoice Total:</span>
+                  <span className="text-ink font-bold">{formatUSD(invoice.grandTotal)}</span>
                 </div>
               </div>
             )}

@@ -205,17 +205,16 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6 pb-12">
       {/* Executive Header */}
       <PageHeader
-        eyebrow="01 / OVERVIEW"
         title={`${greeting}, ${userName}`}
         description="Here's how ARIB GLOBAL is performing today."
         actions={
           <>
-            <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 shadow-xs">
-              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+            <div className="flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 h-10 text-xs text-ink-secondary">
+              <Calendar className="h-3.5 w-3.5 text-muted" />
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className="bg-transparent border-none p-0 text-xs font-medium text-slate-700 focus:ring-0 cursor-pointer"
+                className="bg-transparent border-none p-0 text-xs font-medium text-ink focus:ring-0 cursor-pointer"
               >
                 <option value="Today">Today</option>
                 <option value="Last 7 days">Last 7 days</option>
@@ -228,8 +227,7 @@ export default function DashboardPage() {
             <Button
               size="sm"
               variant="outline"
-              iconLeft={<SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" />}
-              className="text-xs text-slate-700 border-slate-200"
+              iconLeft={<SlidersHorizontal className="h-3.5 w-3.5 text-muted" />}
             >
               Customize
             </Button>
@@ -248,12 +246,12 @@ export default function DashboardPage() {
       />
 
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{error}</div>
+        <div className="rounded-2xl border border-danger-border bg-danger-soft px-4 py-3 text-xs text-danger">{error}</div>
       )}
 
       {/* Business Overview KPI Cards */}
       <div>
-        <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+        <div className="text-xs font-semibold uppercase tracking-wider text-muted mb-2.5">
           Business Overview
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
@@ -300,7 +298,7 @@ export default function DashboardPage() {
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Revenue & Profit</CardTitle>
-              <Link href="/reports/sales" prefetch={false} className="text-xs text-brand-600 font-medium hover:underline shrink-0">
+              <Link href="/reports/sales" prefetch={false} className="text-xs text-primary font-medium hover:underline shrink-0">
                 Full analytics
               </Link>
             </CardHeader>
@@ -334,14 +332,15 @@ export default function DashboardPage() {
           <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle>Top Products</CardTitle>
-              <Link href="/reports/profit" prefetch={false} className="text-xs text-brand-600 font-medium hover:underline shrink-0">
+              <Link href="/reports/profit" prefetch={false} className="text-xs text-primary font-medium hover:underline shrink-0">
                 View catalog
               </Link>
             </CardHeader>
             {overview!.topProducts.length === 0 ? (
               <EmptyState icon={Package} title="No product sales yet" compact />
             ) : (
-              <Table className="border-0 rounded-none shadow-none">
+              <>
+              <Table className="hidden sm:block border-0 rounded-none shadow-none">
                 <TableHeader>
                   <TableHead>Product</TableHead>
                   <TableHead align="right">Units</TableHead>
@@ -352,8 +351,8 @@ export default function DashboardPage() {
                   {overview!.topProducts.map((p) => (
                     <TableRow key={p.productId}>
                       <TableCell>
-                        <div className="font-semibold text-slate-900">{p.name}</div>
-                        <div className="text-[11px] text-slate-400 font-mono">{p.sku}</div>
+                        <div className="font-semibold text-ink">{p.name}</div>
+                        <div className="text-[11px] text-muted font-mono">{p.sku}</div>
                       </TableCell>
                       <TableCell align="right">{p.unitsSold}</TableCell>
                       <TableCell align="right" className="font-semibold">{formatUSD(p.revenue)}</TableCell>
@@ -364,20 +363,40 @@ export default function DashboardPage() {
                   ))}
                 </TableBody>
               </Table>
+
+              <div className="sm:hidden divide-y divide-line-soft">
+                {overview!.topProducts.map((p) => (
+                  <div key={p.productId} className="p-4 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-semibold text-ink text-sm">{p.name}</div>
+                        <div className="text-[11px] text-muted font-mono">{p.sku}</div>
+                      </div>
+                      <MarginBadge marginPercent={p.marginPercent} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-ink-secondary">
+                      <span>{p.unitsSold} units</span>
+                      <span className="font-semibold text-ink">{formatUSD(p.revenue)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              </>
             )}
           </Card>
 
           <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle>Top Customers</CardTitle>
-              <Link href="/customers" prefetch={false} className="text-xs text-brand-600 font-medium hover:underline shrink-0">
+              <Link href="/customers" prefetch={false} className="text-xs text-primary font-medium hover:underline shrink-0">
                 View all
               </Link>
             </CardHeader>
             {overview!.topCustomers.length === 0 ? (
               <EmptyState icon={Building2} title="No customer activity yet" compact />
             ) : (
-              <Table className="border-0 rounded-none shadow-none">
+              <>
+              <Table className="hidden sm:block border-0 rounded-none shadow-none">
                 <TableHeader>
                   <TableHead>Customer</TableHead>
                   <TableHead align="right">Orders</TableHead>
@@ -387,7 +406,7 @@ export default function DashboardPage() {
                 <TableBody>
                   {overview!.topCustomers.map((c) => (
                     <TableRow key={c.customerId}>
-                      <TableCell className="font-semibold text-slate-900">{c.name}</TableCell>
+                      <TableCell className="font-semibold text-ink">{c.name}</TableCell>
                       <TableCell align="right">{c.orders}</TableCell>
                       <TableCell align="right" className="font-semibold">{formatUSD(c.revenue)}</TableCell>
                       <TableCell align="right">
@@ -397,6 +416,22 @@ export default function DashboardPage() {
                   ))}
                 </TableBody>
               </Table>
+
+              <div className="sm:hidden divide-y divide-line-soft">
+                {overview!.topCustomers.map((c) => (
+                  <div key={c.customerId} className="p-4 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-semibold text-ink text-sm">{c.name}</span>
+                      <MarginBadge marginPercent={c.marginPercent} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-ink-secondary">
+                      <span>{c.orders} orders</span>
+                      <span className="font-semibold text-ink">{formatUSD(c.revenue)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              </>
             )}
           </Card>
         </div>
@@ -407,10 +442,11 @@ export default function DashboardPage() {
         <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>Depot Performance</CardTitle>
-            <Link href="/depots" prefetch={false} className="text-xs text-brand-600 font-medium hover:underline shrink-0">
+            <Link href="/depots" prefetch={false} className="text-xs text-primary font-medium hover:underline shrink-0">
               Manage hubs
             </Link>
           </CardHeader>
+          <div className="hidden md:block">
           <Table className="border-0 rounded-none shadow-none">
             <TableHeader>
               <TableHead>Depot Hub</TableHead>
@@ -422,18 +458,33 @@ export default function DashboardPage() {
             <TableBody>
               {overview!.depotPerformance.map((d) => (
                 <TableRow key={d.depotId}>
-                  <TableCell className="font-semibold text-slate-900">{d.name}</TableCell>
+                  <TableCell className="font-semibold text-ink">{d.name}</TableCell>
                   <TableCell align="right">{formatUSD(d.revenue)}</TableCell>
                   <TableCell align="right" className="text-emerald-700 font-medium">{formatUSD(d.profit)}</TableCell>
                   <TableCell align="right">{d.orders}</TableCell>
-                  <TableCell align="right" className="font-mono text-slate-700">
+                  <TableCell align="right" className="font-mono text-ink-secondary">
                     {d.inventoryUnits.toLocaleString()} units
-                    <span className="text-slate-400 font-sans"> ({formatUSD(d.inventoryValue)})</span>
+                    <span className="text-muted font-sans"> ({formatUSD(d.inventoryValue)})</span>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          </div>
+
+          <div className="md:hidden divide-y divide-line-soft">
+            {overview!.depotPerformance.map((d) => (
+              <div key={d.depotId} className="p-4 space-y-1.5">
+                <div className="font-semibold text-ink text-sm">{d.name}</div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-ink-secondary">
+                  <span>Sales: <span className="font-semibold text-ink">{formatUSD(d.revenue)}</span></span>
+                  <span>Profit: <span className="font-medium text-emerald-700">{formatUSD(d.profit)}</span></span>
+                  <span>Orders: <span className="text-ink">{d.orders}</span></span>
+                  <span className="font-mono">{d.inventoryUnits.toLocaleString()} units</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </Card>
       )}
 
@@ -443,12 +494,12 @@ export default function DashboardPage() {
           <SectionHeader
             title="Tax Invoices & Fulfilment Queue"
             actions={
-              <Link href="/invoices" prefetch={false} className="text-xs text-brand-600 font-medium hover:underline">
+              <Link href="/invoices" prefetch={false} className="text-xs text-primary font-medium hover:underline">
                 View all invoices
               </Link>
             }
           />
-          <Card className="p-0 overflow-hidden">
+          <Card className="p-0 overflow-hidden border-0 rounded-none bg-transparent">
             {invoices.length === 0 ? (
               <EmptyState
                 icon={Receipt}
@@ -461,7 +512,8 @@ export default function DashboardPage() {
                 }
               />
             ) : (
-              <Table className="border-0 rounded-none shadow-none">
+              <>
+              <Table className="hidden md:block border-0 rounded-none shadow-none">
                 <TableHeader>
                   <TableHead>Invoice #</TableHead>
                   <TableHead>Customer</TableHead>
@@ -474,18 +526,18 @@ export default function DashboardPage() {
                   {invoices.map((inv) => (
                     <TableRow key={inv.id}>
                       <TableCell>
-                        <Link href={`/invoices/${inv.id}`} prefetch={false} className="font-mono font-semibold text-brand-600 hover:underline text-xs">
+                        <Link href={`/invoices/${inv.id}`} prefetch={false} className="font-mono font-semibold text-primary hover:underline text-xs">
                           {inv.invoiceNumber}
                         </Link>
-                        {inv.proformaNumber && <div className="text-[10px] text-slate-400 font-mono">From: {inv.proformaNumber}</div>}
+                        {inv.proformaNumber && <div className="text-[10px] text-muted font-mono">From: {inv.proformaNumber}</div>}
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-slate-900 text-xs">{inv.customerCompany}</div>
-                        <div className="text-[11px] text-slate-500">{inv.customerName}</div>
+                        <div className="font-semibold text-ink text-xs">{inv.customerCompany}</div>
+                        <div className="text-[11px] text-muted">{inv.customerName}</div>
                       </TableCell>
                       <TableCell>
-                        <span className="inline-flex items-center gap-1 text-xs text-slate-600">
-                          <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                        <span className="inline-flex items-center gap-1 text-xs text-ink-secondary">
+                          <Building2 className="h-3.5 w-3.5 text-muted" />
                           {inv.depotName.replace(' Depot', '').replace(' Hub', '')}
                         </span>
                       </TableCell>
@@ -498,7 +550,7 @@ export default function DashboardPage() {
                       <TableCell align="right">
                         <div className="flex items-center justify-end gap-1">
                           <IconButton label="Print / PDF" onClick={() => setSelectedDoc({ type: 'TAX_INVOICE', data: inv })}>
-                            <Printer className="h-3.5 w-3.5 text-slate-500" />
+                            <Printer className="h-3.5 w-3.5 text-muted" />
                           </IconButton>
                           <LinkButton href={`/invoices/${inv.id}`} size="sm" variant="secondary">
                             Open
@@ -509,6 +561,40 @@ export default function DashboardPage() {
                   ))}
                 </TableBody>
               </Table>
+
+              <div className="md:hidden divide-y divide-line-soft">
+                {invoices.map((inv) => (
+                  <div key={inv.id} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <Link href={`/invoices/${inv.id}`} prefetch={false} className="font-mono font-semibold text-primary hover:underline text-xs">
+                          {inv.invoiceNumber}
+                        </Link>
+                        <div className="font-semibold text-ink text-xs mt-0.5">{inv.customerCompany}</div>
+                      </div>
+                      <StatusBadge status={inv.fulfilmentStatus} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-ink-secondary">
+                      <span className="inline-flex items-center gap-1">
+                        <Building2 className="h-3.5 w-3.5 text-muted" />
+                        {inv.depotName.replace(' Depot', '').replace(' Hub', '')}
+                      </span>
+                      <span className="font-mono font-semibold text-ink">
+                        {!isDepotUser ? formatUSD(inv.grandTotal) : '—'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-end gap-1.5 pt-1">
+                      <IconButton label="Print / PDF" onClick={() => setSelectedDoc({ type: 'TAX_INVOICE', data: inv })}>
+                        <Printer className="h-3.5 w-3.5 text-muted" />
+                      </IconButton>
+                      <LinkButton href={`/invoices/${inv.id}`} size="sm" variant="secondary">
+                        Open
+                      </LinkButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              </>
             )}
           </Card>
         </div>
@@ -517,7 +603,7 @@ export default function DashboardPage() {
           <SectionHeader
             title="Recent Activity & Dispatches"
             actions={
-              <Link href="/shipments" prefetch={false} className="text-xs text-brand-600 font-medium hover:underline">
+              <Link href="/shipments" prefetch={false} className="text-xs text-primary font-medium hover:underline">
                 All AWBs
               </Link>
             }
@@ -537,23 +623,23 @@ export default function DashboardPage() {
                 <Card key={shp.id} className="p-3.5 flex flex-col gap-2.5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="text-[10px] font-mono font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 uppercase">
+                      <span className="text-[10px] font-semibold text-primary bg-primary-soft px-2 py-0.5 rounded-full uppercase">
                         {shp.courier.replace(/_/g, ' ')}
                       </span>
-                      <h4 className="text-xs font-semibold text-slate-900 mt-1.5">{shp.customerCompany}</h4>
-                      <p className="text-[11px] font-mono text-slate-500">AWB: {shp.airwayBillNumber}</p>
+                      <h4 className="text-xs font-semibold text-ink mt-1.5">{shp.customerCompany}</h4>
+                      <p className="text-[11px] text-muted">AWB: {shp.airwayBillNumber}</p>
                     </div>
                     <StatusBadge status={shp.status} />
                   </div>
 
-                  <div className="p-2 rounded bg-slate-50 text-[11px] text-slate-600 space-y-1 border border-slate-100">
+                  <div className="p-2.5 rounded-xl bg-surface text-[11px] text-ink-secondary space-y-1 border border-line-soft">
                     <div className="flex justify-between">
                       <span>Depot</span>
-                      <span className="text-slate-900 font-medium">{shp.depotName}</span>
+                      <span className="text-ink font-medium">{shp.depotName}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Package</span>
-                      <span className="text-slate-900 font-mono">{shp.weightKg} kg ({shp.packageCount} box)</span>
+                      <span className="text-ink font-mono">{shp.weightKg} kg ({shp.packageCount} box)</span>
                     </div>
                   </div>
 
@@ -562,7 +648,7 @@ export default function DashboardPage() {
                       href={shp.trackingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] font-semibold text-brand-600 hover:underline flex items-center gap-1"
+                      className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1"
                     >
                       Track Shipment
                       <ExternalLink className="h-3 w-3" />

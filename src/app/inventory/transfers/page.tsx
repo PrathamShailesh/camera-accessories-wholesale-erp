@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeftRight, Plus, CheckCircle2 } from 'lucide-react';
+import { ArrowLeftRight, ArrowRight, Plus, CheckCircle2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { StockTransfer, Product, Depot } from '@/types/erp';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -134,7 +134,6 @@ export default function TransfersPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="03 / INVENTORY"
         breadcrumbs={[{ label: 'Inventory', href: '/inventory' }, { label: 'Stock Transfers' }]}
         title="Stock Transfers"
         description="Move stock between depots and track transfers in flight."
@@ -148,7 +147,7 @@ export default function TransfersPage() {
       />
 
       {!canTransfer && !loading && (
-        <div className="rounded-lg border border-info-border bg-info-soft px-4 py-3 text-sm text-info">
+        <div className="rounded-2xl border border-info-border bg-info-soft px-4 py-3 text-sm text-info">
           Stock transfers move inventory between depots. You currently operate a single depot
           {depots[0] ? ` (${depots[0].name})` : ''}, so there is nowhere to transfer to. Add a second depot to
           enable transfers.
@@ -175,7 +174,8 @@ export default function TransfersPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0">
+        <>
+        <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Transfer</TableHead>
@@ -224,6 +224,52 @@ export default function TransfersPage() {
             </TableBody>
           </Table>
         </Card>
+
+        <div className="md:hidden space-y-3">
+          {transfers.map((t: any) => (
+            <Card key={t.id} className="p-4 space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-mono font-semibold text-ink text-sm">{t.transferNumber}</span>
+                <StatusBadge status={t.status} />
+              </div>
+              <div className="flex items-center gap-2 text-xs text-ink-secondary">
+                <span className="truncate">{t.sourceDepotName}</span>
+                <ArrowRight className="h-3.5 w-3.5 text-muted shrink-0" />
+                <span className="truncate">{t.destinationDepotName}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                <span className="text-muted">{t.items?.length ?? 0} items · {formatDate(t.createdAt)}</span>
+              </div>
+              {(t.status === 'PENDING' || t.status === 'IN_TRANSIT') && (
+                <div className="pt-1">
+                  {t.status === 'PENDING' && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full"
+                      loading={updatingId === t.id}
+                      onClick={() => handleUpdateStatus(t.id, 'IN_TRANSIT')}
+                    >
+                      Mark In Transit
+                    </Button>
+                  )}
+                  {t.status === 'IN_TRANSIT' && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full"
+                      loading={updatingId === t.id}
+                      onClick={() => handleUpdateStatus(t.id, 'COMPLETED')}
+                    >
+                      Mark Received
+                    </Button>
+                  )}
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+        </>
       )}
 
       <Drawer

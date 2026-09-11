@@ -45,12 +45,11 @@ export default function InventoryReportsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="06 / ANALYTICS"
         title="Inventory Reports"
         description="Stock valuation, reorder alerts, and capital tied up in slow-moving stock."
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-lg divide-x divide-y lg:divide-y-0 divide-line bg-surface">
+      <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-2xl divide-x divide-y lg:divide-y-0 divide-line bg-surface overflow-hidden">
         <div className="p-4">
           <div className="text-xs uppercase tracking-wider text-muted">Stock Value</div>
           <div className="text-2xl font-semibold text-ink mt-1.5">{formatUSD(totalValue)}</div>
@@ -96,7 +95,8 @@ export default function InventoryReportsPage() {
                 </p>
               </Card>
             ) : (
-              <Card className="overflow-hidden p-0">
+              <>
+              <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
                 <Table>
                   <TableHeader>
                     <TableHead>Product</TableHead>
@@ -127,6 +127,29 @@ export default function InventoryReportsPage() {
                   </TableBody>
                 </Table>
               </Card>
+
+              <div className="md:hidden space-y-3">
+                {lowStock.map((p) => (
+                  <Card key={p.id} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <Link href={`/products/${p.id}`} className="font-semibold text-ink hover:underline text-sm">
+                          {p.name}
+                        </Link>
+                        <div className="text-xs text-muted font-mono mt-0.5">{p.sku} · {p.brand}</div>
+                      </div>
+                      <Badge tone={(p.totalStock || 0) === 0 ? 'danger' : 'warning'} className="shrink-0">
+                        {(p.totalStock || 0) === 0 ? 'Out of stock' : 'Reorder'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                      <span className="text-muted">On Hand: <span className="font-mono font-semibold text-ink">{p.totalStock ?? 0}</span></span>
+                      <span className="text-muted">Minimum: <span className="font-mono text-ink-secondary">{p.minStockLevel ?? 0}</span></span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              </>
             )}
           </section>
 
@@ -140,7 +163,8 @@ export default function InventoryReportsPage() {
                 <p className="text-sm text-muted">No products are significantly overstocked.</p>
               </Card>
             ) : (
-              <Card className="overflow-hidden p-0">
+              <>
+              <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
                 <Table>
                   <TableHeader>
                     <TableHead>Product</TableHead>
@@ -169,6 +193,28 @@ export default function InventoryReportsPage() {
                   </TableBody>
                 </Table>
               </Card>
+
+              <div className="md:hidden space-y-3">
+                {overstocked.map((p) => (
+                  <Card key={p.id} className="p-4 space-y-2">
+                    <Link href={`/products/${p.id}`} className="font-semibold text-ink hover:underline text-sm">
+                      {p.name}
+                    </Link>
+                    <div className="text-xs text-muted font-mono">{p.sku} · {p.brand}</div>
+                    <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                      <span className="text-muted">On Hand: <span className="font-mono font-semibold text-ink">{p.totalStock ?? 0}</span></span>
+                      <span className="text-muted">Min: <span className="font-mono text-ink-secondary">{p.minStockLevel ?? 0}</span></span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted">Capital Held</span>
+                      <span className="font-mono font-semibold text-ink">
+                        {formatUSD((p.totalStock || 0) * (p.purchasePrice || 0))}
+                      </span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              </>
             )}
           </section>
         </>

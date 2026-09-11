@@ -202,22 +202,22 @@ function DepotPickContent() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <Boxes className="h-6 w-6 text-[#B45309]" />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#111827]">
+            <Boxes className="h-6 w-6 text-warning" />
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-ink">
               Warehouse Picking Queue
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-[#B45309]/10 text-[#B45309] border border-[#B45309]/20 font-bold">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-warning-soft text-warning border border-warning-border font-bold">
               {invoices.length} Pending
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-[#4B5563] mt-1">
+          <p className="text-xs sm:text-sm text-ink-secondary mt-1">
             Depot picking station: Locate items on shelves, scan serial numbers, and verify stock before moving to packing workbench.
           </p>
         </div>
 
         <button
           onClick={() => loadData()}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white text-[#4B5563] hover:text-[#111827] text-xs hover:bg-[#F8FAFC] self-start sm:self-auto transition-colors shadow-xs"
+          className="flex items-center gap-1.5 px-3 py-1.5 min-h-11 sm:min-h-0 rounded-xl border border-line bg-white text-ink-secondary hover:text-ink text-xs hover:bg-surface self-start sm:self-auto transition-colors shadow-xs"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           <span>Refresh Queue</span>
@@ -225,50 +225,50 @@ function DepotPickContent() {
       </div>
 
       {/* Search & Batch Select Bar */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-white border border-[#E5E7EB] space-y-3 shadow-xs">
+      <div className="p-4 sm:p-5 rounded-3xl bg-white border border-line space-y-3 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Quick Search */}
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
             <input
               type="text"
               placeholder="Search by Invoice #, Customer Name, SKU code, or Serial Barcode..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] placeholder-[#9CA3AF] text-xs focus:border-[#005E82] focus:bg-white focus:outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 min-h-11 sm:min-h-0 rounded-2xl bg-surface border border-line text-ink placeholder-muted text-xs focus:border-primary focus:bg-white focus:outline-none transition-colors"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#6B7280] hover:text-[#111827]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted hover:text-ink"
               >
                 Clear
               </button>
             )}
           </div>
 
-          <div className="text-xs font-mono text-[#6B7280] self-end sm:self-auto">
+          <div className="text-xs font-mono text-muted self-end sm:self-auto">
             {filteredInvoices.length} matching orders
           </div>
         </div>
 
         {/* Select All Toggle */}
         {filteredInvoices.length > 0 && (
-          <div className="pt-2 border-t border-[#E5E7EB] flex items-center justify-between text-xs">
+          <div className="pt-2 border-t border-line flex items-center justify-between text-xs">
             <button
               onClick={toggleSelectAll}
-              className="flex items-center gap-2 text-[#4B5563] hover:text-[#111827] font-medium"
+              className="flex items-center gap-2 text-ink-secondary hover:text-ink font-medium"
             >
               {selectedInvoiceIds.size > 0 && selectedInvoiceIds.size === filteredInvoices.length ? (
-                <CheckSquare className="h-4 w-4 text-[#B45309]" />
+                <CheckSquare className="h-4 w-4 text-warning" />
               ) : (
-                <Square className="h-4 w-4 text-[#9CA3AF]" />
+                <Square className="h-4 w-4 text-muted" />
               )}
               <span>Select all visible pick orders ({filteredInvoices.length})</span>
             </button>
 
             {selectedInvoiceIds.size > 0 && (
-              <span className="text-[#B45309] font-mono font-bold">
+              <span className="text-warning font-mono font-bold">
                 {selectedInvoiceIds.size} orders selected for batch picking
               </span>
             )}
@@ -278,15 +278,15 @@ function DepotPickContent() {
 
       {/* Orders List */}
       {isLoading ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-[#E5E7EB] space-y-3 shadow-xs">
-          <RefreshCw className="h-6 w-6 animate-spin text-[#005E82] mx-auto" />
-          <p className="text-xs text-[#6B7280]">Loading picking queue...</p>
+        <div className="text-center py-16 bg-white rounded-2xl border border-line space-y-3 shadow-xs">
+          <RefreshCw className="h-6 w-6 animate-spin text-primary mx-auto" />
+          <p className="text-xs text-muted">Loading picking queue...</p>
         </div>
       ) : filteredInvoices.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-3xl border border-[#E5E7EB] space-y-3 shadow-xs">
-          <CheckCircle2 className="h-12 w-12 text-[#15803D] mx-auto opacity-80" />
-          <h3 className="text-base font-bold text-[#111827]">Picking Queue Clear</h3>
-          <p className="text-xs text-[#6B7280] max-w-md mx-auto">
+        <div className="text-center py-16 bg-white rounded-3xl border border-line space-y-3 shadow-xs">
+          <CheckCircle2 className="h-12 w-12 text-success mx-auto opacity-80" />
+          <h3 className="text-base font-bold text-ink">Picking Queue Clear</h3>
+          <p className="text-xs text-muted max-w-md mx-auto">
             {searchQuery
               ? `No picking orders matched "${searchQuery}". Clear your search.`
               : 'All confirmed orders at this depot have been picked and forwarded to packing.'}
@@ -302,39 +302,39 @@ function DepotPickContent() {
                 key={invoice.id}
                 className={`bg-white rounded-3xl border p-5 sm:p-6 space-y-5 shadow-xs transition-all ${
                   isSelected
-                    ? 'border-[#B45309] ring-1 ring-[#B45309]/40 bg-[#B45309]/5'
-                    : 'border-[#E5E7EB] hover:border-[#005E82]/30 hover:shadow-md'
+                    ? 'border-warning ring-1 ring-warning/40 bg-warning/5'
+                    : 'border-line hover:border-primary/30 hover:shadow-md'
                 }`}
               >
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E5E7EB]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-line">
                   <div className="flex items-start gap-3">
                     <button
                       type="button"
                       onClick={() => toggleSelectInvoice(invoice.id)}
-                      className="mt-1 p-1 rounded-lg hover:bg-[#F8FAFC] text-[#9CA3AF] hover:text-[#111827] transition-colors"
+                      className="mt-1 p-1 min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 inline-flex items-center justify-center rounded-lg hover:bg-surface text-muted hover:text-ink transition-colors"
                       title="Select for batch picking"
                     >
                       {isSelected ? (
-                        <CheckSquare className="h-5 w-5 text-[#B45309]" />
+                        <CheckSquare className="h-5 w-5 text-warning" />
                       ) : (
-                        <Square className="h-5 w-5 text-[#9CA3AF]" />
+                        <Square className="h-5 w-5 text-muted" />
                       )}
                     </button>
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-bold text-[#005E82]">
+                        <span className="font-mono text-sm font-bold text-primary">
                           #{invoice.invoiceNumber}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-[#B45309]/10 text-[#B45309] border border-[#B45309]/20">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-warning-soft text-warning border border-warning-border">
                           READY TO PICK
                         </span>
                       </div>
-                      <h3 className="text-base font-bold text-[#111827] mt-1">
+                      <h3 className="text-base font-bold text-ink mt-1">
                         {invoice.customerCompany}
                       </h3>
-                      <p className="text-xs text-[#6B7280]">
+                      <p className="text-xs text-muted">
                         Customer Contact: {invoice.customerName || 'N/A'} • Created: {formatDate(invoice.createdAt)}
                       </p>
                     </div>
@@ -344,7 +344,7 @@ function DepotPickContent() {
                     <button
                       type="button"
                       onClick={() => window.print()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F8FAFC] text-[#4B5563] hover:text-[#111827] text-xs font-semibold transition-colors shadow-xs"
+                      className="flex items-center gap-1.5 px-3 py-1.5 min-h-11 sm:min-h-0 rounded-xl border border-line bg-white hover:bg-surface text-ink-secondary hover:text-ink text-xs font-semibold transition-colors shadow-xs"
                     >
                       <Printer className="h-3.5 w-3.5" />
                       <span>Print Pick Slip</span>
@@ -354,7 +354,7 @@ function DepotPickContent() {
 
                 {/* Line Items to Pick */}
                 <div className="space-y-2">
-                  <div className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider font-mono">
+                  <div className="text-[11px] font-bold text-muted uppercase tracking-wider font-mono">
                     Items to Retrieve from Depot Shelves ({invoice.items?.length || 0})
                   </div>
 
@@ -368,26 +368,26 @@ function DepotPickContent() {
                           onClick={() => toggleItemPick(invoice.id, item.id)}
                           className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs cursor-pointer transition-all ${
                             isItemChecked
-                              ? 'bg-[#15803D]/10 border-[#15803D]/30 text-[#15803D]'
-                              : 'bg-[#F8FAFC] border-[#E5E7EB] hover:bg-[#F1F5F9]'
+                              ? 'bg-success-soft border-success/30 text-success'
+                              : 'bg-surface border-line hover:bg-surface-muted'
                           }`}
                         >
                           <div className="flex items-center gap-3">
                             <div
                               className={`h-5 w-5 rounded-md border flex items-center justify-center ${
                                 isItemChecked
-                                  ? 'bg-[#15803D] border-[#15803D] text-white'
-                                  : 'border-[#D1D5DB] bg-white'
+                                  ? 'bg-success border-success text-white'
+                                  : 'border-line bg-white'
                               }`}
                             >
                               {isItemChecked && <CheckCircle2 className="h-4 w-4 text-white" />}
                             </div>
 
                             <div>
-                              <div className={`font-semibold ${isItemChecked ? 'text-[#15803D] line-through' : 'text-[#111827]'}`}>
+                              <div className={`font-semibold ${isItemChecked ? 'text-success line-through' : 'text-ink'}`}>
                                 {item.productName}
                               </div>
-                              <div className="text-[11px] text-[#6B7280] font-mono mt-0.5">
+                              <div className="text-[11px] text-muted font-mono mt-0.5">
                                 SKU: {item.productSku} • {item.brand}
                               </div>
                               {item.allocatedSerials && item.allocatedSerials.length > 0 && (
@@ -395,7 +395,7 @@ function DepotPickContent() {
                                   {item.allocatedSerials.map((sn: string, sidx: number) => (
                                     <span
                                       key={sidx}
-                                      className="px-1.5 py-0.5 rounded bg-[#005E82]/10 border border-[#005E82]/20 text-[#005E82] font-mono text-[10px]"
+                                      className="px-1.5 py-0.5 rounded bg-primary-soft border border-primary/20 text-primary font-mono text-[10px]"
                                     >
                                       SN: {sn}
                                     </span>
@@ -406,7 +406,7 @@ function DepotPickContent() {
                           </div>
 
                           <div className="text-right font-mono font-bold shrink-0 ml-3">
-                            <span className="px-3 py-1.5 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] shadow-xs">
+                            <span className="px-3 py-1.5 rounded-xl bg-white border border-line text-ink shadow-xs">
                               Qty: {item.quantity}
                             </span>
                           </div>
@@ -422,7 +422,7 @@ function DepotPickContent() {
                     type="button"
                     onClick={() => handlePickOrder(invoice)}
                     disabled={Boolean(pickingInFlight[invoice.id])}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#005E82] hover:bg-[#004B68] text-white text-sm font-bold shadow-xs transition-all disabled:opacity-50 active:scale-98"
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary hover:bg-primary-hover text-white text-sm font-bold shadow-xs transition-all disabled:opacity-50 active:scale-98"
                   >
                     {pickingInFlight[invoice.id] ? (
                       <>
@@ -445,16 +445,16 @@ function DepotPickContent() {
 
       {/* Floating Batch Picking Action Bar */}
       {selectedInvoiceIds.size > 0 && (
-        <div className="fixed bottom-6 inset-x-4 sm:inset-x-auto sm:right-8 sm:left-auto max-w-xl z-40 bg-white/95 backdrop-blur-xl border border-[#E5E7EB] p-4 rounded-3xl shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in ring-1 ring-[#005E82]/20">
+        <div className="fixed bottom-6 inset-x-4 sm:inset-x-auto sm:right-8 sm:left-auto max-w-xl z-40 bg-white/95 backdrop-blur-xl border border-line p-4 rounded-3xl shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in ring-1 ring-primary/20">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-[#005E82] text-white flex items-center justify-center font-bold font-mono shadow-xs shrink-0">
+            <div className="h-10 w-10 rounded-2xl bg-primary text-white flex items-center justify-center font-bold font-mono shadow-xs shrink-0">
               {selectedInvoiceIds.size}
             </div>
             <div>
-              <div className="text-xs font-bold text-[#111827]">
+              <div className="text-xs font-bold text-ink">
                 {selectedInvoiceIds.size} Orders Selected for Batch Pick
               </div>
-              <p className="text-[11px] text-[#6B7280]">
+              <p className="text-[11px] text-muted">
                 Confirm all items retrieved from shelves and forward directly to packing.
               </p>
             </div>
@@ -463,14 +463,14 @@ function DepotPickContent() {
           <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
               onClick={() => setSelectedInvoiceIds(new Set())}
-              className="px-3 py-2 rounded-xl text-xs font-semibold text-[#6B7280] hover:text-[#111827]"
+              className="px-3 py-2 min-h-11 sm:min-h-0 rounded-xl text-xs font-semibold text-muted hover:text-ink"
             >
               Deselect All
             </button>
             <button
               onClick={handleBatchPickSelected}
               disabled={isBatchPicking}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#005E82] hover:bg-[#004B68] text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2 min-h-11 sm:min-h-0 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
             >
               {isBatchPicking ? (
                 <>
@@ -495,9 +495,9 @@ export default function DepotPickPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-8 text-center bg-white rounded-2xl border border-[#E5E7EB]">
-          <RefreshCw className="h-6 w-6 animate-spin text-[#005E82] mx-auto" />
-          <p className="text-xs text-[#6B7280] mt-2">Loading picking queue...</p>
+        <div className="p-8 text-center bg-white rounded-2xl border border-line">
+          <RefreshCw className="h-6 w-6 animate-spin text-primary mx-auto" />
+          <p className="text-xs text-muted mt-2">Loading picking queue...</p>
         </div>
       }
     >
