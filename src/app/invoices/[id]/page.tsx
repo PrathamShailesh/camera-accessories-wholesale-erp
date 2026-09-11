@@ -411,7 +411,7 @@ export default function InvoiceDetailPage() {
               <span className="text-xs font-mono font-semibold text-ink-secondary">Currency: USD ($)</span>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-surface border-b border-line text-muted uppercase tracking-wider font-semibold text-[11px]">
                   <tr>
@@ -459,7 +459,7 @@ export default function InvoiceDetailPage() {
                         </td>
                       )}
                       {!isDepotUser && (
-                        <td className="py-3 px-4 text-right font-mono font-bold text-ink">
+                        <td className="py-3 px-4 text-right font-mono text-ink-secondary">
                           {formatUSD(item.totalPrice)}
                         </td>
                       )}
@@ -474,30 +474,72 @@ export default function InvoiceDetailPage() {
               </table>
             </div>
 
+            <div className="md:hidden divide-y divide-line-soft">
+              {(invoice.items || []).map((item, idx) => (
+                <div key={idx} className="p-4 space-y-2 text-xs">
+                  <div className="font-semibold text-ink text-sm">{item.productName}</div>
+                  <div className="text-[11px] font-mono text-muted">
+                    SKU: {item.productSku} · Brand: {item.brand}
+                  </div>
+                  {item.allocatedSerials && item.allocatedSerials.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {item.allocatedSerials.map((sn) => (
+                        <span
+                          key={sn}
+                          className="px-1.5 py-0.5 rounded bg-primary-soft border border-primary/15 text-primary font-mono text-[10px] font-semibold"
+                        >
+                          {sn}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-[10px] text-muted italic">Non-serialized</span>
+                  )}
+                  <div className="flex items-center justify-between pt-1.5 border-t border-line-soft">
+                    <span className="text-muted">
+                      Qty <span className="font-mono font-bold text-ink">{item.quantity}</span>
+                      {!isDepotUser && <> × {formatUSD(item.unitPrice)}</>}
+                    </span>
+                    {!isDepotUser && (
+                      <span className="font-mono font-bold text-ink">{formatUSD(item.totalPrice)}</span>
+                    )}
+                  </div>
+                  {!isDepotUser && hasFreightAllocation && (
+                    <div className="flex items-center justify-between text-muted">
+                      <span>Allocated Freight</span>
+                      <span className="font-mono text-ink-secondary">
+                        {item.allocatedFreight ? formatUSD(item.allocatedFreight) : '—'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
             {!isDepotUser && (
               <div className="p-4 bg-surface border-t border-line-soft flex flex-col items-end space-y-1.5 text-xs font-mono">
-                <div className="flex justify-between w-64 text-ink-secondary">
+                <div className="flex justify-between w-full sm:w-64 text-ink-secondary">
                   <span>Subtotal:</span>
                   <span className="text-ink font-medium">{formatUSD(invoice.subtotal)}</span>
                 </div>
                 {invoice.discountAmount > 0 && (
-                  <div className="flex justify-between w-64 text-emerald-700">
+                  <div className="flex justify-between w-full sm:w-64 text-emerald-700">
                     <span>Discount:</span>
                     <span>-{formatUSD(invoice.discountAmount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between w-64 text-ink-secondary">
+                <div className="flex justify-between w-full sm:w-64 text-ink-secondary">
                   <span>VAT / Tax (5%):</span>
                   <span className="text-ink">{formatUSD(invoice.taxAmount)}</span>
                 </div>
-                <div className="flex justify-between w-64 text-ink-secondary items-center">
+                <div className="flex justify-between w-full sm:w-64 text-ink-secondary items-center">
                   <span className="flex items-center gap-1.5">
                     Shipping / Freight:
                     {invoice.freightIsManualOverride && <Badge tone="warning">Manual Override</Badge>}
                   </span>
                   <span className="text-ink">{formatUSD(invoice.shippingCost)}</span>
                 </div>
-                <div className="flex justify-between w-64 pt-2 border-t border-line text-sm font-bold text-ink">
+                <div className="flex justify-between w-full sm:w-64 pt-2 border-t border-line text-sm font-bold text-ink">
                   <span>Grand Total (USD):</span>
                   <span className="text-primary font-bold">{formatUSD(invoice.grandTotal)}</span>
                 </div>
@@ -715,7 +757,7 @@ export default function InvoiceDetailPage() {
 
       {/* Packing Modal */}
       {isPackingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in overflow-y-auto">
           <div className="relative w-full max-w-lg rounded-xl border border-line bg-white shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-line-soft">
               <h3 className="text-sm font-bold text-ink">Record Package & Box Specs</h3>
@@ -740,7 +782,7 @@ export default function InvoiceDetailPage() {
 
       {/* Shipping Modal */}
       {isShippingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in overflow-y-auto">
           <div className="relative w-full max-w-lg rounded-xl border border-line bg-white shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-line-soft">
               <h3 className="text-sm font-bold text-ink">Dispatch Order & Attach Airway Bill</h3>

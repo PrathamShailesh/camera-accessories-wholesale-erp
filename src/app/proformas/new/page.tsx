@@ -933,7 +933,7 @@ function ProformaBuilder() {
 
       {/* Quick Add Customer Modal */}
       {isQuickAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in overflow-y-auto">
           <div className="relative w-full max-w-lg rounded-xl border border-line bg-white shadow-2xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-line-soft">
               <div className="flex items-center gap-2">
@@ -953,7 +953,7 @@ function ProformaBuilder() {
                 value={newCustCompany}
                 onChange={(e) => setNewCustCompany(e.target.value)}
               />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
                   label="Contact Person *"
                   required
@@ -970,7 +970,7 @@ function ProformaBuilder() {
                   onChange={(e) => setNewCustEmail(e.target.value)}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
                   label="Phone Number"
                   placeholder="+971 4 881 2299"

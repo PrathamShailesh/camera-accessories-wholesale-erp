@@ -263,7 +263,7 @@ export default function CreateServiceInvoicePage() {
               <select
                 value={selectedCustomerId}
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] font-semibold focus:border-[#005E82] focus:outline-none"
+                className="w-full px-3 py-3 md:py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] font-semibold focus:border-[#005E82] focus:outline-none"
               >
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -281,7 +281,7 @@ export default function CreateServiceInvoicePage() {
                 type="date"
                 value={issueDate}
                 onChange={(e) => setIssueDate(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] font-mono focus:border-[#005E82] focus:outline-none"
+                className="w-full px-3 py-3 md:py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] font-mono focus:border-[#005E82] focus:outline-none"
               />
             </div>
 
@@ -293,7 +293,7 @@ export default function CreateServiceInvoicePage() {
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] font-mono focus:border-[#005E82] focus:outline-none"
+                className="w-full px-3 py-3 md:py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] font-mono focus:border-[#005E82] focus:outline-none"
               />
             </div>
           </div>
@@ -317,7 +317,7 @@ export default function CreateServiceInvoicePage() {
             <button
               type="button"
               onClick={handleAddItem}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#005E82]/10 text-[#005E82] hover:bg-[#005E82]/20 text-xs font-bold transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 min-h-11 md:min-h-0 rounded-xl bg-[#005E82]/10 text-[#005E82] hover:bg-[#005E82]/20 text-xs font-bold transition-all"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>Add Service Line</span>
@@ -342,7 +342,7 @@ export default function CreateServiceInvoicePage() {
                     <button
                       type="button"
                       onClick={() => handleRemoveItem(item.id)}
-                      className="text-red-500 hover:text-red-700 p-1"
+                      className="inline-flex items-center justify-center min-h-11 min-w-11 md:min-h-0 md:min-w-0 text-red-500 hover:text-red-700 p-1"
                       title="Remove Item"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -359,7 +359,7 @@ export default function CreateServiceInvoicePage() {
                         placeholder="e.g. International Cargo Logistics & Airway Documentation"
                         value={item.description}
                         onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs focus:border-[#005E82] focus:outline-none"
+                        className="w-full px-3 py-3 md:py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs focus:border-[#005E82] focus:outline-none"
                       />
                     </div>
 
@@ -370,7 +370,7 @@ export default function CreateServiceInvoicePage() {
                       <select
                         value={item.category}
                         onChange={(e) => handleItemChange(item.id, 'category', e.target.value as any)}
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs font-semibold focus:border-[#005E82] focus:outline-none"
+                        className="w-full px-3 py-3 md:py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs font-semibold focus:border-[#005E82] focus:outline-none"
                       >
                         {SERVICE_CATEGORIES.map((cat) => (
                           <option key={cat.value} value={cat.value}>
@@ -392,7 +392,7 @@ export default function CreateServiceInvoicePage() {
                         step="1"
                         value={item.quantity}
                         onChange={(e) => handleItemChange(item.id, 'quantity', Number(e.target.value))}
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs font-mono focus:border-[#005E82] focus:outline-none"
+                        className="w-full px-3 py-3 md:py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs font-mono focus:border-[#005E82] focus:outline-none"
                       />
                     </div>
 
@@ -406,7 +406,7 @@ export default function CreateServiceInvoicePage() {
                         step="0.01"
                         value={item.unitPrice}
                         onChange={(e) => handleItemChange(item.id, 'unitPrice', Number(e.target.value))}
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs font-mono focus:border-[#005E82] focus:outline-none"
+                        className="w-full px-3 py-3 md:py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs font-mono focus:border-[#005E82] focus:outline-none"
                       />
                     </div>
 
@@ -420,7 +420,7 @@ export default function CreateServiceInvoicePage() {
                         max="100"
                         value={item.discountPercent}
                         onChange={(e) => handleItemChange(item.id, 'discountPercent', Number(e.target.value))}
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs font-mono focus:border-[#005E82] focus:outline-none"
+                        className="w-full px-3 py-3 md:py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs font-mono focus:border-[#005E82] focus:outline-none"
                       />
                     </div>
 
@@ -434,7 +434,7 @@ export default function CreateServiceInvoicePage() {
                         max="100"
                         value={item.taxRate}
                         onChange={(e) => handleItemChange(item.id, 'taxRate', Number(e.target.value))}
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs font-mono focus:border-[#005E82] focus:outline-none"
+                        className="w-full px-3 py-3 md:py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#111827] text-xs font-mono focus:border-[#005E82] focus:outline-none"
                       />
                     </div>
                   </div>
@@ -467,7 +467,7 @@ export default function CreateServiceInvoicePage() {
                   step="0.01"
                   value={otherCharges}
                   onChange={(e) => setOtherCharges(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] font-mono focus:border-[#005E82] focus:outline-none"
+                  className="w-full px-3 py-3 md:py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] font-mono focus:border-[#005E82] focus:outline-none"
                 />
               </div>
 
@@ -480,7 +480,7 @@ export default function CreateServiceInvoicePage() {
                   placeholder="e.g. Payment due within 14 days. Thank you for your business."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] focus:border-[#005E82] focus:outline-none text-xs"
+                  className="w-full px-3 py-3 md:py-2 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] focus:border-[#005E82] focus:outline-none text-xs"
                 />
               </div>
             </div>
@@ -521,14 +521,14 @@ export default function CreateServiceInvoicePage() {
         <div className="flex items-center justify-end gap-3">
           <Link
             href="/service-invoices"
-            className="px-5 py-3 rounded-2xl bg-white border border-[#E5E7EB] text-[#6B7280] hover:text-[#111827] text-xs font-bold"
+            className="flex items-center justify-center px-5 py-3.5 md:py-3 min-h-11 md:min-h-0 rounded-2xl bg-white border border-[#E5E7EB] text-[#6B7280] hover:text-[#111827] text-xs font-bold"
           >
             Cancel
           </Link>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#005E82] hover:bg-[#004B68] text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-6 py-3.5 md:py-3 min-h-11 md:min-h-0 rounded-2xl bg-[#005E82] hover:bg-[#004B68] text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
           >
             {isSubmitting ? (
               <>
