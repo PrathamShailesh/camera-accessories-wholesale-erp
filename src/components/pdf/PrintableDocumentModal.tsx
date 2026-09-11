@@ -93,19 +93,19 @@ export default function PrintableDocumentModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-slate-900/50 backdrop-blur-sm overflow-y-auto animate-fade-in no-print-backdrop">
       <div className="relative w-full max-w-4xl rounded-2xl border border-line bg-white shadow-2xl overflow-hidden my-auto">
         {/* Action Header bar (hidden during print) */}
-        <div className="flex items-center justify-between px-6 py-3.5 border-b border-line bg-surface no-print">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-primary font-mono">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-6 py-3.5 border-b border-line bg-surface no-print">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary font-mono shrink-0">
               Document Preview
             </span>
-            <span className="text-xs text-muted">• {docTitle}</span>
+            <span className="text-xs text-muted truncate">• {docTitle}</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
               onClick={() => setOverrideSeal((prev) => (prev !== null ? !prev : !policy.shouldSeal))}
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold border transition-colors ${
+              className={`flex items-center gap-1.5 min-h-11 sm:min-h-0 rounded-full px-2.5 py-1.5 text-xs font-semibold border transition-colors ${
                 shouldShowSeal
                   ? 'bg-success-soft border-success-border text-success hover:bg-success-soft/70'
                   : 'bg-surface-muted border-line text-muted hover:text-ink'
@@ -117,14 +117,14 @@ export default function PrintableDocumentModal({
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
+              className="flex items-center gap-1.5 min-h-11 sm:min-h-0 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
             >
               <Printer className="h-4 w-4" />
               <span>Print / Save as PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="rounded-full p-1.5 text-muted hover:text-ink hover:bg-surface-muted"
+              className="flex items-center justify-center min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 rounded-full p-1.5 text-muted hover:text-ink hover:bg-surface-muted"
             >
               <X className="h-4 w-4" />
             </button>
@@ -228,8 +228,8 @@ export default function PrintableDocumentModal({
             </div>
 
             {/* Main Items Table with Continuous Black Grid Borders */}
-            <div className="mb-3">
-              <table className="w-full text-left border-collapse border border-black text-xs text-black">
+            <div className="mb-3 overflow-x-auto">
+              <table className="w-full min-w-[480px] text-left border-collapse border border-black text-xs text-black">
                 <thead>
                   <tr className="bg-surface-muted border-b border-black text-[11px] font-bold text-black">
                     <th className="py-1.5 px-2 border-r border-black text-center w-[7%]">Sl. No.</th>
