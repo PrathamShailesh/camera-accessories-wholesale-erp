@@ -7,7 +7,7 @@ import { formatDateTime } from '@/lib/utils';
 import { User, UserRole, Depot } from '@/types/erp';
 import ImageUploadField from '@/components/ui/ImageUploadField';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Button } from '@/components/ui/Button';
+import { Button, IconButton } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
@@ -426,7 +426,7 @@ export default function UsersManagementPage() {
               options={[{ label: 'All roles', value: 'ALL' }, ...ROLE_OPTIONS]}
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              wrapperClassName="w-44"
+              wrapperClassName="w-full sm:w-44"
             />
             <span className="text-xs text-muted sm:ml-auto">{filteredUsers.length} users</span>
           </div>
@@ -451,7 +451,8 @@ export default function UsersManagementPage() {
               }
             />
           ) : (
-            <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
+            <>
+            <Card className="hidden md:block overflow-hidden p-0 border-0 rounded-none bg-transparent">
               <Table>
                 <TableHeader>
                   <TableHead>User</TableHead>
@@ -518,6 +519,54 @@ export default function UsersManagementPage() {
                 </TableBody>
               </Table>
             </Card>
+
+            <div className="md:hidden space-y-3">
+              {filteredUsers.map((u) => (
+                <Card key={u.id} className="p-4 space-y-2.5">
+                  <div className="flex items-start gap-3">
+                    <Avatar name={u.name} src={u.avatar} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-ink truncate">{u.name}</div>
+                      <div className="text-xs text-muted truncate">{u.email}</div>
+                    </div>
+                    <StatusBadge status={u.status} />
+                  </div>
+                  <div className="flex items-center justify-between text-xs pt-1.5 border-t border-line-soft">
+                    <Badge tone={ROLE_TONE[u.role] || 'neutral'}>{u.role.replace(/_/g, ' ')}</Badge>
+                    <span className="text-muted">
+                      {u.role === 'DEPOT_USER' ? u.assignedDepotName || '—' : 'All depots'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-muted">
+                    Last login: {u.lastLogin ? formatDateTime(u.lastLogin) : 'Never'}
+                  </div>
+                  <div className="flex items-center flex-wrap gap-1.5 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleToggleStatus(u)}
+                      className={u.status === 'ACTIVE' ? 'text-amber-600' : 'text-emerald-600'}
+                    >
+                      {u.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setResetTarget(u)}>
+                      Reset
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => openEdit(u)}>
+                      Edit
+                    </Button>
+                    <IconButton
+                      label="Delete User"
+                      className="text-muted hover:text-danger hover:bg-danger-soft"
+                      onClick={() => setDeleteTarget(u)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </IconButton>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            </>
           )}
         </>
       )}

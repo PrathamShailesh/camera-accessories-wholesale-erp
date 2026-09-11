@@ -167,7 +167,7 @@ export default function PublicQuotePortalPage() {
             {/* Download / Print PDF */}
             <button
               onClick={() => setIsPrintModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold shadow-sm transition-all"
+              className="flex items-center gap-1.5 px-3.5 py-2 min-h-11 sm:min-h-0 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold shadow-sm transition-all"
             >
               <Printer className="h-4 w-4 text-muted" />
               <span>Print Official PDF</span>
@@ -177,7 +177,7 @@ export default function PublicQuotePortalPage() {
             {!isConfirmed && (
               <button
                 onClick={() => setIsConfirmModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-glow-emerald transition-all transform active:scale-95"
+                className="flex items-center gap-2 px-4 py-2 min-h-11 sm:min-h-0 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-glow-emerald transition-all transform active:scale-95"
               >
                 <CheckCircle2 className="h-4 w-4" />
                 <span>Accept & Confirm Quotation</span>
@@ -316,7 +316,7 @@ export default function PublicQuotePortalPage() {
             <span className="text-xs text-muted font-mono">{(proforma.items || []).length} line items</span>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-900/50 text-muted text-[11px] font-semibold uppercase tracking-wider font-mono">
@@ -355,6 +355,31 @@ export default function PublicQuotePortalPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="md:hidden divide-y divide-slate-800/60">
+            {(proforma.items || []).map((item, index) => (
+              <div key={item.id || index} className="p-4 space-y-2 text-xs">
+                <div className="font-bold text-slate-100">{item.productName}</div>
+                <div className="text-[11px] font-mono text-muted flex items-center gap-2 flex-wrap">
+                  <span>SKU: {item.productSku}</span>
+                  <span>· {item.brand}</span>
+                  {item.trackSerial && (
+                    <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px]">
+                      Serial Tracked
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/60 font-mono">
+                  <span className="text-muted">
+                    Qty <span className="font-bold text-slate-200">{item.quantity}</span> × {formatUSD(item.unitPrice)}
+                    {item.discountPercent > 0 && <span> (-{item.discountPercent}%)</span>}
+                  </span>
+                  <span className="font-bold text-white">{formatUSD(item.totalPrice)}</span>
+                </div>
+                <div className="text-[11px] text-muted font-mono">Tax Rate: {item.taxRate}%</div>
+              </div>
+            ))}
           </div>
 
           {/* Totals Calculation Ribbon */}
@@ -531,8 +556,8 @@ export default function PublicQuotePortalPage() {
 
       {/* Accept Deal Confirmation Modal */}
       {isConfirmModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl p-6 sm:p-8 space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="relative w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl p-6 sm:p-8 space-y-5">
             <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
               <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 <CheckCircle2 className="h-6 w-6" />
@@ -572,14 +597,14 @@ export default function PublicQuotePortalPage() {
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
               <button
                 onClick={() => setIsConfirmModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl text-xs text-muted hover:text-white transition-colors"
+                className="px-4 py-2.5 min-h-11 sm:min-h-0 rounded-xl text-xs text-muted hover:text-white transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCustomerAccept}
                 disabled={isConfirming}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-glow-emerald transition-all transform active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2.5 min-h-11 sm:min-h-0 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-glow-emerald transition-all transform active:scale-95 disabled:opacity-50"
               >
                 <Check className="h-4 w-4" />
                 <span>{isConfirming ? 'Confirming...' : 'Yes, Confirm Deal'}</span>
