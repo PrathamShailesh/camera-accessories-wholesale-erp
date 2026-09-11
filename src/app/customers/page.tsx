@@ -266,58 +266,105 @@ export default function CustomersPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
-          <Table>
-            <TableHeader>
-              <TableHead>Company</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Country</TableHead>
-              <TableHead align="right">Credit Limit</TableHead>
-              <TableHead align="right">Balance</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead align="right">Action</TableHead>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell>
-                    <div className="font-semibold text-ink">{c.companyName}</div>
+        <>
+          <div className="hidden md:block">
+            <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
+              <Table>
+                <TableHeader>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Country</TableHead>
+                  <TableHead align="right">Credit Limit</TableHead>
+                  <TableHead align="right">Balance</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead align="right">Action</TableHead>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell>
+                        <div className="font-semibold text-ink">{c.companyName}</div>
+                        <div className="text-xs text-muted font-mono mt-0.5">{c.customerCode}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-ink">{c.contactPerson}</div>
+                        <div className="text-xs text-muted mt-0.5">{c.email}</div>
+                      </TableCell>
+                      <TableCell className="text-muted">{c.country || '—'}</TableCell>
+                      <TableCell align="right" className="font-mono">{formatUSD(c.creditLimit)}</TableCell>
+                      <TableCell align="right" className="font-mono">{formatUSD(c.currentBalance)}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={c.status} />
+                      </TableCell>
+                      <TableCell align="right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
+                            Edit
+                          </Button>
+                          <LinkButton href={`/customers/${c.id}`} size="sm" variant="secondary" iconRight={<ArrowRight className="h-3.5 w-3.5" />}>
+                            View
+                          </LinkButton>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted hover:text-danger hover:bg-danger-soft px-2"
+                            onClick={() => setDeletingCustomer(c)}
+                            title="Delete Customer"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </div>
+
+          <div className="md:hidden space-y-3">
+            {filtered.map((c) => (
+              <Card key={c.id} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-ink truncate">{c.companyName}</div>
                     <div className="text-xs text-muted font-mono mt-0.5">{c.customerCode}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-ink">{c.contactPerson}</div>
-                    <div className="text-xs text-muted mt-0.5">{c.email}</div>
-                  </TableCell>
-                  <TableCell className="text-muted">{c.country || '—'}</TableCell>
-                  <TableCell align="right" className="font-mono">{formatUSD(c.creditLimit)}</TableCell>
-                  <TableCell align="right" className="font-mono">{formatUSD(c.currentBalance)}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={c.status} />
-                  </TableCell>
-                  <TableCell align="right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
-                        Edit
-                      </Button>
-                      <LinkButton href={`/customers/${c.id}`} size="sm" variant="secondary" iconRight={<ArrowRight className="h-3.5 w-3.5" />}>
-                        View
-                      </LinkButton>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted hover:text-danger hover:bg-danger-soft px-2"
-                        onClick={() => setDeletingCustomer(c)}
-                        title="Delete Customer"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+                  </div>
+                  <StatusBadge status={c.status} />
+                </div>
+                <div className="text-xs text-ink-secondary">
+                  <div>{c.contactPerson}</div>
+                  <div className="text-muted mt-0.5">{c.email}</div>
+                </div>
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-line-soft">
+                  <span className="text-muted">{c.country || '—'}</span>
+                  <span className="font-mono text-ink">{formatUSD(c.creditLimit)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted">Balance</span>
+                  <span className="font-mono text-ink">{formatUSD(c.currentBalance)}</span>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(c)}>
+                    Edit
+                  </Button>
+                  <LinkButton href={`/customers/${c.id}`} size="sm" variant="secondary" className="flex-1" iconRight={<ArrowRight className="h-3.5 w-3.5" />}>
+                    View
+                  </LinkButton>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted hover:text-danger hover:bg-danger-soft px-2.5"
+                    onClick={() => setDeletingCustomer(c)}
+                    title="Delete Customer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </>
       )}
 
       <Drawer

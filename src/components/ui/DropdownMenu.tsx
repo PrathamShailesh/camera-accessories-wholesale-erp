@@ -40,7 +40,7 @@ export function DropdownMenuItem({
   return (
     <RadixDropdown.Item
       className={cn(
-        'flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium outline-none cursor-pointer transition-colors',
+        'flex min-h-11 md:min-h-0 items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium outline-none cursor-pointer transition-colors',
         destructive ? 'text-danger hover:bg-danger-soft' : 'text-ink hover:bg-surface-muted',
         className
       )}

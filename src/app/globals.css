@@ -101,6 +101,14 @@ body {
   }
 }
 
+/* Below 768px: bump form control font-size to 16px so iOS Safari does not
+   auto-zoom the page on focus. Desktop/tablet (>=768px) keeps 0.875rem. */
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 1rem;
+  }
+}
+
 @layer components {
   /* Clean enterprise table */
   .erp-table {

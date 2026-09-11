@@ -23,6 +23,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button, LinkButton, IconButton } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SearchInput } from '@/components/ui/Input';
 import { Toolbar, ToolbarGroup, FilterPillGroup } from '@/components/ui/FilterBar';
@@ -253,6 +254,88 @@ export default function ProformasPage() {
             />
           </div>
         ) : (
+          <>
+          <div className="md:hidden space-y-3">
+            {filteredProformas.map((pf) => (
+              <Card
+                key={pf.id}
+                className="p-4 space-y-2.5 cursor-pointer"
+                onClick={() => router.push(`/proformas/${pf.id}`)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/proformas/${pf.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-semibold text-primary hover:underline text-sm"
+                    >
+                      {pf.proformaNumber}
+                    </Link>
+                    <div className="font-medium text-ink text-sm truncate">{pf.customerCompany}</div>
+                    <div className="text-xs text-muted truncate">{pf.customerName}</div>
+                  </div>
+                  <StatusBadge status={pf.status} className="shrink-0" />
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-semibold text-ink tabular-nums">{formatUSD(pf.grandTotal)}</span>
+                  <span className="text-xs text-muted">{formatDate(pf.issueDate)}</span>
+                </div>
+
+                {pf.convertedToInvoiceNumber && (
+                  <div className="text-[11px] text-success flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    <span>Inv: {pf.convertedToInvoiceNumber}</span>
+                  </div>
+                )}
+
+                <div
+                  className="flex items-center justify-end gap-1.5 pt-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {(pf.status === 'DRAFT' || pf.status === 'SENT') && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleApprove(pf.id)}
+                      loading={approvingId === pf.id}
+                    >
+                      Approve
+                    </Button>
+                  )}
+                  {pf.status === 'CONFIRMED' && (
+                    <LinkButton href={`/proformas/${pf.id}`} size="sm" className="bg-success text-white hover:bg-success/90">
+                      Convert
+                    </LinkButton>
+                  )}
+                  <IconButton label="Print / PDF" onClick={() => setSelectedDoc(pf)}>
+                    <Printer className="h-3.5 w-3.5 text-muted" />
+                  </IconButton>
+                  <LinkButton href={`/proformas/${pf.id}`} size="sm" variant="secondary">
+                    View
+                  </LinkButton>
+                  {pf.status !== 'CONVERTED' && pf.status !== 'CANCELLED' && (
+                    <IconButton
+                      label="Cancel Proforma"
+                      onClick={() => setCancellingProforma(pf)}
+                      className="text-muted hover:text-warning hover:bg-warning-soft"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                    </IconButton>
+                  )}
+                  {(pf.status === 'DRAFT' || pf.status === 'CANCELLED') && (
+                    <IconButton
+                      label="Delete Proforma"
+                      onClick={() => setDeletingProforma(pf)}
+                      className="text-muted hover:text-danger hover:bg-danger-soft"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </IconButton>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableHead>Proforma #</TableHead>
@@ -346,6 +429,8 @@ export default function ProformasPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
+          </>
         )}
       </div>
 

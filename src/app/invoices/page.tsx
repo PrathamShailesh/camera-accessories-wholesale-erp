@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Receipt,
   Printer,
@@ -20,6 +21,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button, LinkButton, IconButton } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { Card } from '@/components/ui/Card';
 import { SearchInput } from '@/components/ui/Input';
 import { Toolbar, ToolbarGroup, FilterPillGroup } from '@/components/ui/FilterBar';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -27,6 +29,7 @@ import { SkeletonTable } from '@/components/ui/Skeleton';
 import { fetchWithCache, getCurrentUserCachedSync } from '@/lib/client-cache';
 
 export default function InvoicesPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User>(
     () => (getCurrentUserCachedSync()?.user as User) || ({
@@ -166,6 +169,70 @@ export default function InvoicesPage() {
             />
           </div>
         ) : (
+          <>
+          <div className="md:hidden space-y-3">
+            {filteredInvoices.map((inv) => (
+              <Card
+                key={inv.id}
+                className="p-4 space-y-2.5 cursor-pointer"
+                onClick={() => router.push(`/invoices/${inv.id}`)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/invoices/${inv.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-semibold text-primary hover:underline text-sm"
+                    >
+                      {inv.invoiceNumber}
+                    </Link>
+                    <div className="font-semibold text-ink text-xs truncate">{inv.customerCompany}</div>
+                    <div className="text-[11px] text-muted truncate">{inv.customerName}</div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <StatusBadge status={inv.fulfilmentStatus} />
+                    <StatusBadge status={inv.paymentStatus} />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-mono font-bold text-ink">
+                    {!isDepotUser ? formatUSD(inv.grandTotal) : '—'}
+                  </span>
+                  <span className="font-mono text-xs text-muted">{formatDate(inv.issueDate)}</span>
+                </div>
+
+                <div className="flex items-center gap-1 text-xs text-ink-secondary">
+                  <Building2 className="h-3.5 w-3.5 text-muted" />
+                  {inv.depotName.replace(' Central Depot', '').replace(' Logistics Hub', '')}
+                </div>
+
+                <div
+                  className="flex items-center justify-end gap-1 pt-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <IconButton label="Print / PDF" onClick={() => setSelectedDoc(inv)}>
+                    <Printer className="h-3.5 w-3.5 text-muted" />
+                  </IconButton>
+                  <LinkButton href={`/invoices/${inv.id}`} size="sm" variant="secondary">
+                    Open
+                  </LinkButton>
+                  {inv.fulfilmentStatus !== 'DELIVERED' &&
+                    inv.fulfilmentStatus !== 'SHIPPED' &&
+                    inv.fulfilmentStatus !== 'CANCELLED' && (
+                      <IconButton
+                        label="Cancel Invoice & Restore Stock"
+                        onClick={() => setCancellingInvoice(inv)}
+                        className="text-muted hover:text-warning hover:bg-warning-soft"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                      </IconButton>
+                    )}
+                </div>
+              </Card>
+            ))}
+          </div>
+          <div className="hidden md:block">
           <Table className="border-0 rounded-none shadow-none">
             <TableHeader>
               <TableHead>Invoice #</TableHead>
@@ -238,6 +305,8 @@ export default function InvoicesPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
+          </>
         )}
       </div>
 

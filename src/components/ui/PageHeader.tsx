@@ -66,12 +66,12 @@ export function SectionHeader({
   className?: string;
 }) {
   return (
-    <div className={cn('flex items-center justify-between gap-3', className)}>
-      <div>
+    <div className={cn('flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between', className)}>
+      <div className="min-w-0">
         <h2 className="text-xl font-semibold tracking-tight text-ink">{title}</h2>
         {description && <p className="text-sm text-muted mt-1">{description}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div>}
     </div>
   );
 }

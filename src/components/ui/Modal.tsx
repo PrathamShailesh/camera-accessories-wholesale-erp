@@ -37,12 +37,12 @@ export function Modal({ open, onClose, title, description, children, footer, siz
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] animate-fade-in" />
         <Dialog.Content
           className={cn(
-            'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-line bg-surface shadow-popover focus:outline-none animate-slide-up',
+            'fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-line bg-surface shadow-popover focus:outline-none animate-slide-up',
             sizeClasses[size]
           )}
         >
           {(title || description) && (
-            <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
+            <div className="shrink-0 flex items-start justify-between gap-3 border-b border-line px-5 py-4">
               <div>
                 {title && <Dialog.Title className="text-sm font-semibold text-ink">{title}</Dialog.Title>}
                 {description && (
@@ -50,14 +50,14 @@ export function Modal({ open, onClose, title, description, children, footer, siz
                 )}
               </div>
               <Dialog.Close asChild>
-                <button className="text-muted hover:text-ink rounded-md p-1 hover:bg-surface-muted" aria-label="Close">
+                <button className="flex h-11 w-11 items-center justify-center -mr-2.5 -mt-2.5 shrink-0 text-muted hover:text-ink rounded-full hover:bg-surface-muted" aria-label="Close">
                   <X className="h-4 w-4" />
                 </button>
               </Dialog.Close>
             </div>
           )}
-          <div className="px-5 py-4 max-h-[70vh] overflow-y-auto">{children}</div>
-          {footer && <div className="flex items-center justify-end gap-2 border-t border-line px-5 py-3.5">{footer}</div>}
+          <div className="flex-1 min-h-0 px-5 py-4 overflow-y-auto">{children}</div>
+          {footer && <div className="shrink-0 flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3.5">{footer}</div>}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -88,7 +88,7 @@ export function Drawer({ open, onClose, title, description, children, footer, wi
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] animate-fade-in" />
         <Dialog.Content
           className={cn(
-            'fixed right-0 top-0 z-50 h-full w-full border-l border-line bg-surface shadow-popover flex flex-col focus:outline-none',
+            'fixed right-0 top-0 z-50 h-full h-[100dvh] w-full border-l border-line bg-surface shadow-popover flex flex-col focus:outline-none',
             drawerWidthClasses[width]
           )}
         >
@@ -101,14 +101,14 @@ export function Drawer({ open, onClose, title, description, children, footer, wi
                 )}
               </div>
               <Dialog.Close asChild>
-                <button className="text-muted hover:text-ink rounded-md p-1 hover:bg-surface-muted" aria-label="Close">
+                <button className="flex h-11 w-11 items-center justify-center -mr-2.5 -mt-2.5 shrink-0 text-muted hover:text-ink rounded-full hover:bg-surface-muted" aria-label="Close">
                   <X className="h-4 w-4" />
                 </button>
               </Dialog.Close>
             </div>
           )}
           <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">{children}</div>
-          {footer && <div className="shrink-0 flex items-center justify-end gap-2 border-t border-line px-5 py-3.5">{footer}</div>}
+          {footer && <div className="shrink-0 flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3.5">{footer}</div>}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

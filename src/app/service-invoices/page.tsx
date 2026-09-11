@@ -23,6 +23,7 @@ import { useToast } from '@/components/ui/Toast';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button, LinkButton, IconButton } from '@/components/ui/Button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { Card } from '@/components/ui/Card';
 import { SearchInput } from '@/components/ui/Input';
 import { Toolbar, ToolbarGroup, FilterPillGroup } from '@/components/ui/FilterBar';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -264,6 +265,8 @@ export default function ServiceInvoicesListPage() {
             />
           </div>
         ) : (
+          <>
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableHead>Invoice #</TableHead>
@@ -374,6 +377,96 @@ export default function ServiceInvoicesListPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
+
+          <div className="md:hidden space-y-3">
+            {invoices.map((inv) => (
+              <Card key={inv.id} className="p-4 space-y-2.5">
+                <Link href={`/service-invoices/${inv.id}`} className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-primary text-sm">#{inv.invoiceNumber}</div>
+                    <div className="font-medium text-ink text-sm truncate">{inv.customerCompany}</div>
+                    <div className="text-xs text-muted truncate">{inv.customerName} • {inv.customerEmail}</div>
+                  </div>
+                  <span className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold border ${getStatusBadge(inv.status)}`}>
+                    {inv.status}
+                  </span>
+                </Link>
+
+                <div className="flex flex-wrap gap-1">
+                  {(inv.items || []).slice(0, 2).map((item, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-0.5 rounded-full bg-primary-soft text-primary text-[10px] font-semibold"
+                    >
+                      {item.category}: {item.description}
+                    </span>
+                  ))}
+                  {(inv.items?.length || 0) > 2 && (
+                    <span className="px-1.5 py-0.5 text-[10px] text-muted">
+                      +{(inv.items?.length || 0) - 2} more
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-line-soft">
+                  <div className="text-muted">
+                    <div>Issue: {formatDate(inv.issueDate)}</div>
+                    <div className="text-danger font-medium">Due: {formatDate(inv.dueDate)}</div>
+                  </div>
+                  <div className="font-semibold text-sm text-ink tabular-nums">{formatUSD(inv.grandTotal)}</div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  {inv.emailStatus === 'SENT' ? (
+                    <span className="inline-flex items-center gap-1 text-success font-semibold text-[11px]">
+                      <CheckCircle2 className="h-3 w-3" /> Sent
+                    </span>
+                  ) : (
+                    <span className="text-muted text-[11px]">Not Sent</span>
+                  )}
+
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleSendInvoiceEmail(inv)}
+                      loading={Boolean(isSendingEmail[inv.id])}
+                      iconLeft={!isSendingEmail[inv.id] ? <Mail className="h-3.5 w-3.5" /> : undefined}
+                      title="Send Service Invoice to Customer Email"
+                    >
+                      Email
+                    </Button>
+
+                    <IconButton label="View Service Invoice Details" onClick={() => router.push(`/service-invoices/${inv.id}`)}>
+                      <Eye className="h-4 w-4 text-muted" />
+                    </IconButton>
+
+                    {inv.status !== 'CANCELLED' && inv.status !== 'PAID' && (
+                      <IconButton
+                        label="Cancel Service Invoice"
+                        className="text-muted hover:text-warning hover:bg-warning-soft"
+                        onClick={() => setCancellingInvoice(inv)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </IconButton>
+                    )}
+
+                    {(inv.status === 'DRAFT' || inv.status === 'CANCELLED') && (
+                      <IconButton
+                        label="Delete Service Invoice"
+                        className="text-muted hover:text-danger hover:bg-danger-soft"
+                        onClick={() => setDeletingInvoice(inv)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </IconButton>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+          </>
         )}
       </div>
 

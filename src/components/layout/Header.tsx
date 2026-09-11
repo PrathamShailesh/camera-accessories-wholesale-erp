@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff,
   ChevronRight,
+  Menu,
 } from 'lucide-react';
 import { User, Notification } from '@/types/erp';
 import { formatDateTime } from '@/lib/utils';
@@ -67,7 +68,7 @@ function getSectionFromPath(pathname: string) {
   return { section: 'ERP System', page: 'Overview' };
 }
 
-export default function Header() {
+export default function Header({ onOpenMobileNav }: { onOpenMobileNav?: () => void } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -170,9 +171,16 @@ export default function Header() {
 
   return (
     <>
-      <header className="shrink-0 z-30 flex h-16 w-full items-center justify-between border-b border-line bg-white px-4 sm:px-6">
-        {/* Left: Section Breadcrumb */}
+      <header className="shrink-0 z-30 flex h-16 w-full items-center justify-between border-b border-line bg-white px-3 sm:px-6">
+        {/* Left: Mobile Menu Toggle + Section Breadcrumb */}
         <div className="flex items-center gap-2 min-w-0">
+          <button
+            onClick={onOpenMobileNav}
+            className="md:hidden -ml-1 flex h-11 w-11 items-center justify-center shrink-0 rounded-full text-ink-secondary hover:text-ink hover:bg-surface transition-colors"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
           <span className="text-xs text-muted font-medium hidden sm:inline">{breadcrumb.section}</span>
           <ChevronRight className="h-3.5 w-3.5 text-line hidden sm:inline" />
           <span className="text-sm font-semibold text-ink truncate">{breadcrumb.page}</span>

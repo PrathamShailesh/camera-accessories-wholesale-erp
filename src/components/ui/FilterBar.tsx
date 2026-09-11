@@ -38,7 +38,7 @@ export const PillSelect = React.forwardRef<HTMLSelectElement, {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          'peer h-9 appearance-none rounded-full border bg-white pl-3.5 pr-8 text-xs font-medium cursor-pointer transition-colors',
+          'peer h-11 md:h-9 appearance-none rounded-full border bg-white pl-3.5 pr-8 text-xs font-medium cursor-pointer transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary',
           hasValue ? 'border-primary/40 bg-primary-soft text-primary' : 'border-line text-ink hover:bg-surface'
         )}
@@ -77,7 +77,7 @@ export function FilterPillGroup({
             type="button"
             onClick={() => onChange(opt.value)}
             className={cn(
-              'h-9 shrink-0 rounded-full px-3.5 text-xs font-semibold transition-colors',
+              'h-11 md:h-9 shrink-0 rounded-full px-3.5 text-xs font-semibold transition-colors',
               active ? 'bg-ink text-white' : 'bg-white text-ink-secondary border border-line hover:bg-surface'
             )}
           >

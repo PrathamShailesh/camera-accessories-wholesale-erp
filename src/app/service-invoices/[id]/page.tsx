@@ -277,7 +277,7 @@ export default function ServiceInvoiceDetailPage() {
           <h3 className="text-xs font-bold text-[#6B7280] uppercase tracking-wider font-mono">
             Billed Business Services
           </h3>
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-[#F8FAFC] border-y border-[#E5E7EB] text-[11px] font-bold text-[#6B7280] uppercase tracking-wider font-mono">
@@ -308,6 +308,26 @@ export default function ServiceInvoiceDetailPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="md:hidden space-y-2.5">
+            {(invoice.items || []).map((item, idx) => (
+              <div key={item.id || idx} className="rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] p-3.5 space-y-2 text-xs">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="font-semibold text-[#111827]">
+                    <span className="font-mono text-[#6B7280] mr-1.5">{idx + 1}.</span>
+                    {item.description}
+                  </div>
+                  <span className="shrink-0 px-2 py-0.5 rounded bg-[#005E82]/10 text-[#005E82] text-[10px] font-bold">
+                    {item.category}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between font-mono text-[#6B7280] pt-1.5 border-t border-[#E5E7EB]">
+                  <span>Qty <span className="font-bold text-[#111827]">{item.quantity}</span> × {formatUSD(item.unitPrice)}</span>
+                  <span className="font-bold text-[#005E82]">{formatUSD(item.totalPrice)}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

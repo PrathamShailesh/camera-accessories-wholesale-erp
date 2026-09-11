@@ -67,7 +67,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
           ref={ref}
           id={inputId}
           required={required}
-          className={cn(baseInputClasses, borderClasses(!!error), 'h-10', className)}
+          className={cn(baseInputClasses, borderClasses(!!error), 'h-11 md:h-10', className)}
           {...props}
         />
       </Field>
@@ -103,7 +103,7 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
             type="number"
             step="0.01"
             required={required}
-            className={cn(baseInputClasses, borderClasses(!!error), 'h-10 pl-7', className)}
+            className={cn(baseInputClasses, borderClasses(!!error), 'h-11 md:h-10 pl-7', className)}
             {...props}
           />
         </div>
@@ -122,7 +122,7 @@ export const SearchInput = React.forwardRef<HTMLInputElement, InputProps>(functi
       <input
         ref={ref}
         type="search"
-        className={cn(baseInputClasses, 'border-line focus:border-primary h-10 rounded-full pl-10', className)}
+        className={cn(baseInputClasses, 'border-line focus:border-primary h-11 md:h-10 rounded-full pl-10', className)}
         {...props}
       />
     </div>
@@ -159,7 +159,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function 
             className={cn(
               baseInputClasses,
               borderClasses(!!error),
-              'h-10 appearance-none pr-8 cursor-pointer',
+              'h-11 md:h-10 appearance-none pr-8 cursor-pointer',
               className
             )}
             {...props}
