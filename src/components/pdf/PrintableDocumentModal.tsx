@@ -90,25 +90,25 @@ export default function PrintableDocumentModal({
     (data.issueDate ? new Date(new Date(data.issueDate).getTime() + 6 * 86400000).toISOString() : '2026-08-25');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in no-print-backdrop">
-      <div className="relative w-full max-w-4xl rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-slate-900/50 backdrop-blur-sm overflow-y-auto animate-fade-in no-print-backdrop">
+      <div className="relative w-full max-w-4xl rounded-2xl border border-line bg-white shadow-2xl overflow-hidden my-auto">
         {/* Action Header bar (hidden during print) */}
-        <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-800 bg-slate-950/80 no-print">
+        <div className="flex items-center justify-between px-6 py-3.5 border-b border-line bg-surface no-print">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-400 font-mono">
+            <span className="text-xs font-bold uppercase tracking-wider text-primary font-mono">
               Document Preview
             </span>
-            <span className="text-xs text-slate-400">• {docTitle}</span>
+            <span className="text-xs text-muted">• {docTitle}</span>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setOverrideSeal((prev) => (prev !== null ? !prev : !policy.shouldSeal))}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold border transition-colors ${
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold border transition-colors ${
                 shouldShowSeal
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
-                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                  ? 'bg-success-soft border-success-border text-success hover:bg-success-soft/70'
+                  : 'bg-surface-muted border-line text-muted hover:text-ink'
               }`}
               title={`${policy.reason} (Click to toggle company seal on/off)`}
             >
@@ -117,14 +117,14 @@ export default function PrintableDocumentModal({
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-glow hover:bg-brand-500 transition-colors"
+              className="flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
             >
               <Printer className="h-4 w-4" />
               <span>Print / Save as PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="rounded-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-800"
+              className="rounded-full p-1.5 text-muted hover:text-ink hover:bg-surface-muted"
             >
               <X className="h-4 w-4" />
             </button>
@@ -132,10 +132,10 @@ export default function PrintableDocumentModal({
         </div>
 
         {/* Printable Document Body */}
-        <div className="max-h-[85vh] overflow-y-auto p-4 sm:p-8 bg-slate-950/90 text-slate-200">
+        <div className="max-h-[85vh] overflow-y-auto p-4 sm:p-8 bg-surface">
           <div
             ref={printRef}
-            className="print-page mx-auto bg-white text-black p-8 sm:p-12 rounded-xl shadow-lg max-w-3xl text-xs font-sans leading-normal border border-slate-200"
+            className="print-page mx-auto bg-white text-black p-8 sm:p-12 rounded-xl shadow-lg max-w-3xl text-xs font-sans leading-normal border border-line"
             style={{ minHeight: '1000px' }}
           >
             {/* Document Watermark / State Notice */}
@@ -231,7 +231,7 @@ export default function PrintableDocumentModal({
             <div className="mb-3">
               <table className="w-full text-left border-collapse border border-black text-xs text-black">
                 <thead>
-                  <tr className="bg-slate-100 border-b border-black text-[11px] font-bold text-black">
+                  <tr className="bg-surface-muted border-b border-black text-[11px] font-bold text-black">
                     <th className="py-1.5 px-2 border-r border-black text-center w-[7%]">Sl. No.</th>
                     <th className="py-1.5 px-2 border-r border-black text-center w-[16%]">Item Code</th>
                     <th className="py-1.5 px-3 border-r border-black text-left w-[43%]">Product Description</th>
@@ -255,7 +255,7 @@ export default function PrintableDocumentModal({
                         </div>
                         {/* Serial numbers badge if allocated or packing list */}
                         {item.allocatedSerials && item.allocatedSerials.length > 0 && (
-                          <div className="text-[10px] text-slate-700 font-mono mt-0.5 font-normal">
+                          <div className="text-[10px] text-ink-secondary font-mono mt-0.5 font-normal">
                             S/N: {item.allocatedSerials.join(', ')}
                           </div>
                         )}
@@ -361,9 +361,9 @@ export default function PrintableDocumentModal({
 
             {/* Payments To Be Made To Reminder or Warehouse Verification Notice */}
             {isPackingList ? (
-              <div className="text-xs text-black mt-4 mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <div className="font-bold uppercase tracking-wide text-slate-900 mb-1">Warehouse Dispatch Notice</div>
-                <div className="text-slate-600">All serial numbers, package counts, and tamper-evident carton seals must be physically inspected before vehicle departure. Report discrepancies to logistics dispatch immediately.</div>
+              <div className="text-xs text-black mt-4 mb-4 p-3 bg-surface border border-line rounded-lg">
+                <div className="font-bold uppercase tracking-wide text-ink mb-1">Warehouse Dispatch Notice</div>
+                <div className="text-ink-secondary">All serial numbers, package counts, and tamper-evident carton seals must be physically inspected before vehicle departure. Report discrepancies to logistics dispatch immediately.</div>
               </div>
             ) : (
               <div className="text-xs text-black mt-4 mb-4">
@@ -375,16 +375,16 @@ export default function PrintableDocumentModal({
 
             {/* Sign-off, Official Company Seal & Warehouse Verification */}
             {isPackingList ? (
-              <div className="flex justify-between items-end text-xs text-black pt-4 border-t border-slate-200 mt-4">
+              <div className="flex justify-between items-end text-xs text-black pt-4 border-t border-line mt-4">
                 <div className="space-y-1">
-                  <div className="font-bold uppercase tracking-wide text-slate-900">
+                  <div className="font-bold uppercase tracking-wide text-ink">
                     Warehouse Verification & Dispatch
                   </div>
-                  <div className="text-[11px] text-slate-600">Origin Depot: {data.depot?.name || 'Central Logistics Hub, Dubai'}</div>
-                  <div className="text-[10px] text-slate-500 font-mono">
+                  <div className="text-[11px] text-ink-secondary">Origin Depot: {data.depot?.name || 'Central Logistics Hub, Dubai'}</div>
+                  <div className="text-[10px] text-muted font-mono">
                     Package Count: {data.packingDetails?.packageCount || 1} Box(es) • Weight: {data.packingDetails?.totalWeightKg || '—'} KG
                   </div>
-                  <div className="text-[9px] text-slate-500 italic pt-1 font-sans">
+                  <div className="text-[9px] text-muted italic pt-1 font-sans">
                     <div>THIS IS AN OPERATIONAL WAREHOUSE PACKING SHEET</div>
                     <div>VERIFIED AGAINST PHYSICAL INVENTORY AT DISPATCH DOCK</div>
                   </div>
@@ -393,38 +393,38 @@ export default function PrintableDocumentModal({
                 {/* Warehouse Dual Signatures */}
                 <div className="flex gap-6 text-center shrink-0">
                   <div className="w-32">
-                    <div className="h-12 border-b border-slate-400 border-dashed mb-1 flex items-end justify-center pb-1">
-                      <span className="text-[11px] font-mono text-slate-800">{data.packingDetails?.packedBy || 'Depot Inspector'}</span>
+                    <div className="h-12 border-b border-line border-dashed mb-1 flex items-end justify-center pb-1">
+                      <span className="text-[11px] font-mono text-ink">{data.packingDetails?.packedBy || 'Depot Inspector'}</span>
                     </div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-900">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-ink">
                       Packed & Checked
                     </div>
-                    <div className="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
+                    <div className="text-[9px] text-muted uppercase tracking-widest font-mono">
                       Warehouse Staff
                     </div>
                   </div>
                   <div className="w-32">
-                    <div className="h-12 border-b border-slate-400 border-dashed mb-1 flex items-end justify-center pb-1">
-                      <span className="text-[10px] text-slate-400 italic">Sign & Date</span>
+                    <div className="h-12 border-b border-line border-dashed mb-1 flex items-end justify-center pb-1">
+                      <span className="text-[10px] text-muted italic">Sign & Date</span>
                     </div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-900">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-ink">
                       Consignee Receipt
                     </div>
-                    <div className="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
+                    <div className="text-[9px] text-muted uppercase tracking-widest font-mono">
                       Courier / Customer
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="flex justify-between items-end text-xs text-black pt-4 border-t border-slate-200 mt-4">
+              <div className="flex justify-between items-end text-xs text-black pt-4 border-t border-line mt-4">
                 <div className="space-y-1">
-                  <div className="font-bold uppercase tracking-wide text-slate-900">
+                  <div className="font-bold uppercase tracking-wide text-ink">
                     For {settings.companyName || 'ARIB GLOBAL GENERAL TRADING L.L.C'}
                   </div>
-                  <div className="text-[11px] text-slate-600">Contact: {settings.phone || '+971 4 800 0100'}</div>
-                  <div className="text-[10px] text-slate-500 font-mono">TRN: {settings.vatGstNumber || '100889218200001'}</div>
-                  <div className="text-[9px] italic text-slate-600 pt-2 font-sans tracking-wide">
+                  <div className="text-[11px] text-ink-secondary">Contact: {settings.phone || '+971 4 800 0100'}</div>
+                  <div className="text-[10px] text-muted font-mono">TRN: {settings.vatGstNumber || '100889218200001'}</div>
+                  <div className="text-[9px] italic text-ink-secondary pt-2 font-sans tracking-wide">
                     <div>THIS IS A COMPUTER GENERATED DOCUMENT</div>
                     {shouldShowSeal ? (
                       <div className="text-brand-700 font-semibold">DIGITALLY AUTHENTICATED WITH OFFICIAL COMPANY SEAL</div>
@@ -447,25 +447,25 @@ export default function PrintableDocumentModal({
                           style={{ aspectRatio: '1 / 1' }}
                         />
                       </div>
-                      <div className="border-t border-slate-400 pt-1 w-36 text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-900">
+                      <div className="border-t border-line pt-1 w-36 text-center">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-ink">
                           Official Company Seal
                         </div>
-                        <div className="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
+                        <div className="text-[9px] text-muted uppercase tracking-widest font-mono">
                           Authorized Signatory
                         </div>
                       </div>
                     </>
                   ) : (
                     <div className="w-36">
-                      <div className="h-16 border-b border-slate-400 border-dashed mb-1 flex items-end justify-center pb-1">
-                        <span className="text-[10px] text-slate-400 italic">Signature</span>
+                      <div className="h-16 border-b border-line border-dashed mb-1 flex items-end justify-center pb-1">
+                        <span className="text-[10px] text-muted italic">Signature</span>
                       </div>
-                      <div className="border-t border-slate-400 pt-1 text-center">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-900">
+                      <div className="border-t border-line pt-1 text-center">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-ink">
                           Authorized Signatory
                         </div>
-                        <div className="text-[9px] text-slate-400 uppercase tracking-widest font-mono">
+                        <div className="text-[9px] text-muted uppercase tracking-widest font-mono">
                           {policy.isDraft ? 'Preliminary / Unsealed' : 'Pending Stamp'}
                         </div>
                       </div>

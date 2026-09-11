@@ -225,7 +225,6 @@ export default function CustomersPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="02 / SALES"
         title="Customers"
         description="B2B client directory — credit limits, payment terms, and account management."
         actions={
@@ -267,7 +266,7 @@ export default function CustomersPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0">
+        <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Company</TableHead>
@@ -306,7 +305,7 @@ export default function CustomersPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2"
+                        className="text-muted hover:text-danger hover:bg-danger-soft px-2"
                         onClick={() => setDeletingCustomer(c)}
                         title="Delete Customer"
                       >

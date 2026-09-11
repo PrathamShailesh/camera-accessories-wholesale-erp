@@ -122,7 +122,6 @@ export default function AuditLogsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="06 / SYSTEM & SECURITY"
         title="Audit Logs & Transactional Notifications"
         description="Immutable record of business activity and transactional email dispatch logs."
       />
@@ -181,7 +180,7 @@ export default function AuditLogsPage() {
               }
             />
           ) : (
-            <Card className="overflow-hidden p-0">
+            <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
               <Table>
                 <TableHeader>
                   <TableHead>Timestamp</TableHead>
@@ -246,7 +245,7 @@ export default function AuditLogsPage() {
               }
             />
           ) : (
-            <Card className="overflow-hidden p-0">
+            <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
               <Table>
                 <TableHeader>
                   <TableHead>Sent / Logged Time</TableHead>

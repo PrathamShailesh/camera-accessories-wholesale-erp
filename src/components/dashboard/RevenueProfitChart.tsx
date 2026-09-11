@@ -17,15 +17,15 @@ const PROFIT_COLOR = '#059669';
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-md text-xs">
-      <div className="font-semibold text-slate-900 mb-1.5">{label}</div>
+    <div className="rounded-lg border border-line bg-white p-3 shadow-md text-xs">
+      <div className="font-semibold text-ink mb-1.5">{label}</div>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center gap-3 justify-between">
-          <span className="flex items-center gap-1.5 text-slate-500">
+          <span className="flex items-center gap-1.5 text-muted">
             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
             {p.name}
           </span>
-          <span className="font-semibold text-slate-900 tabular-nums">{formatUSD(p.value)}</span>
+          <span className="font-semibold text-ink tabular-nums">{formatUSD(p.value)}</span>
         </div>
       ))}
     </div>

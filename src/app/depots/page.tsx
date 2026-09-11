@@ -48,7 +48,7 @@ export default function DepotsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="text-slate-500 text-xs font-medium">Loading depot hub network...</div>
+        <div className="text-muted text-xs font-medium">Loading depot hub network...</div>
       </div>
     );
   }
@@ -93,50 +93,50 @@ export default function DepotsPage() {
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-primary/10 text-primary border border-primary/20">
                       {d.code} {d.isCentralHub ? '· CENTRAL HQ' : ''}
                     </span>
-                    <h3 className="text-lg font-bold text-slate-900 mt-1.5">{d.name}</h3>
-                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                      <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                    <h3 className="text-lg font-bold text-ink mt-1.5">{d.name}</h3>
+                    <p className="text-xs text-muted flex items-center gap-1 mt-0.5">
+                      <MapPin className="h-3.5 w-3.5 text-muted" />
                       <span>{d.city}, {d.country}</span>
                     </p>
                   </div>
 
                   <div className="text-right font-mono">
-                    <div className="text-xs text-slate-400">Stock Value</div>
-                    <div className="text-sm font-bold text-slate-900">
+                    <div className="text-xs text-muted">Stock Value</div>
+                    <div className="text-sm font-bold text-ink">
                       {formatUSD(d.totalStockValue)}
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mt-4 p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs font-mono">
+                <div className="grid grid-cols-2 gap-3 mt-4 p-3 rounded-lg bg-surface border border-line-soft text-xs font-mono">
                   <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-sans font-semibold">Physical Units</span>
-                    <span className="text-slate-900 font-bold text-sm">{d.totalStockUnits} Units</span>
+                    <span className="text-muted block text-[10px] uppercase font-sans font-semibold">Physical Units</span>
+                    <span className="text-ink font-bold text-sm">{d.totalStockUnits} Units</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-sans font-semibold">In Fulfilment</span>
+                    <span className="text-muted block text-[10px] uppercase font-sans font-semibold">In Fulfilment</span>
                     <span className="text-amber-700 font-bold text-sm">{d.activeOrdersCount || 0} Orders</span>
                   </div>
                 </div>
 
-                <div className="space-y-1.5 text-xs text-slate-600 mt-4 pt-3 border-t border-slate-100">
+                <div className="space-y-1.5 text-xs text-ink-secondary mt-4 pt-3 border-t border-line-soft">
                   <div className="flex items-center gap-2">
-                    <Users className="h-3.5 w-3.5 text-slate-400" />
+                    <Users className="h-3.5 w-3.5 text-muted" />
                     <span>Manager: <strong>{d.contactPerson}</strong></span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Phone className="h-3.5 w-3.5 text-slate-400" />
+                    <Phone className="h-3.5 w-3.5 text-muted" />
                     <span>{d.phone}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Mail className="h-3.5 w-3.5 text-slate-400" />
+                    <Mail className="h-3.5 w-3.5 text-muted" />
                     <span>{d.email}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400 font-mono truncate max-w-[240px]">
+              <div className="mt-4 pt-3 border-t border-line-soft flex items-center justify-between">
+                <span className="text-[11px] text-muted font-mono truncate max-w-[240px]">
                   {d.address}
                 </span>
                 <Link

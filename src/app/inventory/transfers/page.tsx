@@ -134,7 +134,6 @@ export default function TransfersPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="03 / INVENTORY"
         breadcrumbs={[{ label: 'Inventory', href: '/inventory' }, { label: 'Stock Transfers' }]}
         title="Stock Transfers"
         description="Move stock between depots and track transfers in flight."
@@ -175,7 +174,7 @@ export default function TransfersPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0">
+        <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Transfer</TableHead>

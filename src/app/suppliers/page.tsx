@@ -14,9 +14,8 @@ import {
 } from 'lucide-react';
 import { Supplier } from '@/types/erp';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Button } from '@/components/ui/Button';
+import { Button, IconButton } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { SearchInput, Input, Select, Textarea } from '@/components/ui/Input';
 import { Drawer, ConfirmDialog } from '@/components/ui/Modal';
@@ -193,7 +192,6 @@ export default function SuppliersPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="03 / PROCUREMENT"
         title="Suppliers & Vendors"
         description="Authorized camera distributors, optical manufacturers, and parts suppliers."
         actions={
@@ -208,11 +206,11 @@ export default function SuppliersPage() {
           placeholder="Search by name, contact person, email, or country..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md"
+          wrapperClassName="w-full sm:w-96"
         />
-        <div className="text-xs text-neutral-400">
-          Showing {suppliers.length} vendor{suppliers.length === 1 ? '' : 's'}
-        </div>
+        <span className="text-xs text-muted sm:ml-auto">
+          {suppliers.length} vendor{suppliers.length === 1 ? '' : 's'}
+        </span>
       </div>
 
       {loading ? (
@@ -239,72 +237,63 @@ export default function SuppliersPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableHead>Supplier / Company</TableHead>
-              <TableHead>Contact Person</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Tax / VAT ID</TableHead>
-              <TableHead>Payment Terms</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableHeader>
-            <TableBody>
-              {suppliers.map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell>
-                    <div className="font-semibold text-white">{s.name}</div>
-                    <div className="text-xs text-neutral-400 flex items-center gap-1.5 mt-0.5">
-                      <Mail className="h-3 w-3 text-neutral-500" />
-                      <span>{s.email}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-neutral-200">{s.contactPerson}</div>
-                    <div className="text-xs text-neutral-400 flex items-center gap-1.5 mt-0.5">
-                      <Phone className="h-3 w-3 text-neutral-500" />
-                      <span>{s.phone}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-xs text-neutral-300">
-                      <MapPin className="h-3.5 w-3.5 text-neutral-500" />
-                      <span>{s.country || 'UAE'}</span>
-                    </div>
-                    {s.address && <div className="text-[11px] text-neutral-500 truncate max-w-xs">{s.address}</div>}
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-mono text-xs text-neutral-400">{s.taxId || 'N/A'}</span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge tone="neutral">{s.paymentTerms.replace('_', ' ')}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => openEdit(s)}
-                        title="Edit Supplier"
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                        onClick={() => setDeletingSupplier(s)}
-                        title="Delete Supplier"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+        <Table>
+          <TableHeader>
+            <TableHead>Supplier / Company</TableHead>
+            <TableHead>Contact Person</TableHead>
+            <TableHead>Location</TableHead>
+            <TableHead>Tax / VAT ID</TableHead>
+            <TableHead>Payment Terms</TableHead>
+            <TableHead align="right">Actions</TableHead>
+          </TableHeader>
+          <TableBody>
+            {suppliers.map((s) => (
+              <TableRow key={s.id}>
+                <TableCell>
+                  <div className="font-semibold text-ink">{s.name}</div>
+                  <div className="text-xs text-muted flex items-center gap-1.5 mt-0.5">
+                    <Mail className="h-3 w-3 text-muted" />
+                    <span>{s.email}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="text-ink-secondary">{s.contactPerson}</div>
+                  <div className="text-xs text-muted flex items-center gap-1.5 mt-0.5">
+                    <Phone className="h-3 w-3 text-muted" />
+                    <span>{s.phone}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 text-xs text-ink-secondary">
+                    <MapPin className="h-3.5 w-3.5 text-muted" />
+                    <span>{s.country || 'UAE'}</span>
+                  </div>
+                  {s.address && <div className="text-[11px] text-muted truncate max-w-xs">{s.address}</div>}
+                </TableCell>
+                <TableCell>
+                  <span className="text-xs text-muted">{s.taxId || 'N/A'}</span>
+                </TableCell>
+                <TableCell>
+                  <Badge tone="neutral">{s.paymentTerms.replace('_', ' ')}</Badge>
+                </TableCell>
+                <TableCell align="right">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <IconButton label="Edit Supplier" onClick={() => openEdit(s)}>
+                      <Edit2 className="h-3.5 w-3.5 text-muted" />
+                    </IconButton>
+                    <IconButton
+                      label="Delete Supplier"
+                      className="text-muted hover:text-danger hover:bg-danger-soft"
+                      onClick={() => setDeletingSupplier(s)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </IconButton>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       {/* Create / Edit Drawer */}
@@ -326,8 +315,8 @@ export default function SuppliersPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {formError && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
+            <div className="p-3 rounded-2xl bg-danger-soft border border-danger-border text-danger text-xs flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>{formError}</span>
             </div>
           )}

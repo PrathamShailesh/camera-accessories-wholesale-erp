@@ -95,7 +95,7 @@ export default function DocumentsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="text-slate-500 text-xs font-medium">Loading Cloudinary document repository...</div>
+        <div className="text-muted text-xs font-medium">Loading Cloudinary document repository...</div>
       </div>
     );
   }
@@ -103,7 +103,6 @@ export default function DocumentsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="05 / DOCUMENTS"
         title="Documents"
         description="One place for every commercial document — AWBs, invoices, proformas, and certificates."
         actions={
@@ -132,13 +131,13 @@ export default function DocumentsPage() {
       {/* Filter and Search Bar */}
       <Card className="p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search title, filename, SKU, AWB or customer..."
-            className="w-full rounded-md border border-slate-200 bg-slate-50/50 pl-9 pr-3 py-1.5 text-xs text-slate-900 focus:bg-white"
+            className="w-full rounded-md border border-line bg-slate-50/50 pl-9 pr-3 py-1.5 text-xs text-ink focus:bg-white"
           />
         </div>
 
@@ -159,7 +158,7 @@ export default function DocumentsPage() {
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${
                 selectedCategory === tab.value
                   ? 'bg-brand-50 text-brand-700 font-bold border border-brand-200'
-                  : 'text-slate-600 hover:bg-slate-50'
+                  : 'text-ink-secondary hover:bg-surface'
               }`}
             >
               {tab.label}
@@ -171,8 +170,8 @@ export default function DocumentsPage() {
       {/* Documents Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredDocs.length === 0 ? (
-          <Card className="col-span-full py-16 text-center text-slate-500 text-xs">
-            <FolderLock className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+          <Card className="col-span-full py-16 text-center text-muted text-xs">
+            <FolderLock className="h-8 w-8 text-muted mx-auto mb-2" />
             <span>No documents found matching criteria.</span>
           </Card>
         ) : (
@@ -191,31 +190,31 @@ export default function DocumentsPage() {
                     <button
                       onClick={(e) => handleDelete(doc.id, e)}
                       title="Delete Document"
-                      className="text-slate-400 hover:text-rose-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="text-muted hover:text-rose-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="h-9 w-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-brand-600">
+                    <div className="h-9 w-9 rounded-md bg-surface-muted border border-line flex items-center justify-center shrink-0 text-brand-600">
                       {isImage ? <ImageIcon className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-xs font-bold text-slate-900 group-hover:text-brand-600 line-clamp-1">
+                      <h3 className="text-xs font-bold text-ink group-hover:text-brand-600 line-clamp-1">
                         {doc.title}
                       </h3>
-                      <p className="text-[11px] text-slate-400 font-mono mt-0.5 truncate">{doc.fileName}</p>
+                      <p className="text-[11px] text-muted font-mono mt-0.5 truncate">{doc.fileName}</p>
                     </div>
                   </div>
 
-                  <div className="mt-3 p-2 rounded bg-slate-50 border border-slate-100 text-[11px] text-slate-600">
-                    <span className="text-slate-400 block text-[10px]">Linked Entity:</span>
+                  <div className="mt-3 p-2 rounded bg-surface border border-line-soft text-[11px] text-ink-secondary">
+                    <span className="text-muted block text-[10px]">Linked Entity:</span>
                     <span className="font-medium truncate block">{doc.relatedEntityLabel || doc.relatedEntityType}</span>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                <div className="mt-4 pt-2.5 border-t border-line-soft flex items-center justify-between text-[10px] font-mono text-muted">
                   <span>{formatFileSize(doc.fileSize)}</span>
                   <span>{formatDateTime(doc.uploadedAt)}</span>
                 </div>
@@ -240,11 +239,11 @@ export default function DocumentsPage() {
       {/* Preview Modal */}
       {previewDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-2xl rounded-xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50">
+          <div className="relative w-full max-w-2xl rounded-xl border border-line bg-white shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-line-soft bg-surface">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">{previewDoc.title}</h3>
-                <p className="text-[11px] font-mono text-slate-400">{previewDoc.fileName}</p>
+                <h3 className="text-sm font-bold text-ink">{previewDoc.title}</h3>
+                <p className="text-[11px] font-mono text-muted">{previewDoc.fileName}</p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -257,24 +256,24 @@ export default function DocumentsPage() {
                   <Download className="h-3.5 w-3.5" />
                   <span>Download</span>
                 </a>
-                <button onClick={() => setPreviewDoc(null)} className="p-1 text-slate-400 hover:text-slate-600">
+                <button onClick={() => setPreviewDoc(null)} className="p-1 text-muted hover:text-ink-secondary">
                   <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 max-h-[65vh] overflow-y-auto flex flex-col items-center justify-center bg-slate-100">
+            <div className="p-6 max-h-[65vh] overflow-y-auto flex flex-col items-center justify-center bg-surface-muted">
               {['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(previewDoc.fileFormat.toLowerCase()) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={previewDoc.cloudinaryUrl}
                   alt={previewDoc.title}
-                  className="max-h-[50vh] max-w-full rounded-md object-contain border border-slate-200"
+                  className="max-h-[50vh] max-w-full rounded-md object-contain border border-line"
                 />
               ) : (
                 <div className="text-center py-8 space-y-3">
                   <FileText className="h-12 w-12 text-brand-600 mx-auto" />
-                  <div className="text-xs font-bold text-slate-900">{previewDoc.fileName}</div>
+                  <div className="text-xs font-bold text-ink">{previewDoc.fileName}</div>
                   <a
                     href={previewDoc.cloudinaryUrl}
                     target="_blank"

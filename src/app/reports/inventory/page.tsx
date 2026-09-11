@@ -45,7 +45,6 @@ export default function InventoryReportsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="06 / ANALYTICS"
         title="Inventory Reports"
         description="Stock valuation, reorder alerts, and capital tied up in slow-moving stock."
       />
@@ -96,7 +95,7 @@ export default function InventoryReportsPage() {
                 </p>
               </Card>
             ) : (
-              <Card className="overflow-hidden p-0">
+              <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
                 <Table>
                   <TableHeader>
                     <TableHead>Product</TableHead>
@@ -140,7 +139,7 @@ export default function InventoryReportsPage() {
                 <p className="text-sm text-muted">No products are significantly overstocked.</p>
               </Card>
             ) : (
-              <Card className="overflow-hidden p-0">
+              <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
                 <Table>
                   <TableHeader>
                     <TableHead>Product</TableHead>

@@ -40,7 +40,6 @@ export default function ProfitabilityPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="06 / ANALYTICS"
         title="Profitability"
         description="Executive margin analysis across equipment models, categories, and customer channels."
       />
@@ -75,7 +74,7 @@ export default function ProfitabilityPage() {
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-brand-600" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-muted">
             Business Intelligence Insights
           </h2>
         </div>
@@ -89,15 +88,15 @@ export default function ProfitabilityPage() {
                     {bi.type.replace(/_/g, ' ')}
                   </Badge>
                   {bi.metricValue && (
-                    <span className="font-mono text-xs font-bold text-slate-900">{bi.metricValue}</span>
+                    <span className="font-mono text-xs font-bold text-ink">{bi.metricValue}</span>
                   )}
                 </div>
-                <h4 className="text-xs font-bold text-slate-900 leading-snug">{bi.title}</h4>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{bi.message}</p>
+                <h4 className="text-xs font-bold text-ink leading-snug">{bi.title}</h4>
+                <p className="text-xs text-muted mt-1 leading-relaxed">{bi.message}</p>
               </div>
 
               {bi.actionLink && (
-                <div className="pt-3 border-t border-slate-100 mt-2">
+                <div className="pt-3 border-t border-line-soft mt-2">
                   <Link
                     href={bi.actionLink}
                     className="text-xs font-semibold text-brand-600 hover:underline flex items-center gap-1"
@@ -114,8 +113,8 @@ export default function ProfitabilityPage() {
 
       {/* Product Profitability Table */}
       <Card className="overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <div className="p-4 border-b border-line-soft bg-slate-50/50 flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
             Most Profitable Products & Margin Contribution
           </h3>
         </div>
@@ -134,15 +133,15 @@ export default function ProfitabilityPage() {
             {metrics.map((m) => (
               <TableRow key={m.productId}>
                 <TableCell>
-                  <div className="font-bold text-slate-900 text-xs">{m.productName}</div>
-                  <div className="text-[11px] text-slate-400 font-mono">
+                  <div className="font-bold text-ink text-xs">{m.productName}</div>
+                  <div className="text-[11px] text-muted font-mono">
                     SKU: {m.sku} · {m.brand}
                   </div>
                 </TableCell>
-                <TableCell className="text-slate-600">{m.categoryName}</TableCell>
-                <TableCell align="right" className="font-bold text-slate-900">{m.unitsSold}</TableCell>
-                <TableCell align="right" className="font-bold text-slate-900">{formatUSD(m.totalRevenue)}</TableCell>
-                <TableCell align="right" className="text-slate-500">{formatUSD(m.totalCost)}</TableCell>
+                <TableCell className="text-ink-secondary">{m.categoryName}</TableCell>
+                <TableCell align="right" className="font-bold text-ink">{m.unitsSold}</TableCell>
+                <TableCell align="right" className="font-bold text-ink">{formatUSD(m.totalRevenue)}</TableCell>
+                <TableCell align="right" className="text-muted">{formatUSD(m.totalCost)}</TableCell>
                 <TableCell align="right" className="font-bold text-emerald-700">
                   {formatUSD(m.grossProfit)}
                 </TableCell>

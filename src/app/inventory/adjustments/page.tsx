@@ -139,7 +139,6 @@ export default function StockAdjustmentsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="03 / INVENTORY"
         breadcrumbs={[{ label: 'Inventory', href: '/inventory' }, { label: 'Stock Adjustments' }]}
         title="Stock Adjustments"
         description="Correct stock levels from cycle counts, damage, or recovered units."
@@ -191,7 +190,7 @@ export default function StockAdjustmentsPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0">
+        <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Product</TableHead>

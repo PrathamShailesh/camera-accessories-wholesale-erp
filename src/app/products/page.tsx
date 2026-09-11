@@ -14,8 +14,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { formatUSD, cloudinaryThumb } from '@/lib/utils';
 import { Product, Depot } from '@/types/erp';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Button, LinkButton } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { Button, LinkButton, IconButton } from '@/components/ui/Button';
 import { MarginBadge } from '@/components/ui/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import { SearchInput, Input, Select, Textarea } from '@/components/ui/Input';
@@ -302,7 +301,6 @@ export default function ProductsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="03 / INVENTORY"
         title="Product Catalog"
         description="Product master with stock distribution, wholesale margins, serials and barcodes."
         actions={
@@ -318,7 +316,7 @@ export default function ProductsPage() {
       />
 
       {/* Catalog metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-lg divide-x divide-y lg:divide-y-0 divide-line bg-surface">
+      <div className="grid grid-cols-2 lg:grid-cols-4 border border-line rounded-2xl divide-x divide-y lg:divide-y-0 divide-line bg-surface overflow-hidden">
         <div className="p-4">
           <div className="text-xs uppercase tracking-wider text-muted">Catalog SKUs</div>
           <div className="text-2xl font-semibold text-ink mt-1.5">{products.length}</div>
@@ -396,8 +394,7 @@ export default function ProductsPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0">
-          <Table>
+        <Table>
             <TableHeader>
               <TableHead>Product</TableHead>
               <TableHead>Brand</TableHead>
@@ -454,23 +451,20 @@ export default function ProductsPage() {
                         <LinkButton href={`/products/${p.id}`} size="sm" variant="secondary">
                           View
                         </LinkButton>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2"
+                        <IconButton
+                          label="Delete Product"
+                          className="text-muted hover:text-danger hover:bg-danger-soft"
                           onClick={() => setDeletingProduct(p)}
-                          title="Delete Product"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        </IconButton>
                       </div>
                     </TableCell>
                   </TableRow>
                 );
               })}
-            </TableBody>
-          </Table>
-        </Card>
+          </TableBody>
+        </Table>
       )}
 
       <Drawer

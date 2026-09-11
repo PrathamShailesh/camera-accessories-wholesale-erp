@@ -404,10 +404,10 @@ export default function ServiceInvoiceDetailPage() {
               </>
             ) : (
               <div className="w-36">
-                <div className="h-16 border-b border-slate-300 border-dashed mb-1 flex items-end justify-center pb-1">
-                  <span className="text-[10px] text-slate-400 italic">Signature</span>
+                <div className="h-16 border-b border-line border-dashed mb-1 flex items-end justify-center pb-1">
+                  <span className="text-[10px] text-muted italic">Signature</span>
                 </div>
-                <div className="border-t border-slate-300 pt-1 text-center">
+                <div className="border-t border-line pt-1 text-center">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-[#111827]">
                     Authorized Signatory
                   </div>

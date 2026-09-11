@@ -16,13 +16,13 @@ function CustomTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload as CategoryDatum;
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-md text-xs">
-      <div className="font-semibold text-slate-900 mb-1">{d.name}</div>
-      <div className="text-slate-500">
-        Revenue: <span className="font-semibold text-slate-900">{formatUSD(d.revenue)}</span>
+    <div className="rounded-lg border border-line bg-white p-3 shadow-md text-xs">
+      <div className="font-semibold text-ink mb-1">{d.name}</div>
+      <div className="text-muted">
+        Revenue: <span className="font-semibold text-ink">{formatUSD(d.revenue)}</span>
       </div>
-      <div className="text-slate-500">
-        Units sold: <span className="font-semibold text-slate-900">{d.units}</span>
+      <div className="text-muted">
+        Units sold: <span className="font-semibold text-ink">{d.units}</span>
       </div>
     </div>
   );

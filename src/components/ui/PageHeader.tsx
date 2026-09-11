@@ -18,7 +18,7 @@ export interface PageHeaderProps {
   className?: string;
 }
 
-export function PageHeader({ eyebrow, title, description, breadcrumbs, actions, divider = true, className }: PageHeaderProps) {
+export function PageHeader({ eyebrow, title, description, breadcrumbs, actions, divider = false, className }: PageHeaderProps) {
   return (
     <div className={cn(className)}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -44,7 +44,7 @@ export function PageHeader({ eyebrow, title, description, breadcrumbs, actions, 
               {eyebrow}
             </div>
           )}
-          <h1 className="text-[28px] leading-[1.15] sm:text-4xl font-semibold tracking-tight text-ink">{title}</h1>
+          <h1 className="text-[28px] leading-[1.15] sm:text-[34px] font-semibold tracking-tight text-ink">{title}</h1>
           {description && <p className="text-sm sm:text-[15px] text-muted mt-2.5 max-w-2xl leading-relaxed">{description}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div>}

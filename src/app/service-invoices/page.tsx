@@ -190,7 +190,7 @@ export default function ServiceInvoicesListPage() {
       case 'CANCELLED':
         return 'bg-gray-100 text-gray-500 border-gray-200';
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'bg-surface-muted text-ink-secondary border-line';
     }
   };
 

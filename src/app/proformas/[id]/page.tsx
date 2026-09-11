@@ -178,7 +178,7 @@ export default function ProformaDetailPage() {
   if (isLoading) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="text-slate-500 text-xs">Loading proforma document...</div>
+        <div className="text-muted text-xs">Loading proforma document...</div>
       </div>
     );
   }
@@ -186,7 +186,7 @@ export default function ProformaDetailPage() {
   if (!proforma) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="text-slate-500 text-sm font-semibold">Proforma Quotation Not Found</div>
+        <div className="text-muted text-sm font-semibold">Proforma Quotation Not Found</div>
         <LinkButton href="/proformas" variant="outline" size="sm">
           Back to Proformas
         </LinkButton>
@@ -377,17 +377,17 @@ export default function ProformaDetailPage() {
       )}
 
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-line">
         <div className="flex items-center gap-3">
           <Link
             href="/proformas"
-            className="p-2 rounded-md border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+            className="p-2 rounded-md border border-line bg-white text-muted hover:text-ink hover:bg-surface transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 font-mono">
+              <h1 className="text-xl font-bold tracking-tight text-ink font-mono">
                 {proforma.proformaNumber}
               </h1>
               <StatusBadge status={proforma.status} />
@@ -398,8 +398,8 @@ export default function ProformaDetailPage() {
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Customer: <strong className="text-slate-800">{proforma.customerCompany}</strong> · Created: {formatDate(proforma.issueDate)}
+            <p className="text-xs text-muted mt-0.5">
+              Customer: <strong className="text-ink">{proforma.customerCompany}</strong> · Created: {formatDate(proforma.issueDate)}
             </p>
           </div>
         </div>
@@ -408,7 +408,7 @@ export default function ProformaDetailPage() {
           <Button
             size="sm"
             variant="outline"
-            iconLeft={<Printer className="h-3.5 w-3.5 text-slate-500" />}
+            iconLeft={<Printer className="h-3.5 w-3.5 text-muted" />}
             onClick={() => setIsPrintModalOpen(true)}
           >
             Print PDF
@@ -528,16 +528,16 @@ export default function ProformaDetailPage() {
         {/* Left 2 Columns: Items & Financials */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="overflow-hidden">
-            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="p-4 border-b border-line-soft bg-slate-50/50 flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
                 Quotation Line Items ({proforma.items?.length || 0})
               </h3>
-              <span className="text-xs font-mono font-semibold text-slate-700">Currency: USD ($)</span>
+              <span className="text-xs font-mono font-semibold text-ink-secondary">Currency: USD ($)</span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold text-[11px]">
+                <thead className="bg-surface border-b border-line text-muted uppercase tracking-wider font-semibold text-[11px]">
                   <tr>
                     <th className="py-2.5 px-4">Equipment / Model</th>
                     <th className="py-2.5 px-4 text-center">Qty</th>
@@ -550,21 +550,21 @@ export default function ProformaDetailPage() {
                   {proforma.items?.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-900">{item.productName}</div>
-                        <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                        <div className="font-semibold text-ink">{item.productName}</div>
+                        <div className="text-[11px] font-mono text-muted mt-0.5">
                           SKU: {item.productSku} · Brand: {item.brand}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-center font-mono font-bold text-slate-900">
+                      <td className="py-3 px-4 text-center font-mono font-bold text-ink">
                         {item.quantity}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono text-slate-700">
+                      <td className="py-3 px-4 text-right font-mono text-ink-secondary">
                         {formatUSD(item.unitPrice)}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono text-slate-500">
+                      <td className="py-3 px-4 text-right font-mono text-muted">
                         {item.discountPercent > 0 ? `${item.discountPercent}%` : '—'}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
+                      <td className="py-3 px-4 text-right font-mono font-bold text-ink">
                         {formatUSD(item.totalPrice)}
                       </td>
                     </tr>
@@ -574,10 +574,10 @@ export default function ProformaDetailPage() {
             </div>
 
             {/* Financial Summary */}
-            <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col items-end space-y-1.5 text-xs font-mono">
-              <div className="flex justify-between w-64 text-slate-600">
+            <div className="p-4 bg-slate-50/50 border-t border-line-soft flex flex-col items-end space-y-1.5 text-xs font-mono">
+              <div className="flex justify-between w-64 text-ink-secondary">
                 <span>Subtotal:</span>
-                <span className="text-slate-900 font-medium">{formatUSD(proforma.subtotal)}</span>
+                <span className="text-ink font-medium">{formatUSD(proforma.subtotal)}</span>
               </div>
               {proforma.discountAmount > 0 && (
                 <div className="flex justify-between w-64 text-rose-600">
@@ -585,15 +585,15 @@ export default function ProformaDetailPage() {
                   <span>-{formatUSD(proforma.discountAmount)}</span>
                 </div>
               )}
-              <div className="flex justify-between w-64 text-slate-600">
+              <div className="flex justify-between w-64 text-ink-secondary">
                 <span>VAT / Tax (5%):</span>
-                <span className="text-slate-900">{formatUSD(proforma.taxAmount)}</span>
+                <span className="text-ink">{formatUSD(proforma.taxAmount)}</span>
               </div>
-              <div className="flex justify-between w-64 text-slate-600">
+              <div className="flex justify-between w-64 text-ink-secondary">
                 <span>Shipping Charges:</span>
-                <span className="text-slate-900">{formatUSD(proforma.shippingCost)}</span>
+                <span className="text-ink">{formatUSD(proforma.shippingCost)}</span>
               </div>
-              <div className="flex justify-between w-64 pt-2 border-t border-slate-200 text-sm font-bold text-slate-900">
+              <div className="flex justify-between w-64 pt-2 border-t border-line text-sm font-bold text-ink">
                 <span>Grand Total (USD):</span>
                 <span className="text-brand-600 font-bold">{formatUSD(proforma.grandTotal)}</span>
               </div>
@@ -630,38 +630,38 @@ export default function ProformaDetailPage() {
         {/* Right Column: Customer & Terms */}
         <div className="space-y-6">
           <Card className="p-5 space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Customer Details</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted">Customer Details</h3>
             <div>
-              <h4 className="text-sm font-bold text-slate-900">{proforma.customerCompany}</h4>
-              <p className="text-xs text-slate-500 mt-0.5">{proforma.customerName}</p>
-              <p className="text-xs text-slate-500">{proforma.customerEmail}</p>
+              <h4 className="text-sm font-bold text-ink">{proforma.customerCompany}</h4>
+              <p className="text-xs text-muted mt-0.5">{proforma.customerName}</p>
+              <p className="text-xs text-muted">{proforma.customerEmail}</p>
             </div>
-            <div className="pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-600">
+            <div className="pt-3 border-t border-line-soft space-y-2 text-xs text-ink-secondary">
               <div>
-                <span className="font-semibold text-slate-700 block mb-0.5">Billing Address:</span>
-                <span className="text-[11px] leading-relaxed text-slate-500">{proforma.billingAddress}</span>
+                <span className="font-semibold text-ink-secondary block mb-0.5">Billing Address:</span>
+                <span className="text-[11px] leading-relaxed text-muted">{proforma.billingAddress}</span>
               </div>
               <div>
-                <span className="font-semibold text-slate-700 block mb-0.5">Shipping Address:</span>
-                <span className="text-[11px] leading-relaxed text-slate-500">{proforma.shippingAddress}</span>
+                <span className="font-semibold text-ink-secondary block mb-0.5">Shipping Address:</span>
+                <span className="text-[11px] leading-relaxed text-muted">{proforma.shippingAddress}</span>
               </div>
             </div>
           </Card>
 
           <Card className="p-5 space-y-3 text-xs">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Commercial Terms</h3>
-            <div className="space-y-2 text-slate-600">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted">Commercial Terms</h3>
+            <div className="space-y-2 text-ink-secondary">
               <div className="flex justify-between">
                 <span>Payment Terms:</span>
-                <span className="text-slate-900 font-medium">{proforma.paymentTerms}</span>
+                <span className="text-ink font-medium">{proforma.paymentTerms}</span>
               </div>
               <div className="flex justify-between">
                 <span>Delivery Terms:</span>
-                <span className="text-slate-900 font-medium">{proforma.deliveryTerms}</span>
+                <span className="text-ink font-medium">{proforma.deliveryTerms}</span>
               </div>
               <div className="flex justify-between">
                 <span>Expiry Date:</span>
-                <span className="text-slate-900 font-mono">{formatDate(proforma.expiryDate)}</span>
+                <span className="text-ink font-mono">{formatDate(proforma.expiryDate)}</span>
               </div>
             </div>
           </Card>
@@ -671,16 +671,16 @@ export default function ProformaDetailPage() {
       {/* Section 15: Tax Invoice Conversion Confirmation Modal */}
       {isConvertModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-xl border border-slate-200 bg-white shadow-2xl p-7 space-y-5">
+          <div className="relative w-full max-w-lg rounded-xl border border-line bg-white shadow-2xl p-7 space-y-5">
             {!conversionSuccess && (
-              <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-start justify-between pb-4 border-b border-line-soft">
                 <div>
                   <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary mb-1.5">
                     {proforma.proformaNumber}
                   </div>
-                  <h3 className="text-xl font-semibold tracking-tight text-slate-900">Convert to Tax Invoice</h3>
+                  <h3 className="text-xl font-semibold tracking-tight text-ink">Convert to Tax Invoice</h3>
                 </div>
-                <button onClick={() => setIsConvertModalOpen(false)} className="text-slate-400 hover:text-slate-600 mt-1">
+                <button onClick={() => setIsConvertModalOpen(false)} className="text-muted hover:text-ink-secondary mt-1">
                   ✕
                 </button>
               </div>
@@ -695,14 +695,14 @@ export default function ProformaDetailPage() {
                   <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-600 mt-1">
                     Tax Invoice Created
                   </div>
-                  <div className="text-2xl font-semibold tracking-tight text-slate-900 font-mono">
+                  <div className="text-2xl font-semibold tracking-tight text-ink font-mono">
                     {generatedInvoice?.number}
                   </div>
-                  <p className="text-sm text-slate-500 max-w-xs">
+                  <p className="text-sm text-muted max-w-xs">
                     The order has been placed into the physical depot fulfilment workflow.
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center justify-center gap-2 pt-4 border-t border-slate-100">
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-4 border-t border-line-soft">
                   <LinkButton href={`/invoices/${generatedInvoice?.id}`} size="sm" className="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs">
                     View Invoice
                   </LinkButton>
@@ -715,26 +715,26 @@ export default function ProformaDetailPage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-5 text-sm text-slate-700">
-                <div className="rounded-lg border border-slate-200 divide-y divide-slate-100 text-sm">
+              <div className="space-y-5 text-sm text-ink-secondary">
+                <div className="rounded-lg border border-line divide-y divide-slate-100 text-sm">
                   <div className="flex justify-between px-3.5 py-2.5">
-                    <span className="text-slate-500">Customer</span>
-                    <span className="font-semibold text-slate-900">{proforma.customerCompany}</span>
+                    <span className="text-muted">Customer</span>
+                    <span className="font-semibold text-ink">{proforma.customerCompany}</span>
                   </div>
                   <div className="flex justify-between px-3.5 py-2.5">
-                    <span className="text-slate-500">Products</span>
-                    <span className="text-slate-900">{proforma.items?.length || 0} line items</span>
+                    <span className="text-muted">Products</span>
+                    <span className="text-ink">{proforma.items?.length || 0} line items</span>
                   </div>
                   <div className="flex justify-between px-3.5 py-2.5">
-                    <span className="text-slate-500">Subtotal</span>
-                    <span className="text-slate-900">{formatUSD(proforma.subtotal)}</span>
+                    <span className="text-muted">Subtotal</span>
+                    <span className="text-ink">{formatUSD(proforma.subtotal)}</span>
                   </div>
                   <div className="flex justify-between px-3.5 py-2.5">
-                    <span className="text-slate-500">Tax</span>
-                    <span className="text-slate-900">{formatUSD(proforma.taxAmount)}</span>
+                    <span className="text-muted">Tax</span>
+                    <span className="text-ink">{formatUSD(proforma.taxAmount)}</span>
                   </div>
-                  <div className="flex justify-between px-3.5 py-2.5 bg-slate-50 rounded-b-lg">
-                    <span className="font-semibold text-slate-900">Total</span>
+                  <div className="flex justify-between px-3.5 py-2.5 bg-surface rounded-b-lg">
+                    <span className="font-semibold text-ink">Total</span>
                     <span className="font-bold text-brand-600">{formatUSD(proforma.grandTotal)}</span>
                   </div>
                 </div>
@@ -744,11 +744,11 @@ export default function ProformaDetailPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">Select Fulfilment Depot</label>
+                  <label className="block text-xs font-semibold text-ink-secondary">Select Fulfilment Depot</label>
                   <select
                     value={selectedDepotId}
                     onChange={(e) => setSelectedDepotId(e.target.value)}
-                    className="w-full rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900"
+                    className="w-full rounded-md border border-line bg-white px-3 py-1.5 text-xs text-ink"
                   >
                     {depots.map((d) => (
                       <option key={d.id} value={d.id}>
@@ -758,7 +758,7 @@ export default function ProformaDetailPage() {
                   </select>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-line-soft">
                   <Button variant="outline" onClick={() => setIsConvertModalOpen(false)}>
                     Cancel
                   </Button>
@@ -779,18 +779,18 @@ export default function ProformaDetailPage() {
       {/* Email Quote Modal */}
       {isEmailModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-2xl p-7 space-y-5">
-            <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+          <div className="relative w-full max-w-md rounded-xl border border-line bg-white shadow-2xl p-7 space-y-5">
+            <div className="flex items-start justify-between pb-4 border-b border-line-soft">
               <div>
-                <h3 className="text-xl font-semibold tracking-tight text-slate-900">Email Quotation</h3>
-                <p className="text-xs text-slate-500 mt-1">Send Proforma {proforma.proformaNumber}</p>
+                <h3 className="text-xl font-semibold tracking-tight text-ink">Email Quotation</h3>
+                <p className="text-xs text-muted mt-1">Send Proforma {proforma.proformaNumber}</p>
               </div>
               <button
                 onClick={() => {
                   setIsEmailModalOpen(false);
                   setEmailResult(null);
                 }}
-                className="text-slate-400 hover:text-slate-600 mt-1"
+                className="text-muted hover:text-ink-secondary mt-1"
               >
                 ✕
               </button>
@@ -798,9 +798,9 @@ export default function ProformaDetailPage() {
 
             {!emailResult ? (
               <div className="space-y-4">
-                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
-                  <div className="text-xs text-slate-500 mb-1">Recipient Email</div>
-                  <div className="text-sm font-semibold text-slate-900">
+                <div className="p-4 rounded-lg bg-surface border border-line">
+                  <div className="text-xs text-muted mb-1">Recipient Email</div>
+                  <div className="text-sm font-semibold text-ink">
                     {proforma.customerEmail || 'No email address on file for this customer'}
                   </div>
                 </div>
@@ -829,7 +829,7 @@ export default function ProformaDetailPage() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-line-soft">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -857,21 +857,21 @@ export default function ProformaDetailPage() {
                     <AlertTriangle className="h-6 w-6" />
                   </div>
                   <div>
-                    <div className="text-base font-bold text-slate-900">Email Logged (SMTP Not Configured)</div>
-                    <div className="text-xs text-slate-600 mt-1 max-w-sm">
+                    <div className="text-base font-bold text-ink">Email Logged (SMTP Not Configured)</div>
+                    <div className="text-xs text-ink-secondary mt-1 max-w-sm">
                       {emailResult.message}
                     </div>
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-1.5">
-                  <div className="font-semibold text-slate-800">Delivery Status</div>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                <div className="p-3.5 rounded-lg bg-surface border border-line text-xs space-y-1.5">
+                  <div className="font-semibold text-ink">Delivery Status</div>
+                  <p className="text-ink-secondary text-[11px] leading-relaxed">
                     This proforma was recorded in the Notification &amp; Email Audit logs. To deliver live emails directly to your customers' inboxes, please enter your SMTP credentials in Settings.
                   </p>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-line-soft">
                   <LinkButton href="/settings" variant="outline" size="sm">
                     Configure SMTP
                   </LinkButton>
@@ -893,13 +893,13 @@ export default function ProformaDetailPage() {
                     <CheckCircle2 className="h-6 w-6" />
                   </div>
                   <div>
-                    <div className="text-base font-bold text-slate-900">Email Sent Successfully</div>
-                    <div className="text-xs text-slate-500 mt-1">
+                    <div className="text-base font-bold text-ink">Email Sent Successfully</div>
+                    <div className="text-xs text-muted mt-1">
                       Quotation delivered to {emailResult.recipient || proforma.customerEmail}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-end pt-3 border-t border-slate-100">
+                <div className="flex items-center justify-end pt-3 border-t border-line-soft">
                   <Button
                     size="sm"
                     onClick={() => {

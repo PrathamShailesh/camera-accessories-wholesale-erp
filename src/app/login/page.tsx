@@ -139,7 +139,7 @@ export default function LoginPage() {
   const brandName = settings?.tradingName || settings?.companyName || 'ARIB GLOBAL';
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center items-center p-4 sm:p-6 select-none">
+    <div className="min-h-screen bg-surface text-ink flex flex-col justify-center items-center p-4 sm:p-6 select-none">
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
@@ -159,19 +159,19 @@ export default function LoginPage() {
               Enterprise ERP
             </span>
           </div>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto">
+          <p className="text-xs text-muted max-w-xs mx-auto">
             Camera & Cine Optical Accessories Wholesale System
           </p>
         </div>
 
         {/* White Enterprise Sign-In Card */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="rounded-xl border border-line bg-white p-6 sm:p-8 shadow-sm space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-line-soft">
             <div className="flex items-center gap-2">
               <KeyRound className="h-4 w-4 text-brand-600" />
-              <h2 className="text-sm font-bold text-slate-900">Sign In to Account</h2>
+              <h2 className="text-sm font-bold text-ink">Sign In to Account</h2>
             </div>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-mono font-medium">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-muted text-ink-secondary text-[10px] font-mono font-medium">
               <ShieldCheck className="h-3 w-3 text-emerald-600" />
               <span>TLS Encrypted</span>
             </div>
@@ -193,9 +193,9 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4 text-xs">
             <div className="space-y-1.5">
-              <label className="block text-slate-700 font-semibold">Work Email Address</label>
+              <label className="block text-ink-secondary font-semibold">Work Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted" />
                 <input
                   type="email"
                   required
@@ -203,14 +203,14 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="e.g. sarah.admin@lenscore.com"
-                  className="w-full rounded-md border border-slate-200 bg-slate-50/50 pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:border-brand-500 focus:outline-none"
+                  className="w-full rounded-md border border-line bg-slate-50/50 pl-9 pr-3 py-2 text-xs text-ink placeholder-slate-400 focus:bg-white focus:border-brand-500 focus:outline-none"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="block text-slate-700 font-semibold">Password</label>
+                <label className="block text-ink-secondary font-semibold">Password</label>
                 <button
                   type="button"
                   onClick={() => setShowHelpModal(true)}
@@ -220,7 +220,7 @@ export default function LoginPage() {
                 </button>
               </div>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
@@ -229,12 +229,12 @@ export default function LoginPage() {
                   onKeyDown={handleKeyDown}
                   onKeyUp={handleKeyDown}
                   placeholder="Enter password"
-                  className="w-full rounded-md border border-slate-200 bg-slate-50/50 pl-9 pr-9 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:border-brand-500 focus:outline-none"
+                  className="w-full rounded-md border border-line bg-slate-50/50 pl-9 pr-9 py-2 text-xs text-ink placeholder-slate-400 focus:bg-white focus:border-brand-500 focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-3 text-muted hover:text-ink-secondary"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -245,13 +245,13 @@ export default function LoginPage() {
               )}
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-500">
+            <div className="flex items-center justify-between text-xs text-muted">
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded border-slate-300 text-brand-600 focus:ring-0"
+                  className="rounded border-line text-brand-600 focus:ring-0"
                 />
                 <span className="text-[11px]">Remember work email</span>
               </label>
@@ -259,7 +259,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowHelpModal(true)}
-                className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-900"
+                className="flex items-center gap-1 text-[11px] text-muted hover:text-ink"
               >
                 <HelpCircle className="h-3.5 w-3.5" />
                 <span>Help</span>
@@ -277,8 +277,8 @@ export default function LoginPage() {
           </form>
 
           {/* Quick Access Demo Logins */}
-          <div className="pt-4 border-t border-slate-100 space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+          <div className="pt-4 border-t border-line-soft space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-ink-secondary">
               <div className="flex items-center gap-1.5">
                 <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20" />
                 <span>Quick Access Demo Accounts</span>
@@ -292,21 +292,21 @@ export default function LoginPage() {
                   type="button"
                   disabled={isLoading}
                   onClick={() => handleQuickAccess(acc.email, acc.pass)}
-                  className="w-full flex items-center justify-between p-2 rounded-md border border-slate-200 bg-slate-50/50 hover:bg-slate-100 text-left transition-colors group"
+                  className="w-full flex items-center justify-between p-2 rounded-md border border-line bg-slate-50/50 hover:bg-surface-muted text-left transition-colors group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <UserCheck className="h-3.5 w-3.5 text-slate-400 group-hover:text-brand-600 shrink-0" />
+                    <UserCheck className="h-3.5 w-3.5 text-muted group-hover:text-brand-600 shrink-0" />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-slate-900 truncate">{acc.name}</span>
+                        <span className="text-xs font-semibold text-ink truncate">{acc.name}</span>
                         <span className="text-[9px] font-semibold text-brand-700 bg-brand-50 px-1.5 py-0.2 rounded border border-brand-100 shrink-0">
                           {acc.badge}
                         </span>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-mono truncate block">{acc.email}</span>
+                      <span className="text-[10px] text-muted font-mono truncate block">{acc.email}</span>
                     </div>
                   </div>
-                  <ArrowRight className="h-3 w-3 text-slate-400 group-hover:text-brand-600 shrink-0" />
+                  <ArrowRight className="h-3 w-3 text-muted group-hover:text-brand-600 shrink-0" />
                 </button>
               ))}
             </div>
@@ -314,7 +314,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer Notice */}
-        <div className="text-center text-[11px] text-slate-400 space-y-0.5">
+        <div className="text-center text-[11px] text-muted space-y-0.5">
           <p>ARIB GLOBAL · Camera & Cine Wholesale ERP · Dubai · Singapore · Bangalore · Mumbai</p>
         </div>
       </div>
@@ -322,21 +322,21 @@ export default function LoginPage() {
       {/* Help Modal */}
       {showHelpModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900">Enterprise Access Assistance</h3>
-              <button onClick={() => setShowHelpModal(false)} className="text-slate-400 hover:text-slate-600">
+          <div className="relative w-full max-w-md rounded-xl border border-line bg-white p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-line-soft">
+              <h3 className="text-sm font-bold text-ink">Enterprise Access Assistance</h3>
+              <button onClick={() => setShowHelpModal(false)} className="text-muted hover:text-ink-secondary">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-ink-secondary">
               User accounts and role permissions are managed by your Super Administrator. Please contact support@lenscore.com for password resets or depot assignment updates.
             </p>
-            <div className="flex justify-end pt-2 border-t border-slate-100">
+            <div className="flex justify-end pt-2 border-t border-line-soft">
               <button
                 type="button"
                 onClick={() => setShowHelpModal(false)}
-                className="px-4 py-2 rounded-md bg-slate-100 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                className="px-4 py-2 rounded-md bg-surface-muted text-xs font-semibold text-ink-secondary hover:bg-surface-muted"
               >
                 Close
               </button>

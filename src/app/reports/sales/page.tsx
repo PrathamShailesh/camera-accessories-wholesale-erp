@@ -49,7 +49,6 @@ export default function SalesReportsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="06 / ANALYTICS"
         title="Sales Reports"
         description="Invoiced revenue, tax collected, and order volume."
         actions={
@@ -95,7 +94,7 @@ export default function SalesReportsPage() {
           description="Sales figures appear here once proformas are converted into tax invoices."
         />
       ) : (
-        <Card className="overflow-hidden p-0">
+        <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Invoice</TableHead>

@@ -29,34 +29,34 @@ export function KPICard({ label, value, icon: Icon, tone = 'neutral', trend, hel
   const TrendIcon = isUp ? ArrowUp : isDown ? ArrowDown : Minus;
 
   return (
-    <div className={cn('rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md', className)}>
+    <div className={cn('rounded-2xl border border-line bg-white p-4 transition-colors hover:border-ink/15', className)}>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</span>
+        <span className="text-xs font-medium text-muted">{label}</span>
         {Icon && (
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-50 text-slate-400 border border-slate-100">
-            <Icon className="h-4 w-4" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-surface text-muted">
+            <Icon className="h-3.5 w-3.5" />
           </div>
         )}
       </div>
-      <div className="mt-2.5">
-        <div className="text-xl font-bold tracking-tight text-slate-900 tabular-nums">
-          {restricted ? <span className="text-slate-400 text-sm font-medium">Restricted</span> : value}
+      <div className="mt-2">
+        <div className="text-2xl font-semibold tracking-tight text-ink tabular-nums">
+          {restricted ? <span className="text-muted text-sm font-medium">Restricted</span> : value}
         </div>
         {!restricted && trend && (
-          <div className="flex items-center gap-1 mt-1.5 text-xs font-medium">
+          <div className="flex items-center gap-1.5 mt-2 text-xs font-medium">
             <span
               className={cn(
-                'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold',
-                trendGood ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold',
+                trendGood ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'
               )}
             >
               <TrendIcon className="h-3 w-3" />
               <span>{trend.value}</span>
             </span>
-            {trend.label && <span className="text-slate-500 font-normal text-[11px]">{trend.label}</span>}
+            {trend.label && <span className="text-muted font-normal text-[11px]">{trend.label}</span>}
           </div>
         )}
-        {!restricted && !trend && helperText && <div className="mt-1.5 text-xs text-slate-500">{helperText}</div>}
+        {!restricted && !trend && helperText && <div className="mt-2 text-xs text-muted">{helperText}</div>}
       </div>
     </div>
   );

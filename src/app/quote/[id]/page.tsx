@@ -118,7 +118,7 @@ export default function PublicQuotePortalPage() {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 space-y-4">
         <div className="h-10 w-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin" />
-        <div className="text-slate-400 text-sm font-medium tracking-wide">Loading Secure Wholesale Quotation...</div>
+        <div className="text-muted text-sm font-medium tracking-wide">Loading Secure Wholesale Quotation...</div>
       </div>
     );
   }
@@ -130,7 +130,7 @@ export default function PublicQuotePortalPage() {
           <AlertCircle className="h-8 w-8" />
         </div>
         <h1 className="text-xl font-bold text-white">Quotation Not Found</h1>
-        <p className="text-sm text-slate-400 max-w-md">
+        <p className="text-sm text-muted max-w-md">
           The requested quotation document could not be located or may have expired. Please verify your link or contact your wholesale account manager.
         </p>
       </div>
@@ -169,7 +169,7 @@ export default function PublicQuotePortalPage() {
               onClick={() => setIsPrintModalOpen(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold shadow-sm transition-all"
             >
-              <Printer className="h-4 w-4 text-slate-400" />
+              <Printer className="h-4 w-4 text-muted" />
               <span>Print Official PDF</span>
             </button>
 
@@ -222,19 +222,19 @@ export default function PublicQuotePortalPage() {
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
                 {proforma.customerCompany}
               </h1>
-              <p className="text-xs sm:text-sm text-slate-400">
+              <p className="text-xs sm:text-sm text-muted">
                 Prepared for: <strong className="text-slate-200">{proforma.customerName}</strong> ({proforma.customerEmail})
               </p>
             </div>
 
             <div className="flex flex-col items-start md:items-end justify-center p-4 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 text-right">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted font-mono">
                 Total Quotation Value
               </div>
               <div className="text-3xl sm:text-4xl font-extrabold text-brand-400 font-mono tracking-tight mt-1">
                 {formatUSD(proforma.grandTotal)}
               </div>
-              <div className="text-[11px] text-slate-500 mt-1">
+              <div className="text-[11px] text-muted mt-1">
                 Valid until {formatDate(proforma.expiryDate)}
               </div>
             </div>
@@ -243,19 +243,19 @@ export default function PublicQuotePortalPage() {
           {/* Quick Metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 mt-6 border-t border-slate-800/80 text-xs">
             <div className="space-y-1">
-              <span className="text-slate-500">Document #</span>
+              <span className="text-muted">Document #</span>
               <p className="font-mono font-bold text-slate-200">{proforma.proformaNumber}</p>
             </div>
             <div className="space-y-1">
-              <span className="text-slate-500">Issue Date</span>
+              <span className="text-muted">Issue Date</span>
               <p className="font-mono font-medium text-slate-200">{formatDate(proforma.issueDate)}</p>
             </div>
             <div className="space-y-1">
-              <span className="text-slate-500">Payment Terms</span>
+              <span className="text-muted">Payment Terms</span>
               <p className="font-medium text-slate-200">{proforma.paymentTerms || 'NET 30'}</p>
             </div>
             <div className="space-y-1">
-              <span className="text-slate-500">Delivery Terms</span>
+              <span className="text-muted">Delivery Terms</span>
               <p className="font-medium text-slate-200">{proforma.deliveryTerms || 'Air Freight CIF'}</p>
             </div>
           </div>
@@ -270,33 +270,33 @@ export default function PublicQuotePortalPage() {
             </div>
             <div className="text-xs text-slate-300 space-y-1">
               <p className="font-bold text-white">{settings?.tradingName || settings?.companyName || 'ARIB GLOBAL Wholesale Distribution'}</p>
-              <p className="text-slate-400">{settings?.companyAddress || 'Global Logistics & Camera Distribution Center'}</p>
-              <p className="text-slate-400">Email: {settings?.email || settings?.smtpFromEmail || 'sales@growthbridge.com'}</p>
-              <p className="text-slate-400">Phone: {settings?.phone || '+1 (800) 555-CAM'}</p>
+              <p className="text-muted">{settings?.companyAddress || 'Global Logistics & Camera Distribution Center'}</p>
+              <p className="text-muted">Email: {settings?.email || settings?.smtpFromEmail || 'sales@growthbridge.com'}</p>
+              <p className="text-muted">Phone: {settings?.phone || '+1 (800) 555-CAM'}</p>
             </div>
           </div>
 
           <div className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted font-mono">
               <Building2 className="h-4 w-4" />
               <span>Bill To Client</span>
             </div>
             <div className="text-xs text-slate-300 space-y-1">
               <p className="font-bold text-white">{proforma.customerCompany}</p>
-              <p className="text-slate-400">Attn: {proforma.customerName}</p>
-              <p className="text-slate-400">{proforma.billingAddress || 'Commercial Billing Address on file'}</p>
-              <p className="text-slate-400">{proforma.customerEmail} • {proforma.customerPhone}</p>
+              <p className="text-muted">Attn: {proforma.customerName}</p>
+              <p className="text-muted">{proforma.billingAddress || 'Commercial Billing Address on file'}</p>
+              <p className="text-muted">{proforma.customerEmail} • {proforma.customerPhone}</p>
             </div>
           </div>
 
           <div className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted font-mono">
               <Truck className="h-4 w-4" />
               <span>Ship To / Dispatch Hub</span>
             </div>
             <div className="text-xs text-slate-300 space-y-1">
               <p className="font-bold text-white">{proforma.customerCompany}</p>
-              <p className="text-slate-400">{proforma.shippingAddress || 'Consignee Delivery Address on file'}</p>
+              <p className="text-muted">{proforma.shippingAddress || 'Consignee Delivery Address on file'}</p>
               <div className="pt-1">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px] font-mono">
                   📦 Allocated from Regional Depot
@@ -313,13 +313,13 @@ export default function PublicQuotePortalPage() {
               <Package className="h-4 w-4 text-brand-400" />
               <span>Allocated Equipment & Optical Hardware</span>
             </div>
-            <span className="text-xs text-slate-400 font-mono">{(proforma.items || []).length} line items</span>
+            <span className="text-xs text-muted font-mono">{(proforma.items || []).length} line items</span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-900/50 text-slate-400 text-[11px] font-semibold uppercase tracking-wider font-mono">
+                <tr className="border-b border-slate-800 bg-slate-900/50 text-muted text-[11px] font-semibold uppercase tracking-wider font-mono">
                   <th className="py-3 px-4">Item & Description</th>
                   <th className="py-3 px-4">Brand</th>
                   <th className="py-3 px-4 text-center">Qty</th>
@@ -334,7 +334,7 @@ export default function PublicQuotePortalPage() {
                   <tr key={item.id || index} className="hover:bg-slate-900/40 transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-slate-100">{item.productName}</div>
-                      <div className="text-[11px] font-mono text-slate-500 flex items-center gap-2 mt-0.5">
+                      <div className="text-[11px] font-mono text-muted flex items-center gap-2 mt-0.5">
                         <span>SKU: {item.productSku}</span>
                         {item.trackSerial && (
                           <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px]">
@@ -346,10 +346,10 @@ export default function PublicQuotePortalPage() {
                     <td className="py-3.5 px-4 font-medium text-slate-300">{item.brand}</td>
                     <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-200">{item.quantity}</td>
                     <td className="py-3.5 px-4 text-right font-mono text-slate-300">{formatUSD(item.unitPrice)}</td>
-                    <td className="py-3.5 px-4 text-right font-mono text-slate-400">
+                    <td className="py-3.5 px-4 text-right font-mono text-muted">
                       {item.discountPercent > 0 ? `${item.discountPercent}%` : '—'}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono text-slate-400">{item.taxRate}%</td>
+                    <td className="py-3.5 px-4 text-right font-mono text-muted">{item.taxRate}%</td>
                     <td className="py-3.5 px-4 text-right font-mono font-bold text-white">{formatUSD(item.totalPrice)}</td>
                   </tr>
                 ))}
@@ -359,15 +359,15 @@ export default function PublicQuotePortalPage() {
 
           {/* Totals Calculation Ribbon */}
           <div className="p-6 border-t border-slate-800 bg-slate-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div className="text-xs text-slate-400 max-w-sm space-y-1">
+            <div className="text-xs text-muted max-w-sm space-y-1">
               <p className="font-semibold text-slate-300">Commercial Notes & Specifications:</p>
-              <p className="text-[11px] leading-relaxed text-slate-500">
+              <p className="text-[11px] leading-relaxed text-muted">
                 {proforma.notes || 'All equipment brand new factory sealed with manufacturer wholesale warranty. Prices quoted in USD ($).'}
               </p>
             </div>
 
             <div className="w-full sm:w-80 space-y-2 text-xs font-mono">
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between text-muted">
                 <span>Equipment Subtotal:</span>
                 <span className="text-slate-200 font-semibold">{formatUSD(proforma.subtotal)}</span>
               </div>
@@ -377,12 +377,12 @@ export default function PublicQuotePortalPage() {
                   <span>-{formatUSD(proforma.discountAmount)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between text-muted">
                 <span>Estimated Tax / VAT:</span>
                 <span className="text-slate-200">{formatUSD(proforma.taxAmount)}</span>
               </div>
               {proforma.shippingCost > 0 && (
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-muted">
                   <span>Insured Express Freight:</span>
                   <span className="text-slate-200">{formatUSD(proforma.shippingCost)}</span>
                 </div>
@@ -402,25 +402,25 @@ export default function PublicQuotePortalPage() {
               <CreditCard className="h-4 w-4" />
               <span>Official Wire Transfer & Banking Instructions</span>
             </div>
-            <span className="text-[11px] text-slate-400">Swift & FedWire Routing</span>
+            <span className="text-[11px] text-muted">Swift & FedWire Routing</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs font-mono">
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-500 font-sans">Bank Name</div>
+                <div className="text-[10px] text-muted font-sans">Bank Name</div>
                 <div className="font-bold text-slate-200 mt-0.5">{settings?.bankName || 'JPMorgan Chase Bank, N.A.'}</div>
               </div>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-500 font-sans">Beneficiary Name</div>
+                <div className="text-[10px] text-muted font-sans">Beneficiary Name</div>
                 <div className="font-bold text-slate-200 mt-0.5">{settings?.accountName || 'ARIB GLOBAL WHOLESALE LLC'}</div>
               </div>
               <button
                 onClick={() => handleCopy(settings?.accountName || 'ARIB GLOBAL WHOLESALE LLC', 'beneficiary')}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                className="p-1.5 rounded-lg hover:bg-slate-800 text-muted hover:text-white transition-colors"
                 title="Copy"
               >
                 {copiedField === 'beneficiary' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
@@ -429,12 +429,12 @@ export default function PublicQuotePortalPage() {
 
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-500 font-sans">Account Number</div>
+                <div className="text-[10px] text-muted font-sans">Account Number</div>
                 <div className="font-bold text-slate-200 mt-0.5">{settings?.accountNumber || '849203948102'}</div>
               </div>
               <button
                 onClick={() => handleCopy(settings?.accountNumber || '849203948102', 'accNum')}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                className="p-1.5 rounded-lg hover:bg-slate-800 text-muted hover:text-white transition-colors"
                 title="Copy"
               >
                 {copiedField === 'accNum' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
@@ -443,12 +443,12 @@ export default function PublicQuotePortalPage() {
 
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-500 font-sans">SWIFT / BIC Code</div>
+                <div className="text-[10px] text-muted font-sans">SWIFT / BIC Code</div>
                 <div className="font-bold text-slate-200 mt-0.5">{settings?.swiftBic || 'CHASUS33XXX'}</div>
               </div>
               <button
                 onClick={() => handleCopy(settings?.swiftBic || 'CHASUS33XXX', 'swift')}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                className="p-1.5 rounded-lg hover:bg-slate-800 text-muted hover:text-white transition-colors"
                 title="Copy"
               >
                 {copiedField === 'swift' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
@@ -457,12 +457,12 @@ export default function PublicQuotePortalPage() {
 
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-500 font-sans">IBAN (if applicable)</div>
+                <div className="text-[10px] text-muted font-sans">IBAN (if applicable)</div>
                 <div className="font-bold text-slate-200 mt-0.5">{settings?.iban || 'US33CHAS849203948102'}</div>
               </div>
               <button
                 onClick={() => handleCopy(settings?.iban || 'US33CHAS849203948102', 'iban')}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                className="p-1.5 rounded-lg hover:bg-slate-800 text-muted hover:text-white transition-colors"
                 title="Copy"
               >
                 {copiedField === 'iban' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
@@ -471,12 +471,12 @@ export default function PublicQuotePortalPage() {
 
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-slate-500 font-sans">FedWire Routing Code</div>
+                <div className="text-[10px] text-muted font-sans">FedWire Routing Code</div>
                 <div className="font-bold text-slate-200 mt-0.5">{settings?.routingCode || '021000021'}</div>
               </div>
               <button
                 onClick={() => handleCopy(settings?.routingCode || '021000021', 'routing')}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                className="p-1.5 rounded-lg hover:bg-slate-800 text-muted hover:text-white transition-colors"
                 title="Copy"
               >
                 {copiedField === 'routing' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
@@ -486,7 +486,7 @@ export default function PublicQuotePortalPage() {
         </div>
 
         {/* Footer Support & Legal */}
-        <footer className="pt-8 pb-12 text-center text-xs text-slate-500 space-y-4 border-t border-slate-800/80">
+        <footer className="pt-8 pb-12 text-center text-xs text-muted space-y-4 border-t border-slate-800/80">
           {/* Official Seal Badge when Confirmed / Security Header when Preliminary */}
           {proforma.status === 'CONFIRMED' || proforma.status === 'CONVERTED' ? (
             <div className="flex flex-col items-center justify-center gap-2">
@@ -502,28 +502,28 @@ export default function PublicQuotePortalPage() {
               <div className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">
                 Officially Authenticated Proforma Invoice
               </div>
-              <div className="text-[10px] text-slate-500 font-mono">
+              <div className="text-[10px] text-muted font-mono">
                 ARIB GLOBAL GENERAL TRADING L.L.C • DUBAI - U.A.E.
               </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-1.5">
-              <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              <div className="text-[11px] font-semibold text-muted uppercase tracking-wider">
                 {proforma.status === 'CANCELLED' ? 'Quotation Cancelled / Expired' : 'Official Proforma Quotation Portal'}
               </div>
-              <div className="text-[10px] text-slate-500 font-mono">
+              <div className="text-[10px] text-muted font-mono">
                 ARIB GLOBAL GENERAL TRADING L.L.C • DUBAI - U.A.E.
               </div>
             </div>
           )}
 
-          <p className="font-medium text-slate-400">
+          <p className="font-medium text-muted">
             {settings?.tradingName || settings?.companyName || 'ARIB GLOBAL Wholesale Distribution LLC'}
           </p>
           <p>
             Tax Registration: <span className="font-mono">{settings?.taxRegistrationNumber || 'TRN-94820194'}</span> • VAT/GST: <span className="font-mono">{settings?.vatGstNumber || 'VAT-US-849201'}</span>
           </p>
-          <p className="text-[11px] text-slate-600">
+          <p className="text-[11px] text-slate-500">
             This digital proforma invoice portal is protected with 256-bit encryption. For questions or modifications, please reply to your email quotation.
           </p>
         </footer>
@@ -539,7 +539,7 @@ export default function PublicQuotePortalPage() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-white">Accept & Confirm Quotation</h3>
-                <p className="text-xs text-slate-400">{proforma.proformaNumber} for {formatUSD(proforma.grandTotal)}</p>
+                <p className="text-xs text-muted">{proforma.proformaNumber} for {formatUSD(proforma.grandTotal)}</p>
               </div>
             </div>
 
@@ -549,7 +549,7 @@ export default function PublicQuotePortalPage() {
               </p>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-medium">
+                <label className="block text-muted mb-1 font-medium">
                   Add PO Number or Order Notes (Optional):
                 </label>
                 <textarea
@@ -572,7 +572,7 @@ export default function PublicQuotePortalPage() {
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
               <button
                 onClick={() => setIsConfirmModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl text-xs text-slate-400 hover:text-white transition-colors"
+                className="px-4 py-2.5 rounded-xl text-xs text-muted hover:text-white transition-colors"
               >
                 Cancel
               </button>

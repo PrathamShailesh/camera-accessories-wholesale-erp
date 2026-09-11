@@ -150,7 +150,6 @@ export default function SettingsPage() {
   return (
     <form onSubmit={handleSave} className="flex flex-col gap-8 pb-16 max-w-3xl">
       <PageHeader
-        eyebrow="07 / ADMINISTRATION"
         title="Settings"
         description="Company identity, banking details, document numbering, and email delivery."
         actions={
@@ -205,9 +204,9 @@ export default function SettingsPage() {
             />
           </div>
 
-          <div className="sm:col-span-2 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+          <div className="sm:col-span-2 p-4 rounded-2xl bg-surface border border-line space-y-3">
             <div className="flex items-start gap-4">
-              <div className="p-2.5 rounded-2xl bg-white border border-slate-200 shrink-0 shadow-sm">
+              <div className="p-2.5 rounded-2xl bg-white border border-line shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={settings.sealUrl || '/arib-seal.png'}
@@ -218,27 +217,27 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                  <span className="text-xs font-bold text-ink uppercase tracking-wider">
                     Official Company Seal
                   </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success-soft text-success border border-success-border">
                     Smart Commercial Policy
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Registered company stamp: <strong className="text-slate-200">ARIB GLOBAL GENERAL TRADING L.L.C • DUBAI - U.A.E.</strong> Affixed exclusively to legally binding financial documents.
+                <p className="text-xs text-muted leading-relaxed">
+                  Registered company stamp: <strong className="text-ink-secondary">ARIB GLOBAL GENERAL TRADING L.L.C • DUBAI - U.A.E.</strong> Affixed exclusively to legally binding financial documents.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
-                  <div className="flex items-center gap-1.5 text-emerald-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <div className="flex items-center gap-1.5 text-success">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success" />
                     <span>Sealed: Tax Invoices & Confirmed Proformas</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                  <div className="flex items-center gap-1.5 text-muted">
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted" />
                     <span>Omitted: Packing Slips & Draft Quotes</span>
                   </div>
                 </div>
-                <div className="text-[11px] text-slate-500 font-mono pt-0.5">Asset: public/arib-seal.png (1024×1024 Hi-Res Transparent PNG)</div>
+                <div className="text-[11px] text-muted font-mono pt-0.5">Asset: public/arib-seal.png (1024×1024 Hi-Res Transparent PNG)</div>
               </div>
             </div>
           </div>

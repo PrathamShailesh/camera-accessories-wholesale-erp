@@ -127,7 +127,7 @@ export default function InvoiceDetailPage() {
   if (isLoading) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="text-slate-500 text-xs animate-pulse">Loading tax invoice document...</div>
+        <div className="text-muted text-xs animate-pulse">Loading tax invoice document...</div>
       </div>
     );
   }
@@ -135,7 +135,7 @@ export default function InvoiceDetailPage() {
   if (!invoice) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="text-slate-500 text-sm font-semibold">Tax Invoice Not Found</div>
+        <div className="text-muted text-sm font-semibold">Tax Invoice Not Found</div>
         <LinkButton href="/invoices" variant="outline" size="sm">
           Back to Invoices
         </LinkButton>
@@ -259,7 +259,6 @@ export default function InvoiceDetailPage() {
     <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-16">
       {/* Header Bar */}
       <PageHeader
-        eyebrow="02 / SALES"
         breadcrumbs={[{ label: 'Tax Invoices', href: '/invoices' }, { label: invoice.invoiceNumber }]}
         title={
           <span className="inline-flex items-center gap-2.5">
@@ -269,7 +268,7 @@ export default function InvoiceDetailPage() {
         }
         description={
           <>
-            Customer: <strong className="text-slate-800">{invoice.customerCompany || invoice.customerName}</strong> · Assigned Hub: <strong className="text-slate-800">{invoice.depotName || 'Depot'}</strong>
+            Customer: <strong className="text-ink">{invoice.customerCompany || invoice.customerName}</strong> · Assigned Hub: <strong className="text-ink">{invoice.depotName || 'Depot'}</strong>
           </>
         }
         actions={
@@ -277,7 +276,7 @@ export default function InvoiceDetailPage() {
             <Button
               size="sm"
               variant="outline"
-              iconLeft={<Printer className="h-3.5 w-3.5 text-slate-500" />}
+              iconLeft={<Printer className="h-3.5 w-3.5 text-muted" />}
               onClick={() => setIsPrintModalOpen(true)}
             >
               Print Invoice
@@ -350,16 +349,16 @@ export default function InvoiceDetailPage() {
         {/* Main Document Body */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="overflow-hidden">
-            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="p-4 border-b border-line-soft bg-slate-50/50 flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
                 Tax Invoice Items ({invoice.items?.length || 0})
               </h3>
-              <span className="text-xs font-mono font-semibold text-slate-700">Currency: USD ($)</span>
+              <span className="text-xs font-mono font-semibold text-ink-secondary">Currency: USD ($)</span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold text-[11px]">
+                <thead className="bg-surface border-b border-line text-muted uppercase tracking-wider font-semibold text-[11px]">
                   <tr>
                     <th className="py-2.5 px-4">Item & SKU</th>
                     <th className="py-2.5 px-4">Serial Numbers</th>
@@ -372,8 +371,8 @@ export default function InvoiceDetailPage() {
                   {(invoice.items || []).map((item, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-900">{item.productName}</div>
-                        <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                        <div className="font-semibold text-ink">{item.productName}</div>
+                        <div className="text-[11px] font-mono text-muted mt-0.5">
                           SKU: {item.productSku} · Brand: {item.brand}
                         </div>
                       </td>
@@ -390,19 +389,19 @@ export default function InvoiceDetailPage() {
                             ))}
                           </div>
                         ) : (
-                          <span className="text-[10px] text-slate-400 italic">Non-serialized</span>
+                          <span className="text-[10px] text-muted italic">Non-serialized</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-center font-mono font-bold text-slate-900">
+                      <td className="py-3 px-4 text-center font-mono font-bold text-ink">
                         {item.quantity}
                       </td>
                       {!isDepotUser && (
-                        <td className="py-3 px-4 text-right font-mono text-slate-700">
+                        <td className="py-3 px-4 text-right font-mono text-ink-secondary">
                           {formatUSD(item.unitPrice)}
                         </td>
                       )}
                       {!isDepotUser && (
-                        <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
+                        <td className="py-3 px-4 text-right font-mono font-bold text-ink">
                           {formatUSD(item.totalPrice)}
                         </td>
                       )}
@@ -413,10 +412,10 @@ export default function InvoiceDetailPage() {
             </div>
 
             {!isDepotUser && (
-              <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col items-end space-y-1.5 text-xs font-mono">
-                <div className="flex justify-between w-64 text-slate-600">
+              <div className="p-4 bg-slate-50/50 border-t border-line-soft flex flex-col items-end space-y-1.5 text-xs font-mono">
+                <div className="flex justify-between w-64 text-ink-secondary">
                   <span>Subtotal:</span>
-                  <span className="text-slate-900 font-medium">{formatUSD(invoice.subtotal)}</span>
+                  <span className="text-ink font-medium">{formatUSD(invoice.subtotal)}</span>
                 </div>
                 {invoice.discountAmount > 0 && (
                   <div className="flex justify-between w-64 text-emerald-700">
@@ -424,15 +423,15 @@ export default function InvoiceDetailPage() {
                     <span>-{formatUSD(invoice.discountAmount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between w-64 text-slate-600">
+                <div className="flex justify-between w-64 text-ink-secondary">
                   <span>VAT / Tax (5%):</span>
-                  <span className="text-slate-900">{formatUSD(invoice.taxAmount)}</span>
+                  <span className="text-ink">{formatUSD(invoice.taxAmount)}</span>
                 </div>
-                <div className="flex justify-between w-64 text-slate-600">
+                <div className="flex justify-between w-64 text-ink-secondary">
                   <span>Shipping Charges:</span>
-                  <span className="text-slate-900">{formatUSD(invoice.shippingCost)}</span>
+                  <span className="text-ink">{formatUSD(invoice.shippingCost)}</span>
                 </div>
-                <div className="flex justify-between w-64 pt-2 border-t border-slate-200 text-sm font-bold text-slate-900">
+                <div className="flex justify-between w-64 pt-2 border-t border-line text-sm font-bold text-ink">
                   <span>Grand Total (USD):</span>
                   <span className="text-brand-600 font-bold">{formatUSD(invoice.grandTotal)}</span>
                 </div>
@@ -443,7 +442,7 @@ export default function InvoiceDetailPage() {
           {/* Documents Attachment Card */}
           <Card className="p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
                 Cloudinary Documents ({documents.length})
               </h3>
               <button onClick={() => setIsUploadModalOpen(true)} className="text-xs text-brand-600 font-medium hover:underline">
@@ -452,7 +451,7 @@ export default function InvoiceDetailPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               {documents.length === 0 ? (
-                <p className="text-xs text-slate-400 italic col-span-2">No documents attached yet.</p>
+                <p className="text-xs text-muted italic col-span-2">No documents attached yet.</p>
               ) : (
                 documents.map((doc) => (
                   <a
@@ -460,13 +459,13 @@ export default function InvoiceDetailPage() {
                     href={doc.cloudinaryUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2.5 rounded-md border border-slate-200 bg-slate-50/50 hover:bg-slate-50 flex items-center justify-between group transition-colors"
+                    className="p-2.5 rounded-md border border-line bg-slate-50/50 hover:bg-surface flex items-center justify-between group transition-colors"
                   >
                     <div>
-                      <div className="text-xs font-semibold text-slate-900 group-hover:text-brand-600">{doc.title}</div>
-                      <span className="text-[10px] text-slate-400 font-mono">{doc.category}</span>
+                      <div className="text-xs font-semibold text-ink group-hover:text-brand-600">{doc.title}</div>
+                      <span className="text-[10px] text-muted font-mono">{doc.category}</span>
                     </div>
-                    <ExternalLink className="h-3.5 w-3.5 text-slate-400 group-hover:text-brand-600 shrink-0" />
+                    <ExternalLink className="h-3.5 w-3.5 text-muted group-hover:text-brand-600 shrink-0" />
                   </a>
                 ))
               )}
@@ -477,25 +476,25 @@ export default function InvoiceDetailPage() {
         {/* Sidebar Info */}
         <div className="space-y-6">
           <Card className="p-5 space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Customer Profile</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted">Customer Profile</h3>
             <div>
-              <h4 className="text-sm font-bold text-slate-900">{invoice.customerCompany || invoice.customerName}</h4>
-              <p className="text-xs text-slate-500 mt-0.5">{invoice.customerName}</p>
-              <p className="text-xs text-slate-500">{invoice.customerEmail}</p>
+              <h4 className="text-sm font-bold text-ink">{invoice.customerCompany || invoice.customerName}</h4>
+              <p className="text-xs text-muted mt-0.5">{invoice.customerName}</p>
+              <p className="text-xs text-muted">{invoice.customerEmail}</p>
             </div>
-            <div className="pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-600">
+            <div className="pt-3 border-t border-line-soft space-y-2 text-xs text-ink-secondary">
               <div>
-                <span className="font-semibold text-slate-700 block mb-0.5">Shipping Address:</span>
-                <span className="text-[11px] leading-relaxed text-slate-500">{invoice.shippingAddress}</span>
+                <span className="font-semibold text-ink-secondary block mb-0.5">Shipping Address:</span>
+                <span className="text-[11px] leading-relaxed text-muted">{invoice.shippingAddress}</span>
               </div>
             </div>
           </Card>
 
           <Card className="p-5 space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Fulfilment Depot Hub</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted">Fulfilment Depot Hub</h3>
             <div>
-              <h4 className="text-sm font-bold text-slate-900">{invoice.depotName || 'Central Depot'}</h4>
-              <p className="text-xs text-slate-500 mt-0.5">Responsible for physical warehouse dispatch</p>
+              <h4 className="text-sm font-bold text-ink">{invoice.depotName || 'Central Depot'}</h4>
+              <p className="text-xs text-muted mt-0.5">Responsible for physical warehouse dispatch</p>
             </div>
           </Card>
 
@@ -505,10 +504,10 @@ export default function InvoiceDetailPage() {
                 <span className="text-xs font-bold uppercase tracking-wider text-brand-700">Shipment Dispatched</span>
                 <StatusBadge status={shipment.status} />
               </div>
-              <div className="space-y-1.5 text-xs text-slate-700 font-mono">
+              <div className="space-y-1.5 text-xs text-ink-secondary font-mono">
                 <div className="flex justify-between">
                   <span>Courier:</span>
-                  <span className="font-semibold text-slate-900">{shipment.courier.replace('_', ' ')}</span>
+                  <span className="font-semibold text-ink">{shipment.courier.replace('_', ' ')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>AWB Number:</span>
@@ -586,20 +585,20 @@ export default function InvoiceDetailPage() {
       {/* Packing Modal */}
       {isPackingModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-xl border border-slate-200 bg-white shadow-2xl p-6 flex flex-col gap-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900">Record Package & Box Specs</h3>
-              <button onClick={() => setIsPackingModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+          <div className="relative w-full max-w-lg rounded-xl border border-line bg-white shadow-2xl p-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-3 border-b border-line-soft">
+              <h3 className="text-sm font-bold text-ink">Record Package & Box Specs</h3>
+              <button onClick={() => setIsPackingModalOpen(false)} className="text-muted hover:text-ink-secondary">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <form onSubmit={handlePackSubmit} className="flex flex-col gap-3 text-xs text-slate-700">
+            <form onSubmit={handlePackSubmit} className="flex flex-col gap-3 text-xs text-ink-secondary">
               <Input label="Packed By Operator" required value={packedBy} onChange={(e) => setPackedBy(e.target.value)} />
               <div className="grid grid-cols-2 gap-3">
                 <Input label="Box Count" type="number" min={1} value={boxCount} onChange={(e) => setBoxCount(Number(e.target.value))} />
                 <Input label="Total Weight (kg)" type="number" step="0.1" value={totalWeight} onChange={(e) => setTotalWeight(Number(e.target.value))} />
               </div>
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-line-soft">
                 <Button type="button" variant="outline" onClick={() => setIsPackingModalOpen(false)}>Cancel</Button>
                 <Button type="submit" loading={isPacking}>Confirm Packing Complete</Button>
               </div>
@@ -611,20 +610,20 @@ export default function InvoiceDetailPage() {
       {/* Shipping Modal */}
       {isShippingModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-xl border border-slate-200 bg-white shadow-2xl p-6 flex flex-col gap-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900">Dispatch Order & Attach Airway Bill</h3>
-              <button onClick={() => setIsShippingModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+          <div className="relative w-full max-w-lg rounded-xl border border-line bg-white shadow-2xl p-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-3 border-b border-line-soft">
+              <h3 className="text-sm font-bold text-ink">Dispatch Order & Attach Airway Bill</h3>
+              <button onClick={() => setIsShippingModalOpen(false)} className="text-muted hover:text-ink-secondary">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <form onSubmit={handleShipSubmit} className="flex flex-col gap-3 text-xs text-slate-700">
+            <form onSubmit={handleShipSubmit} className="flex flex-col gap-3 text-xs text-ink-secondary">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Carrier / Courier</label>
+                <label className="block text-xs font-semibold text-ink-secondary mb-1">Carrier / Courier</label>
                 <select
                   value={courier}
                   onChange={(e) => setCourier(e.target.value as Shipment['courier'])}
-                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900"
+                  className="w-full rounded-md border border-line bg-white px-3 py-1.5 text-xs text-ink"
                 >
                   <option value="DHL_EXPRESS">DHL Express Worldwide</option>
                   <option value="FEDEX_INTERNATIONAL">FedEx International Priority</option>
@@ -634,7 +633,7 @@ export default function InvoiceDetailPage() {
               </div>
               <Input label="Airway Bill (AWB) Number *" required value={awbNumber} onChange={(e) => setAwbNumber(e.target.value)} />
               <Input label="Tracking URL (Optional)" value={trackingUrl} onChange={(e) => setTrackingUrl(e.target.value)} />
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-line-soft">
                 <Button type="button" variant="outline" onClick={() => setIsShippingModalOpen(false)}>Cancel</Button>
                 <Button type="submit" loading={isShipping}>Dispatch Shipment</Button>
               </div>

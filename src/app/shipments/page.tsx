@@ -82,7 +82,6 @@ export default function ShipmentsPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="04 / DEPOT & FULFILMENT"
         title="Shipments & AWBs"
         description="Dispatched orders, airway bills, and delivery tracking."
       />
@@ -128,7 +127,7 @@ export default function ShipmentsPage() {
           action={shipments.length === 0 && <LinkButton href="/depot/ship">Go to Dispatch</LinkButton>}
         />
       ) : (
-        <Card className="overflow-hidden p-0">
+        <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Shipment</TableHead>

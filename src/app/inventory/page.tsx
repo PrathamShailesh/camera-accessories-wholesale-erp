@@ -60,7 +60,6 @@ export default function InventoryPage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="03 / INVENTORY"
         title="Inventory"
         description="Know exactly what is available, where it is stored, and what is moving."
         actions={
@@ -130,7 +129,7 @@ export default function InventoryPage() {
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0">
+        <Card className="overflow-hidden p-0 border-0 rounded-none bg-transparent">
           <Table>
             <TableHeader>
               <TableHead>Product</TableHead>

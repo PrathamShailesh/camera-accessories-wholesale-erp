@@ -99,7 +99,6 @@ export default function OrdersPipelinePage() {
   return (
     <div className="flex flex-col gap-6 pb-16">
       <PageHeader
-        eyebrow="02 / SALES"
         title="Order Pipeline"
         description="Every live order from quotation through dispatch and delivery."
       />
